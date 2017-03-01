@@ -90,17 +90,18 @@ if ~isempty(hToolbar) && isempty(findobj(hToolbar, 'Tag', objNames.buttonTag))
 		separator = 'on';
 	end;
     
-    hButtonPZ = uitoggletool(hToolbar);
-    hButtonPZ.CData = buttonImage;
-    hButtonPZ.OnCallback = 'PZ_tool(''Activate_PZ'');';
-    hButtonPZ.OffCallback =  'PZ_tool(''Deactivate_PZ'');';
-    hButtonPZ.Tag = objNames.buttonTag;
-    hButtonPZ.TooltipString = objNames.buttonToolTipString;
-    hButtonPZ.Separator = separator;
-    hButtonPZ.UserData = hFig;
-    hButtonPZ.Enable = 'on';
+    hButton = uitoggletool(hToolbar);
+    hButton.CData = buttonImage;
+    hButton.OnCallback = 'PZ_tool(''Activate_PZ'');';
+    hButton.OffCallback =  'PZ_tool(''Deactivate_PZ'');';
+    hButton.Tag = objNames.buttonTag;
+    hButton.TooltipString = objNames.buttonToolTipString;
+    hButton.Separator = separator;
+    hButton.UserData = hFig;
+    hButton.Enable = 'on';
 else
-    hButtonPZ = [];
+    % Button already present    
+    hButton = [];
 end;
 
 % If the menubar exists, create menu item
@@ -128,7 +129,7 @@ end;
 
 aD.hRoot     = groot;
 aD.hFig      = hFig;
-aD.hButtonPZ =  hButtonPZ;
+aD.hButton =  hButton;
 aD.hMenuPZ   =  hMenuPZ;
 aD.hToolbar  =  hToolbar;
 aD.hToolMenu =  hToolMenu;
@@ -193,7 +194,7 @@ pause(0.5);
 
 % Make it easy to find this button (tack on 'On') 
 % Wait until after old fig is closed.
-aD.hButtonPZ.Tag = [aD.hButtonPZ.Tag,'_On'];
+aD.hButton.Tag = [aD.hButton.Tag,'_On'];
 aD.hMenuPZ.Tag   = [aD.hMenuPZ.Tag, '_On'];
 aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
 
@@ -259,8 +260,8 @@ function Deactivate_PZ
 dispDebug;
 
 aD = getAD;
-if ~isempty(aD.hButtonPZ)
-    aD.hButtonPZ.Tag = aD.hButtonPZ.Tag(1:end-3);
+if ~isempty(aD.hButton)
+    aD.hButton.Tag = aD.hButton.Tag(1:end-3);
 end
     
 if ~isempty(aD.hMenuPZ)
@@ -632,10 +633,10 @@ checked   = aD.hMenuPZ.Checked;
 if strcmpi(checked,'on')
     % turn off button -> Deactivate_PZ
     aD.hMenuPZ.Checked = 'off';
-    aD.hButtonPZ.State = 'off';
-else %hButtonPZ
+    aD.hButton.State = 'off';
+else %hButton
     aD.hMenuPZ.Checked = 'on';
-    aD.hButtonPZ.State = 'on';
+    aD.hButton.State = 'on';
 end;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -681,7 +682,7 @@ old_SHH = aD.hRoot.ShowHiddenHandles;
 aD.hRoot.ShowHiddenHandles = 'On';
 
 %call->PZ_tool('Deactivate_PZ');
-aD.hButtonPZ.State = 'off';
+aD.hButton.State = 'off';
 
 aD.hRoot.ShowHiddenHandles= old_SHH;
 %

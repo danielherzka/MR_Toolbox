@@ -93,18 +93,19 @@ if ~isempty(hToolbar) && isempty(findobj(hToolbar, 'Tag', objNames.buttonTag ))
         separator = 'on';
     end;
     
-    hButtonWL = uitoggletool(hToolbar);
-    hButtonWL.CData = buttonImage;
-    hButtonWL.OnCallback = 'WL_tool(''Activate_WL'');';
-    hButtonWL.OffCallback = 'WL_tool(''Deactivate_WL'');';
-    hButtonWL.Tag = objNames.buttonTag;
-    hButtonWL.TooltipString = objNames.buttonToolTipString;
-    hButtonWL.Separator = separator;
-    hButtonWL.UserData = [];
-    hButtonWL.Enable = 'on';
+    hButton = uitoggletool(hToolbar);
+    hButton.CData = buttonImage;
+    hButton.OnCallback = 'WL_tool(''Activate_WL'');';
+    hButton.OffCallback = 'WL_tool(''Deactivate_WL'');';
+    hButton.Tag = objNames.buttonTag;
+    hButton.TooltipString = objNames.buttonToolTipString;
+    hButton.Separator = separator;
+    hButton.UserData = [];
+    hButton.Enable = 'on';
     
 else
-    hButtonWL = [];
+    % Button already present
+    hButton = [];
 end;
 
 % If menu exist and the menu item has not been previously created
@@ -133,7 +134,7 @@ end;
 
 aD.hRoot       = groot;
 aD.hFig        = hFig;
-aD.hButtonWL   =  hButtonWL;
+aD.hButton   =  hButton;
 aD.hMenuWL     =  hMenuWL;
 aD.hToolbar    =  hToolbar;
 aD.hToolMenu   =  hToolMenu;
@@ -195,7 +196,7 @@ pause(0.5);
 
 % Make it easy to find this button (tack on 'On')
 % Wait until after old fig is closed.
-aD.hButtonWL.Tag = [aD.hButtonWL.Tag,'_On'];
+aD.hButton.Tag = [aD.hButton.Tag,'_On'];
 aD.hMenuWL.Tag   = [aD.hMenuWL.Tag, '_On'];
 aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
 
@@ -276,8 +277,8 @@ function Deactivate_WL(varargin)
 dispDebug;
 
 aD = getAD;
-if ~isempty(aD.hButtonWL)
-    aD.hButtonWL.Tag = aD.hButtonWL.Tag(1:end-3);
+if ~isempty(aD.hButton)
+    aD.hButton.Tag = aD.hButton.Tag(1:end-3);
 end
     
 if ~isempty(aD.hMenuWL)
@@ -292,7 +293,7 @@ restoreOrigData(aD.hFig, aD.origProperties);
 enableToolbarButtons(aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates )
 
 % Store tool state for recovery on next button press in the appdata
-setappdata(aD.hButtonWL, 'cMapData',...
+setappdata(aD.hButton, 'cMapData',...
     {aD.cMapData.allColormaps, ...               % colormaps-per-axes
      aD.cMapData.allCmapValues, ...               % value-per-axes
      aD.hGUI.Colormap_popupmenu.String, ...      % current colormap names
@@ -324,7 +325,7 @@ point = aD.hCurrentAxes.CurrentPoint;
 % Store reference point and the refereonce CLim
 aD.refPoint = [point(1,1) point(1,2)];
 aD.refCLim  = aD.hCurrentAxes.CLim;
-%hButtonWL.UserData = [point(1,1) point(1,2), Clim];
+%hButton.UserData = [point(1,1) point(1,2), Clim];
 storeAD(aD);
 updateColormapPopupmenu;
 Adjust_WL;
@@ -343,7 +344,7 @@ aD = getAD;
 aD.hCurrentAxes = gca;
 point = aD.hCurrentAxes.CurrentPoint;
 
-%ref_coor = hButtonWL.UserData;
+%ref_coor = hButton.UserData;
 
 clim= aD.refCLim;
 xlim= aD.hCurrentAxes.XLim;
@@ -782,12 +783,12 @@ if strcmpi(checked,'on')
     % turn off button ->Deactivate_WL
     dispDebug(' Deactivate');
     aD.hMenuWL.Checked = 'off';
-    aD.hButtonWL.State = 'off';
+    aD.hButton.State = 'off';
 else
     % turn on button -> Activate_WL
     dispDebug(' Activate');
     aD.hMenuWL.Checked = 'on';
-    aD.hButtonWL.State = 'on';
+    aD.hButton.State = 'on';
 end;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -804,7 +805,7 @@ old_SHH = aD.hRoot.ShowHiddenHandles;
 aD.hRoot.ShowHiddenHandles = 'On';
 
 %call->WL_tool('Deactivate_WL');
-aD.hButtonWL.State = 'off';
+aD.hButton.State = 'off';
 
 aD.hRoot.ShowHiddenHandles= old_SHH;
 %
@@ -914,7 +915,7 @@ dispDebug;
 
 aD = getAD;
 
-storageData = getappdata(aD.hButtonWL, 'cMapData');
+storageData = getappdata(aD.hButton, 'cMapData');
 
 outCmaps     = storageData{1};
 outCmapValues= storageData{2};
