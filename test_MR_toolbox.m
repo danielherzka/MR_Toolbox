@@ -11,7 +11,9 @@ end
 %%
 % multiple images; no time
 figure
-imagescn(I.A(end/4:end*3/4,:,1:9), [], [], 10);
+
+Ims = cat(4, I.A,I.A,I.A);
+imagescn(Ims(end/4:end*3/4,:,:,:), [], [], 10 , 3);
 
 
 % single image; no time
