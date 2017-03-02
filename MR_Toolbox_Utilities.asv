@@ -2,11 +2,13 @@ function utilFcn = MR_Toolbox_Utilities
 
 %  Creata cell-list of available functions
 fs={...
-    'defaultButtonTags',...
-    'retrieveNames',...
-    'enableToolbarButtons',...
-    'disableToolbarButtons',...
-    'retreiveOrigData' ...
+    'defaultButtonTags';...
+    'retrieveNames';...
+    'enableToolbarButtons';...
+    'disableToolbarButtons';...
+    'retrieveOrigData'; ...
+    'restoreOrigData';...
+    'findHiddenObj';...
     };
 
 % Convert each name into a function handle available from structure M
@@ -51,7 +53,7 @@ structNames.toolName            = '<Utils>';
 function [hToolbar_Children, origToolEnables, origToolStates ] = disableToolbarButtons(hToolbar, currentToolName) 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
+utilDispDebug;
 hRoot = groot;
 old_SHH = hRoot.ShowHiddenHandles;
 hRoot.ShowHiddenHandles = 'on';
@@ -85,7 +87,7 @@ hRoot.ShowHiddenHandles = old_SHH;
 function enableToolbarButtons(hToolbar_Children, origToolEnables, origToolStates)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
+utilDispDebug;
 
 for i = 1:length(hToolbar_Children)
     if isprop(hToolbar_Children(i), 'Enable') && ~isempty(origToolEnables{i})
@@ -100,14 +102,14 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function propList = retreiveOrigData(hObjs,propList)
+function propList = retrieveOrigData(hObjs,propList)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Retrive previous settings for storage
-dispDebug;
+utilDispDebug;
 
 if nargin==1
-    % basic list - typically modified 
+    % basic list - typically modified figure properties
     propList = {...
         'WindowButtonDownFcn'; ...
         'WindowButtonMotionFcn'; ...
@@ -123,8 +125,11 @@ end
 
 propList = repmat(propList, [1 1 length(hObjs)]);
 
-for j = 1:length(hObjs)
-    for i = 1:size(propList,1)
+for j = 1:length(hObjs) % objects
+    for i = 1:size(propList,1) % properties
+        i
+        j
+        if isprop(hObjs(i), proplist{i,j,
         propList{i,2,j} = hObjs(j).(propList{i,1});
     end
 end
@@ -137,7 +142,7 @@ function restoreOrigData(hFig, propList)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Restore previous WBDF etc to restore state after WL is done.
-dispDebug;
+utilDispDebug;
 for j = 1:length(hFig)
     for i = 1:size(propList,1)
         hFig(j).(propList{i,1,j}) = propList{i,2,j};
@@ -145,6 +150,26 @@ for j = 1:length(hFig)
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function h = findHiddenObj(Handle, Property, Value)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+utilDispDebug;
+
+h_root = groot;
+old_SHH = h_root.ShowHiddenHandles;
+h_root.ShowHiddenHandles = 'On';
+if nargin <3
+    h = findobj(Handle, Property);
+else
+    h = findobj(Handle, Property, Value);
+end;
+h_root.ShowHiddenHandles = old_SHH;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -162,11 +187,12 @@ global DB;
 if DB
     objectNames = retrieveNames;
     x = dbstack;
-    func_name = x(2).name;    loc = [];
-    if length(x) > 3
-        loc = [' (loc) ', repmat('|> ',1, length(x)-3)] ;
+    funcName = x(2).name;    loc = [];
+    callFuncName = x(4).name;
+    if length(x) > 5
+        loc = ['(loc)', repmat('|> ',1, length(x)-3)] ;
     end
-    fprintf([objectNames.toolName, ':',loc , ' %s'], func_name);
+    fprintf([callFuncName,' ',objectNames.toolName, ':', loc , ' %s'], funcName);
 %     if nargin>0
 %         for i = 1:length(varargin)
 %             str = varargin{i};

@@ -53,7 +53,7 @@ structNames.toolName            = '<Utils>';
 function [hToolbar_Children, origToolEnables, origToolStates ] = disableToolbarButtons(hToolbar, currentToolName) 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
+utilDispDebug;
 hRoot = groot;
 old_SHH = hRoot.ShowHiddenHandles;
 hRoot.ShowHiddenHandles = 'on';
@@ -87,7 +87,7 @@ hRoot.ShowHiddenHandles = old_SHH;
 function enableToolbarButtons(hToolbar_Children, origToolEnables, origToolStates)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
+utilDispDebug;
 
 for i = 1:length(hToolbar_Children)
     if isprop(hToolbar_Children(i), 'Enable') && ~isempty(origToolEnables{i})
@@ -106,7 +106,7 @@ function propList = retrieveOrigData(hObjs,propList)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Retrive previous settings for storage
-dispDebug;
+utilDispDebug;
 
 if nargin==1
     % basic list - typically modified figure properties
@@ -125,9 +125,11 @@ end
 
 propList = repmat(propList, [1 1 length(hObjs)]);
 
-for j = 1:length(hObjs)
-    for i = 1:size(propList,1)
-        propList{i,2,j} = hObjs(j).(propList{i,1});
+for j = 1:length(hObjs) % objects
+    for i = 1:size(propList,1) % properties
+        if isprop(hObjs(j), propList{i,1,j})
+            propList{i,2,j} = hObjs(j).(propList{i,1,j});
+        end
     end
 end
 %
@@ -139,7 +141,7 @@ function restoreOrigData(hFig, propList)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Restore previous WBDF etc to restore state after WL is done.
-dispDebug;
+utilDispDebug;
 for j = 1:length(hFig)
     for i = 1:size(propList,1)
         hFig(j).(propList{i,1,j}) = propList{i,2,j};
@@ -153,7 +155,7 @@ end
 function h = findHiddenObj(Handle, Property, Value)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
+utilDispDebug;
 
 h_root = groot;
 old_SHH = h_root.ShowHiddenHandles;
@@ -184,11 +186,12 @@ global DB;
 if DB
     objectNames = retrieveNames;
     x = dbstack;
-    func_name = x(2).name;    loc = [];
-    if length(x) > 3
-        loc = [' (loc) ', repmat('|> ',1, length(x)-3)] ;
+    funcName = x(2).name;    loc = [];
+    callFuncName = x(3).file(1:end-2);
+    if length(x) > 5
+        loc = ['(loc)', repmat('|> ',1, length(x)-5)] ;
     end
-    fprintf([objectNames.toolName, ':',loc , ' %s'], func_name);
+    fprintf([callFuncName,' ',objectNames.toolName, ':', loc , ' %s'], funcName);
 %     if nargin>0
 %         for i = 1:length(varargin)
 %             str = varargin{i};
