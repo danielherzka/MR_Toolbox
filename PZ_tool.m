@@ -152,7 +152,7 @@ dispDebug;
 aD = getAD;
     
 % Check the menu object
-if ~isempty(aD.hMenuPZ), aD.hMenuPZ.Checked = 'on'; end
+if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
 
 % Find toolbar and deactivate other buttons
 aD.hToolbar = findall(aD.hFig, 'type', 'uitoolbar');
@@ -178,10 +178,10 @@ end;
 
 % Obtain current axis
 aD.hRoot.CurrentFigure = aD.hFig;
-aD.hAxes=aD.hFig.CurrentAxes;
-if isempty(aD.hAxes), 
-    aD.hAxes = hAllAxes(1); 
-    aD.hFig.CurrentAxes = hAxes;
+aD.hCurrentAxes=aD.hFig.CurrentAxes;
+if isempty(aD.hCurrentAxes), 
+    aD.hCurrentAxes = aD.hAllAxes(1); 
+    aD.hFig.CurrentAxes = aD.hCurrentAxes;
 end;
 
 % Store the figure's old infor within the fig's own userdata
@@ -195,15 +195,8 @@ pause(0.5);
 % Make it easy to find this button (tack on 'On') 
 % Wait until after old fig is closed.
 aD.hButton.Tag = [aD.hButton.Tag,'_On'];
-aD.hMenuPZ.Tag   = [aD.hMenuPZ.Tag, '_On'];
+aD.hMenu.Tag   = [aD.hMenu.Tag, '_On'];
 aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
-
-%% PART II Create Figure
-aD.hFigPZ = openfig(aD.objectNames.figFilename,'reuse');
-
-% Load Save preferences tool data
-optionalUIControls = {'Apply_radiobutton', 'Value'};
-aD.hSP.UserData = {aD.objectNames.figFilename, optionalUIControls};
 
 aD.hFig.WindowButtonDownFcn   = 'PZ_tool(''Adjust_On'');'; %entry
 aD.hFig.WindowButtonUpFcn     = 'PZ_tool(''Adjust_Pan_For_All'');'; %exit
@@ -211,11 +204,17 @@ aD.hFig.WindowButtonMotionFcn = '';
 aD.hFig.WindowKeyPressFcn  = @Key_Press_CopyPaste;
 
 % Draw faster and without flashes
-%aD.hFig.CloseRequestFcn = [ origCRF , ',PZ_tool(''Close_Parent_Figure'')'];
 aD.hFig.CloseRequestFcn = @Close_Parent_Figure;
 aD.hFig.Renderer = 'zbuffer';
 aD.hRoot.CurrentFigure = aD.hFig;
 [aD.hAllAxes.SortMethod] = deal('Depth');
+
+%% PART II Create GUI Figure
+aD.hFigPZ = openfig(aD.objectNames.figFilename,'reuse');
+
+% Load Save preferences tool data
+optionalUIControls = {'Apply_radiobutton', 'Value'};
+aD.hSP.UserData = {aD.objectNames.figFilename, optionalUIControls};
 
 % Generate a structure of handles to pass to callbacks, and store it. 
 aD.hGUI = guihandles(aD.hFigPZ);
@@ -228,10 +227,10 @@ aD.hFigPZ.CloseRequestFcn = @Close_Request_Callback;
 aD.hFig.Pointer =  'Custom';
 aD.hFig.PointerShapeCData = openHandPointerImage;
 
-hIm = findobj(aD.hAxes, 'Type', 'Image');
+hIm = findobj(aD.hCurrentAxes, 'Type', 'Image');
 imCData = hIm.CData;
-zoom_factor = max([size(imCData,2)/diff(allXlims(aD.hAxes==aD.hAllAxes,:)),...
-    size(imCData,1)/diff(allYlims(aD.hAxes==aD.hAllAxes,:))]);
+zoom_factor = max([size(imCData,2)/diff(allXlims(aD.hCurrentAxes==aD.hAllAxes,:)),...
+    size(imCData,1)/diff(allYlims(aD.hCurrentAxes==aD.hAllAxes,:))]);
 
 % Store all relevant info for faster use during calls
 %hGUI.Reset_pushbutton.UserData =  {hFig, hFigPZ, hAllAxes, all_xlims, all_ylims, hAxes };
@@ -328,12 +327,12 @@ dispDebug
 
 aD = getAD; 
 
-aD.hAxes = gca;
-currPoint = aD.hAxes.CurrentPoint;
+aD.hCurrentAxes = gca;
+currPoint = aD.hCurrentAxes.CurrentPoint;
 refPoint = aD.ReferencePoint;
 
-xlim = aD.hAxes.XLim;
-ylim = aD.hAxes.YLim;
+xlim = aD.hCurrentAxes.XLim;
+ylim = aD.hCurrentAxes.YLim;
 
 % Use fraction  i.e. relative to position to the originally clicked point
 % to determine the change in window and level
@@ -343,8 +342,8 @@ xlim = xlim - deltas(1);
 ylim = ylim - deltas(2);
 
 % set the xlims and the ylims after motion
-aD.hAxes.XLim = xlim;
-aD.hAxes.YLim = ylim;
+aD.hCurrentAxes.XLim = xlim;
+aD.hCurrentAxes.YLim = ylim;
 
 storeAD(aD);
 
@@ -367,8 +366,8 @@ aD.hFig.WindowButtonMotionFcn = ' ';
 apply_all = aD.hGUI.Apply_radiobutton.Value;
 %most_current_data = hGUI.Apply_radiobutton.UserData
 
-currentXLim = aD.hAxes.XLim;
-currentYLim = aD.hAxes.YLim;
+currentXLim = aD.hCurrentAxes.XLim;
+currentYLim = aD.hCurrentAxes.YLim;
 
 if apply_all
     [aD.hAllAxes.XLim] =  deal(currentXLim);
@@ -400,10 +399,10 @@ zoom_factor = str2double(aD.hGUI.Zoom_value_edit.String);
 if ~isnan(zoom_factor)
     
     if apply_all, all_axes = aD.hAllAxes;
-    else          all_axes = aD.hAxes;
+    else          all_axes = aD.hCurrentAxes;
     end;
     
-    hIm = findobj(aD.hAxes, 'Type', 'Image');
+    hIm = findobj(aD.hCurrentAxes, 'Type', 'Image');
     im = hIm.CData;
     xsize = size(im,2);
     ysize = size(im,1);
@@ -441,13 +440,13 @@ apply_all = aD.hGUI.Apply_radiobutton.Value;
 if isempty(aD.hFig.CurrentAxes)
     aD.hFig.CurrentAxes = hAllAxes(1);
 end
-aD.hAxes = aD.hFig.CurrentAxes;
+aD.hCurrentAxes = aD.hFig.CurrentAxes;
     
-hAxes_idx = find(aD.hAllAxes==aD.hAxes);
+hAxes_idx = find(aD.hAllAxes==aD.hCurrentAxes);
 
 
-aD.hAxes.XLim = aD.origXLims(hAxes_idx,:);
-aD.hAxes.YLim = aD.origYLims(hAxes_idx,:);
+aD.hCurrentAxes.XLim = aD.origXLims(hAxes_idx,:);
+aD.hCurrentAxes.YLim = aD.origYLims(hAxes_idx,:);
 
 if apply_all,
     for i = 1:length(aD.hAllAxes)
@@ -457,11 +456,11 @@ if apply_all,
     aD.hGUI.Reset_pushbutton.Enable = 'Off';
 end
 
-hIm = findobj(aD.hAxes, 'Type', 'image');
+hIm = findobj(aD.hCurrentAxes, 'Type', 'image');
 im = hIm.CData;
 
-zoom_factor_x = size(im,2) / diff(aD.hAxes.XLim);
-zoom_factor_y = size(im,1) / diff(aD.hAxes.YLim);
+zoom_factor_x = size(im,2) / diff(aD.hCurrentAxes.XLim);
+zoom_factor_y = size(im,1) / diff(aD.hCurrentAxes.YLim);
 
 aD.hGUI.Zoom_value_edit.String = num2str(max([zoom_factor_x, zoom_factor_y]),3);
 aD.hRoot.CurrentFigure = aD.hFig;
@@ -483,15 +482,15 @@ aD = getAD;
 apply_all = aD.hGUI.Apply_radiobutton.Value;
 
 if ~isempty(aD.hFig.CurrentAxes)
-    aD.hAxes = aD.hFig.CurrentAxes;
+    aD.hCurrentAxes = aD.hFig.CurrentAxes;
 else
-    aD.hAxes = aD.hAllAxes(1);
+    aD.hCurrentAxes = aD.hAllAxes(1);
 end
 
 aD.hRoot.CurrentFigure = aD.hFig;
 
-aD.hAxes.XLimMode = 'auto';
-aD.hAxes.YLimMode = 'auto';
+aD.hCurrentAxes.XLimMode = 'auto';
+aD.hCurrentAxes.YLimMode = 'auto';
 axis('image');
 
 if apply_all    
@@ -502,7 +501,7 @@ if apply_all
         axis('image');
     end;
 end
-aD.hFig.CurrentAxes = aD.hAxes;
+aD.hFig.CurrentAxes = aD.hCurrentAxes;
 aD.hGUI.Zoom_value_edit.String = num2str(1);
 aD.hGUI.Reset_pushbutton.Enable = 'On';
 aD.hRoot.CurrentFigure = aD.hFig;
@@ -585,15 +584,15 @@ aD = getAD;
 if isempty(aD.hFig.CurrentAxes)
     aD.hFig.CurrentAxes = aD.hAllAxes(1);
 end
-aD.hAxes = aD.hFig.CurrentAxes;
+aD.hCurrentAxes = aD.hFig.CurrentAxes;
 
-hIm = findobj(aD.hAxes, 'Type', 'image');
+hIm = findobj(aD.hCurrentAxes, 'Type', 'image');
 im = hIm.CData;
 
 % Ta daa
 %axis('equal');
-xlim = aD.hAxes.XLim;
-ylim = aD.hAxes.YLim;
+xlim = aD.hCurrentAxes.XLim;
+ylim = aD.hCurrentAxes.YLim;
 
 zoom_factor_x = size(im,2) / diff(xlim);
 zoom_factor_y = size(im,1) / diff(ylim);
@@ -652,8 +651,8 @@ aD = getAD;
 
 switch data.Key
     case 'c' %copy
-        aD.copy.XLim = aD.hAxes.XLim;
-        aD.copy.YLim = aD.hAxes.YLim;
+        aD.copy.XLim = aD.hCurrentAxes.XLim;
+        aD.copy.YLim = aD.hCurrentAxes.YLim;
         storeAD(aD);
     case {'p','v'} %paste
         apply_all = aD.hGUI.Apply_radiobutton.Value;
@@ -662,8 +661,8 @@ switch data.Key
                 [aD.hAllAxes.XLim ]= deal(aD.copy.XLim);
                 [aD.hAllAxes.YLim ]= deal(aD.copy.YLim);
             else
-                aD.hAxes.XLim = aD.copy.XLim;
-                aD.hAxes.YLim = aD.copy.YLim;
+                aD.hCurrentAxes.XLim = aD.copy.XLim;
+                aD.hCurrentAxes.YLim = aD.copy.YLim;
             end
         end
 end
@@ -721,7 +720,7 @@ close(hFig);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%START SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%

@@ -121,21 +121,21 @@ if ~isempty(hToolMenu) && isempty(findobj(hToolMenu,'Tag', objNames.menuTag))
         separator = 'Off';
     end;
     
-    hMenuWL = uimenu(hToolMenu,'Position', position);
-    hMenuWL.Tag       = objNames.menuTag;
-    hMenuWL.Label     = objNames.menuLabel;
-    hMenuWL.Callback  = @Menu_WL;
-    hMenuWL.Separator = separator;
-    hMenuWL.UserData  = hFig;
+    hMenu = uimenu(hToolMenu,'Position', position);
+    hMenu.Tag       = objNames.menuTag;
+    hMenu.Label     = objNames.menuLabel;
+    hMenu.Callback  = @Menu_WL;
+    hMenu.Separator = separator;
+    hMenu.UserData  = hFig;
     
 else
-    hMenuWL = [];
+    hMenu = [];
 end;
 
 aD.hRoot       = groot;
 aD.hFig        = hFig;
 aD.hButton   =  hButton;
-aD.hMenuWL     =  hMenuWL;
+aD.hMenuWL     =  hMenu;
 aD.hToolbar    =  hToolbar;
 aD.hToolMenu   =  hToolMenu;
 aD.objectNames = objNames;
@@ -157,7 +157,7 @@ dispDebug;
 aD = getAD;
 
 % Check the menu object
-if ~isempty(aD.hMenuWL), aD.hMenuWL.Checked = 'on'; end
+if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
 
 % Deactivate other toolbar buttons to avoid callback conflicts
 aD.hToolbar = findall(aD.hFig, 'type', 'uitoolbar');
@@ -200,13 +200,6 @@ aD.hButton.Tag = [aD.hButton.Tag,'_On'];
 aD.hMenuWL.Tag   = [aD.hMenuWL.Tag, '_On'];
 aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
 
-%% PART II Create Figure
-aD.hFigWL = openfig(aD.objectNames.figFilename,'reuse');
-
-% Load Save preferences tool data
-optionalUIControls = {'Apply_to_popupmenu', 'Value'};
-aD.hSP.UserData = {aD.objectNames.figFilename, optionalUIControls};
-
 % Set callbacks
 aD.hFig.WindowButtonDownFcn   = 'WL_tool(''Adjust_On'');';
 aD.hFig.WindowButtonUpFcn     = 'WL_tool(''Adjust_WL_For_All''); ';
@@ -219,6 +212,13 @@ aD.hFig.Renderer = 'zbuffer';
 aD.hRoot.CurrentFigure = aD.hFig;
 [aD.hAllAxes.SortMethod] = deal('Depth');
 
+%% PART II Create GUI Figure
+aD.hFigWL = openfig(aD.objectNames.figFilename,'reuse');
+
+% Load Save preferences tool data
+optionalUIControls = {'Apply_to_popupmenu', 'Value'};
+aD.hSP.UserData = {aD.objectNames.figFilename, optionalUIControls};
+
 % Generate a structure of handles to pass to callbacks and store it.
 aD.hGUI = guihandles(aD.hFigWL);
 %guidata(aD.hFigWL,aD.hGUI);
@@ -226,7 +226,7 @@ aD.hGUI = guihandles(aD.hFigWL);
 aD.hFigWL.Name = aD.objectNames.figName;
 aD.hFigWL.CloseRequestFcn = @Close_Request_Callback;
 
-% Store the figure's old infor within the fig's own userdata
+% Store the figure's old info
 aD.origData = retreiveOrigData(aD.hFig);
 aD.copy.CLim       = [];
 aD.copy.CMapValue  = [];
@@ -265,7 +265,6 @@ end
 aD.hGUI.Reset_pushbutton.Enable   = 'Off';
 aD.hGUI.Window_value_edit.Enable  = 'Off';
 aD.hGUI.Level_value_edit.Enable   = 'Off';
-
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -432,7 +431,6 @@ Set_Colormap;
 
 figure(aD.hFigWL);
 figure(aD.hFig);
-
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -776,18 +774,18 @@ dispDebug;
 
 aD = getAD;
 
-checked = aD.hMenuWL.Checked;
+checked = aD.hMenu.Checked;
 
 % Changing button state engages button callback
 if strcmpi(checked,'on')
     % turn off button ->Deactivate_WL
     dispDebug(' Deactivate');
-    aD.hMenuWL.Checked = 'off';
+    aD.hMenu.Checked = 'off';
     aD.hButton.State = 'off';
 else
     % turn on button -> Activate_WL
     dispDebug(' Activate');
-    aD.hMenuWL.Checked = 'on';
+    aD.hMenu.Checked = 'on';
     aD.hButton.State = 'on';
 end;
 %
@@ -837,7 +835,7 @@ close(hFig);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%START SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%

@@ -2,13 +2,11 @@ function utilFcn = MR_Toolbox_Utilities
 
 %  Creata cell-list of available functions
 fs={...
-    'defaultButtonTags';...
-    'retrieveNames';...
-    'enableToolbarButtons';...
-    'disableToolbarButtons';...
-    'retrieveOrigData'; ...
-    'restoreOrigData';...
-    'findHiddenObj';...
+    'defaultButtonTags',...
+    'retrieveNames',...
+    'enableToolbarButtons',...
+    'disableToolbarButtons',...
+    'retreiveOrigData' ...
     };
 
 % Convert each name into a function handle available from structure M
@@ -102,14 +100,14 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function propList = retrieveOrigData(hObjs,propList)
+function propList = retreiveOrigData(hObjs,propList)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Retrive previous settings for storage
 dispDebug;
 
 if nargin==1
-    % basic list - typically modified figure properties
+    % basic list - typically modified 
     propList = {...
         'WindowButtonDownFcn'; ...
         'WindowButtonMotionFcn'; ...
@@ -147,26 +145,6 @@ for j = 1:length(hFig)
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function h = findHiddenObj(Handle, Property, Value)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-
-h_root = groot;
-old_SHH = h_root.ShowHiddenHandles;
-h_root.ShowHiddenHandles = 'On';
-if nargin <3
-    h = findobj(Handle, Property);
-else
-    h = findobj(Handle, Property, Value);
-end;
-h_root.ShowHiddenHandles = old_SHH;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
