@@ -161,10 +161,6 @@ aD.hToolbar = findobj(aD.hToolbar, 'Tag', 'FigureToolBar');
 if ~isempty(aD.hToolbar)
     [aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates ] = ...
         disableToolbarButtons(aD.hToolbar, aD.objectNames.buttonTag);
-    
-    % Enable save_prefs tool button
-    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
-    aD.hSP.Enable = 'On';
 end;
 
 % Store initial state of all axes in current figure for reset
@@ -188,8 +184,8 @@ end;
 aD.origProperties = retreiveOrigData(aD.hFig);
 
 % Find and close the old PZ figure to avoid conflicts
-hFigPZOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
-if ~isempty(hFigPZOld), close(hFigPZOld); end;
+hToolFigOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
+if ~isempty(hToolFigOld), close(hToolFigOld); end;
 pause(0.5);
 
 % Make it easy to find this button (tack on 'On') 
@@ -210,18 +206,23 @@ aD.hRoot.CurrentFigure = aD.hFig;
 [aD.hAllAxes.SortMethod] = deal('Depth');
 
 %% PART II Create GUI Figure
-aD.hFigPZ = openfig(aD.objectNames.figFilename,'reuse');
+aD.hToolFig = openfig(aD.objectNames.figFilename,'reuse');
 
-% Load Save preferences tool data
-optionalUIControls = {'Apply_radiobutton', 'Value'};
-aD.hSP.UserData = {aD.objectNames.figFilename, optionalUIControls};
+% Enable save_prefs tool button
+if ~isempty(aD.hToolbar)
+    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
+    aD.hSP.Enable = 'On';
+    optionalUIControls = {'Apply_radiobutton', 'Value'};
+    aD.hSP.UserData = {aD.objectNames.figFilename, optionalUIControls};
+end
 
 % Generate a structure of handles to pass to callbacks, and store it. 
-aD.hGUI = guihandles(aD.hFigPZ);
+aD.hGUI = guihandles(aD.hToolFig);
 
-aD.hFigPZ.Name = aD.objectNames.figName;
-aD.hFigPZ.CloseRequestFcn = @Close_Request_Callback;
+aD.hToolFig.Name = aD.objectNames.figName;
+aD.hToolFig.CloseRequestFcn = @Close_Request_Callback;
 
+%%  PART III - Finish setup for other objects
 % Change the pointer and store the old pointer data
 [openHandPointerImage, closedHandPointerImage ] =  definePointers;
 aD.hFig.Pointer =  'Custom';
@@ -233,7 +234,7 @@ zoom_factor = max([size(imCData,2)/diff(allXlims(aD.hCurrentAxes==aD.hAllAxes,:)
     size(imCData,1)/diff(allYlims(aD.hCurrentAxes==aD.hAllAxes,:))]);
 
 % Store all relevant info for faster use during calls
-%hGUI.Reset_pushbutton.UserData =  {hFig, hFigPZ, hAllAxes, all_xlims, all_ylims, hAxes };
+%hGUI.Reset_pushbutton.UserData =  {hFig, hToolFig, hAllAxes, all_xlims, all_ylims, hAxes };
 aD.hGUI.Reset_pushbutton.Enable = 'Off';
 aD.hGUI.Zoom_value_edit.String  = num2str(zoom_factor,3);
 
@@ -269,7 +270,7 @@ if ~isempty(aD.hMenuPZ)
 end
    
 % Close PZ figure
-delete(aD.hFigPZ);
+delete(aD.hToolFig);
 
 zoom off;
 dispDebug('Zoom off');
@@ -377,7 +378,7 @@ end;
 aD.hFig.PointerShapeCData = aD.openHandPointerImage;
 aD.hGUI.Reset_pushbutton.Enable = 'On';
 
-%figure(aD.hFigPZ);
+%figure(aD.hToolFig);
 aD.hRoot.CurrentFigure = aD.hFig;
 dispDebug('end');
 %
@@ -607,7 +608,7 @@ if apply_all
     [aD.hAllAxes.YLim] = deal(ylim);
 end;
 
-figure(aD.hFigPZ);
+figure(aD.hToolFig);
 
 aD.hGUI.Reset_pushbutton.Enable = 'On';
 aD.hRoot.CurrentFigure = aD.hFig;
@@ -698,20 +699,20 @@ dispDebug;
 
 aD = getAD;
 if ~isempty(aD)
-    hFigPZ = aD.hFigPZ;
+    hToolFig = aD.hToolFig;
 else
     % Parent Figure is already closed and aD is gone
     dispDebug('ParFig closed!');
     objNames = retrieveNames;
-    hFigPZ = findobj(groot, 'Tag', objNames.figTag); 
+    hToolFig = findobj(groot, 'Tag', objNames.figTag); 
 end
 
 
-hFigPZ.CloseRequestFcn = 'closereq';
+hToolFig.CloseRequestFcn = 'closereq';
 try
-    close(hFigPZ);
+    close(hToolFig);
 catch
-    delete(hFigPZ);
+    delete(hToolFig);
 end;
 
 hFig.CloseRequestFcn = 'closereq';
@@ -997,7 +998,7 @@ if DB
     objectNames = retrieveNames;
     x = dbstack;
     func_name = x(2).name;    loc = [];
-    if length(x) > 3
+    if length(x) > 4
         loc = [' (loc) ', repmat('|> ',1, length(x)-3)] ;
     end
     fprintf([objectNames.toolName, ':',loc , ' %s'], func_name);

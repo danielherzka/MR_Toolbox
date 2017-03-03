@@ -135,7 +135,7 @@ end;
 aD.hRoot       = groot;
 aD.hFig        = hFig;
 aD.hButton   =  hButton;
-aD.hMenuWL     =  hMenu;
+aD.hMenu     =  hMenu;
 aD.hToolbar    =  hToolbar;
 aD.hToolMenu   =  hToolMenu;
 aD.objectNames = objNames;
@@ -166,10 +166,6 @@ aD.hToolbar = findobj(aD.hToolbar, 'Tag', 'FigureToolBar');
 if ~isempty(aD.hToolbar)
     [aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates ] = ...
         disableToolbarButtons(aD.hToolbar,  aD.objectNames.buttonTag);
-  
-    % Enable save_prefs tool button
-    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
-    aD.hSP.Enable = 'On';
 end;
 
 % Store initial state of all axes in current figure for reset
@@ -190,14 +186,14 @@ end;
 aD.origProperties = retreiveOrigData(aD.hFig);
 
 % Find and close the old WL figure to avoid conflicts
-hFigWLOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
-if ~isempty(hFigWLOld), close(hFigWLOld);end;
+hToolFigOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
+if ~isempty(hToolFigOld), close(hToolFigOld);end;
 pause(0.5);
 
 % Make it easy to find this button (tack on 'On')
 % Wait until after old fig is closed.
 aD.hButton.Tag = [aD.hButton.Tag,'_On'];
-aD.hMenuWL.Tag   = [aD.hMenuWL.Tag, '_On'];
+aD.hMenu.Tag   = [aD.hMenu.Tag, '_On'];
 aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
 
 % Set callbacks
@@ -213,18 +209,24 @@ aD.hRoot.CurrentFigure = aD.hFig;
 [aD.hAllAxes.SortMethod] = deal('Depth');
 
 %% PART II Create GUI Figure
-aD.hFigWL = openfig(aD.objectNames.figFilename,'reuse');
+aD.hToolFig = openfig(aD.objectNames.figFilename,'reuse');
 
-% Load Save preferences tool data
-optionalUIControls = {'Apply_to_popupmenu', 'Value'};
-aD.hSP.UserData = {aD.objectNames.figFilename, optionalUIControls};
+% Enable save_prefs tool button
+if ~isempty(aD.hToolbar)
+    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
+    aD.hSP.Enable = 'On';
+    optionalUIControls = {'Apply_to_popupmenu', 'Value'};
+    aD.hSP.UserData = {aD.objectNames.figFilename, optionalUIControls};
+end
 
 % Generate a structure of handles to pass to callbacks and store it.
-aD.hGUI = guihandles(aD.hFigWL);
-%guidata(aD.hFigWL,aD.hGUI);
+aD.hGUI = guihandles(aD.hToolFig);
 
-aD.hFigWL.Name = aD.objectNames.figName;
-aD.hFigWL.CloseRequestFcn = @Close_Request_Callback;
+aD.hToolFig.Name = aD.objectNames.figName;
+aD.hToolFig.CloseRequestFcn = @Close_Request_Callback;
+
+
+%%  PART III - Finish setup for other objects
 
 % Store the figure's old info
 aD.origData = retreiveOrigData(aD.hFig);
@@ -232,6 +234,7 @@ aD.copy.CLim       = [];
 aD.copy.CMapValue  = [];
 aD.copy.CMap       = [];
 
+% Update colormap information
 if isempty(aD.cMapData)
     
     dispDebug;('First Call');
@@ -260,8 +263,6 @@ else
     restoreColormap;
     
 end
-
-%hGUI.Reset_pushbutton.UserData = {hAllAxes, allClims, hCurrentAxes };
 aD.hGUI.Reset_pushbutton.Enable   = 'Off';
 aD.hGUI.Window_value_edit.Enable  = 'Off';
 aD.hGUI.Level_value_edit.Enable   = 'Off';
@@ -280,9 +281,9 @@ if ~isempty(aD.hButton)
     aD.hButton.Tag = aD.hButton.Tag(1:end-3);
 end
     
-if ~isempty(aD.hMenuWL)
-    aD.hMenuWL.Checked = 'off';
-    aD.hMenuWL.Tag = aD.hMenuWL.Tag(1:end-3);
+if ~isempty(aD.hMenu)
+    aD.hMenu.Checked = 'off';
+    aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
 end
 
 % Restore old figure settings
@@ -299,7 +300,7 @@ setappdata(aD.hButton, 'cMapData',...
      aD.hGUI.Apply_to_popupmenu.Value});         % apply to current value
 
 % Close WL figure
-delete(aD.hFigWL);
+delete(aD.hToolFig);
 
 %Disable save_prefs tool button (only enabled when tool is active)
 aD.hSP.Enable = 'Off';
@@ -370,7 +371,7 @@ aD.hCurrentAxes.CLim = [new_level - new_window/2 , new_level + new_window/2];
 
 storeAD(aD); % Need hCurrentAxes to be perm? If not, don't need store
 
-%hApply_to_popupmenu = findHiddenObj(hFigWL, 'Tag', 'Apply_to_popupmenu');
+%hApply_to_popupmenu = findHiddenObj(hToolFig, 'Tag', 'Apply_to_popupmenu');
 %aD.hGUI.Apply_to_popupmenu.UserData =  { [new_level, new_window], hCurrentAxes, hFig};
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -429,7 +430,7 @@ Update_Window_Level(newWin, newLev);
 
 Set_Colormap;
 
-figure(aD.hFigWL);
+figure(aD.hToolFig);
 figure(aD.hFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -587,7 +588,7 @@ aD.cMapData.allColormaps  = outCmaps;
 
 storeAD(aD);
 
-figure(aD.hFigWL);
+figure(aD.hToolFig);
 figure(aD.hFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -820,15 +821,15 @@ dispDebug;
 
 aD = getAD;
 if ~isempty(aD)
-    hFigWL = aD.hFigWL;
+    hToolFig = aD.hToolFig;
 else
     % Parent Figure is already closed and aD is gone (shouldn't happen!)
     dispDebug('ParFig closed!');
     objNames = retrieveNames;
-    hFigWL = findobj(groot, 'Tag', objNames.figTag);
+    hToolFig = findobj(groot, 'Tag', objNames.figTag);
 end
 
-delete(hFigWL);
+delete(hToolFig);
 hFig.CloseRequestFcn = 'closereq';
 close(hFig);
 %
@@ -1107,7 +1108,7 @@ if DB
     objectNames = retrieveNames;
     x = dbstack;
     func_name = x(2).name;    loc = [];
-    if length(x) > 3
+    if length(x) > 4
         loc = [' (loc) ', repmat('|> ',1, length(x)-3)] ;
     end
     fprintf([objectNames.toolName, ':',loc , ' %s'], func_name);

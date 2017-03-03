@@ -9,6 +9,7 @@ fs={...
     'retrieveOrigData'; ...
     'restoreOrigData';...
     'findHiddenObj';...
+    'createButtonObject';...
     };
 
 % Convert each name into a function handle available from structure M
@@ -168,6 +169,43 @@ end;
 h_root.ShowHiddenHandles = old_SHH;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  hButton = createButtonObject(...
+    hFig, ...
+    hToolbar, ...
+    buttonImage, ...
+    callbackOn, ...
+    callbackOff,...
+    buttonTag, ...
+    buttonToolTipString)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+hToolbar_Children = hToolbar.Children; 
+buttonTags = defaultButtonTags();
+hButtons = cell(1,size(buttonTags,2));
+
+for i = 1:length(buttonTags)
+    hButtons{i} = findobj(hToolbar_Children, 'Tag', buttonTags{i});
+end;
+
+separator = 'off';
+if isempty(hButtons)
+    separator = 'on';
+end;
+
+hButton = uitoggletool(hToolbar);
+hButton.CData         = buttonImage;
+hButton.OnCallback    = callbackOn;
+hButton.OffCallback   = callbackOff;
+hButton.Tag           = buttonTag;
+hButton.TooltipString = buttonToolTipString;
+hButton.Separator     = separator;
+hButton.UserData      = hFig;
+hButton.Enable         = 'on';
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

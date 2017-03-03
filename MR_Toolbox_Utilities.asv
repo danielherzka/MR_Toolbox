@@ -127,10 +127,9 @@ propList = repmat(propList, [1 1 length(hObjs)]);
 
 for j = 1:length(hObjs) % objects
     for i = 1:size(propList,1) % properties
-        i
-        j
-        if isprop(hObjs(i), proplist{i,j,
-        propList{i,2,j} = hObjs(j).(propList{i,1});
+        if isprop(hObjs(j), propList{i,1,j})
+            propList{i,2,j} = hObjs(j).(propList{i,1,j});
+        end
     end
 end
 %
@@ -170,6 +169,12 @@ h_root.ShowHiddenHandles = old_SHH;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  createButtonObject(hToolbar, )
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -188,9 +193,9 @@ if DB
     objectNames = retrieveNames;
     x = dbstack;
     funcName = x(2).name;    loc = [];
-    callFuncName = x(4).name;
+    callFuncName = x(3).file(1:end-2);
     if length(x) > 5
-        loc = ['(loc)', repmat('|> ',1, length(x)-3)] ;
+        loc = ['(loc)', repmat('|> ',1, length(x)-5)] ;
     end
     fprintf([callFuncName,' ',objectNames.toolName, ':', loc , ' %s'], funcName);
 %     if nargin>0
