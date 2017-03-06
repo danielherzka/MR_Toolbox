@@ -117,7 +117,7 @@ aD.hToolbar = findobj(aD.hToolbar, 'Tag', 'FigureToolBar');
 
 if ~isempty(aD.hToolbar)
     [aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates ] = ...
-        disableToolbarButtons(aD.hToolbar, aD.objectNames.buttonTag);
+        aD.hUtils.disableToolbarButtons(aD.hToolbar, aD.objectNames.buttonTag);
 end;
 
 % Store initial state of all axes in current figure for reset
@@ -768,57 +768,57 @@ button_image = repmat(button_image, [1,1,3]);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function [hToolbar_Children, origToolEnables, origToolStates ] = disableToolbarButtons(hToolbar, currentToolName)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
+% %% %%%%%%%%%%%%%%%%%%%%%%%%
+% %
+% function [hToolbar_Children, origToolEnables, origToolStates ] = disableToolbarButtons(hToolbar, currentToolName)
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% dispDebug;
+% 
+% hRoot = groot;
+% old_SHH = hRoot.ShowHiddenHandles;
+% hRoot.ShowHiddenHandles = 'on';
+% 
+% hToolbar_Children = hToolbar.Children;
+% 
+% origToolEnables = cell(size(hToolbar_Children));
+% origToolStates  = cell(size(hToolbar_Children));
+% 
+% 
+% for i = 1:length(hToolbar_Children) 
+%     if ~strcmpi(hToolbar_Children(i).Tag, currentToolName)
+%         if isprop(hToolbar_Children(i), 'Enable')
+%             origToolEnables{i} =  hToolbar_Children(i).Enable;
+%             hToolbar_Children(i).Enable ='off';
+%         end
+%         if isprop(hToolbar_Children(i), 'State')
+%             origToolStates{i}  =  hToolbar_Children(i).State;
+%             hToolbar_Children(i).Enable ='off';
+%         end
+%     end
+% end
+% 
+% hRoot.ShowHiddenHandles = old_SHH;
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-hRoot = groot;
-old_SHH = hRoot.ShowHiddenHandles;
-hRoot.ShowHiddenHandles = 'on';
-
-hToolbar_Children = hToolbar.Children;
-
-origToolEnables = cell(size(hToolbar_Children));
-origToolStates  = cell(size(hToolbar_Children));
-
-
-for i = 1:length(hToolbar_Children) 
-    if ~strcmpi(hToolbar_Children(i).Tag, currentToolName)
-        if isprop(hToolbar_Children(i), 'Enable')
-            origToolEnables{i} =  hToolbar_Children(i).Enable;
-            hToolbar_Children(i).Enable ='off';
-        end
-        if isprop(hToolbar_Children(i), 'State')
-            origToolStates{i}  =  hToolbar_Children(i).State;
-            hToolbar_Children(i).Enable ='off';
-        end
-    end
-end
-
-hRoot.ShowHiddenHandles = old_SHH;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function enableToolbarButtons(hToolbar_Children, origToolEnables, origToolStates)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-
-for i = 1:length(hToolbar_Children)
-    if isprop(hToolbar_Children(i), 'Enable') && ~isempty(origToolEnables{i})
-        hToolbar_Children(i).Enable = origToolEnables{i};
-    end
-    if isprop(hToolbar_Children(i), 'State') && ~isempty(origToolStates{i})
-        hToolbar_Children(i).State = origToolStates{i};
-    end
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %% %%%%%%%%%%%%%%%%%%%%%%%%
+% %
+% function enableToolbarButtons(hToolbar_Children, origToolEnables, origToolStates)
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% dispDebug;
+% 
+% for i = 1:length(hToolbar_Children)
+%     if isprop(hToolbar_Children(i), 'Enable') && ~isempty(origToolEnables{i})
+%         hToolbar_Children(i).Enable = origToolEnables{i};
+%     end
+%     if isprop(hToolbar_Children(i), 'State') && ~isempty(origToolStates{i})
+%         hToolbar_Children(i).State = origToolStates{i};
+%     end
+% end
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -906,18 +906,18 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function restoreOrigData(hFig, propList)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Restore previous WBDF etc to restore state after WL is done.
-dispDebug;
-for i = 1:size(propList,1)
-  hFig.(propList{i,1}) = propList{i,2};
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %% %%%%%%%%%%%%%%%%%%%%%%%%
+% %
+% function restoreOrigData(hFig, propList)
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % Restore previous WBDF etc to restore state after WL is done.
+% dispDebug;
+% for i = 1:size(propList,1)
+%   hFig.(propList{i,1}) = propList{i,2};
+% end
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function  dispDebug(varargin)
 %
