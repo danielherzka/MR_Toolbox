@@ -1,8 +1,7 @@
-function MV_tool(varargin);
-% function MV_tool(varargin);
+function MV_tool(varargin)
+% function MV_tool(varargin)
 % Movie viewing tool for displaying 3D or 4D sets of data. Use with
 % imagescn. Can export to avi.
-%
 % Usage: MV_tool;
 %
 % Author: Daniel Herzka  herzkad@nih.gov
@@ -31,9 +30,9 @@ end
 global DB; DB = 1;
 
 switch Action
-    case 'New',                        Create_New_Button;
-    case 'Activate_View_Images',       Activate_View_Images;
-    case 'Deactivate_View_Images',     Deactivate_View_Images(varargin{2:end});
+    case 'New',                        Create_New_Objects;
+    case 'Activate_MV',                Activate_MV;
+    case 'Deactivate_MV',              Deactivate_MV(varargin{2:end});
     case 'Set_Current_Axes', 	       Set_Current_Axes(varargin{2:end});
     case 'Limit', 	                   Limit(varargin{2:end});
     case 'Step', 	                   Step(varargin{2:end});
@@ -46,8 +45,8 @@ switch Action
     case 'Show_Frames',                Show_Frames;
     case 'Show_Objects',               Show_Objects;
     case 'Toggle_Object',              Toggle_Object(varargin{2:end});
-    case 'Menu_View_Images',           Menu_View_Images;
-    case 'Close_Parent_Figure',        Close_Parent_Figure;
+    case 'Menu_MV',                    Menu_MV(varargin{2:end});
+    case 'Close_Parent_Figure',        Close_Parent_Figure(varargin{2:end});
     otherwise
         disp(['Unimplemented Functionality: ', Action]);
         
@@ -55,356 +54,199 @@ end;
       
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Create_New_Button
+function Create_New_Objects
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-%global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
-fig = gcf;
+hUtils = MR_Toolbox_Utilities;
 
-% Find handle for current image toolbar and menubar
-hToolbar = findall(fig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
-hToolMenu = findall(fig, 'Label', '&Tools');
+hFig = gcf;
 
-if ~isempty(hToolbar) & isempty(findobj(hToolbar, 'Tag', 'figViewImages'))
-	hToolbar_Children = get(hToolbar, 'Children');
-	
-	% The default button size is 15 x 16 x 3. Create Button Image
-	button_size_x= 16;
-	button_image = NaN* zeros(15,button_size_x);
-	
-	f= [...
-			9    10    11    12    13    14    15    24    30    39    45    50    51    52    53    54    60, ...
-			65    69    75    80    84    90    91    92    93    94    95    99   100   101   102   103   104, ...
-			105   106   110   116   121   125   131   135   136   140   141   142   143   144   145   146   149, ...
-			151   157   163   166   172   177   181   182   183   184   185   186   187   189   191   204   205, ...
-			219   220   221 ...
-		]; 
-	button_image(f) = 0;
-	button_image = repmat(button_image, [1,1,3]);
-	
-	buttontags = {'figWindowLevel', 'figPanZoom', 'figROITool', 'figViewImages', 'figPointTool', 'figRotateTool', 'figProfileTool'};
-	separator = 'off';
-	
-	hbuttons = [];
-	for i = 1:length(buttontags)
-		hbuttons = [hbuttons, findobj(hToolbar_Children, 'Tag', buttontags{i})];
-	end;
-	if isempty(hbuttons)
-		separator = 'on';
-	end;
-	
-	hNewButton = uitoggletool(hToolbar);
-	set(hNewButton, 'Cdata', button_image, ...
-		'OnCallback', 'MV_tool(''Activate_View_Images'')',...
-		'OffCallback', 'MV_tool(''Deactivate_View_Images'')',...
-		'Tag', 'figViewImages', ...
-		'TooltipString', 'View Images & Make Movies',...
-		'UserData', [], ...
-		'Separator', separator, ...
-		'Enable', 'on');   
-end;
+objNames = retrieveNames;
 
-% If the menubar exists, create menu item
-if ~isempty(hToolMenu) && isempty(findobj(hToolMenu, 'Tag', 'menuViewImages'))
-	hWindowLevelMenu = findobj(hToolMenu, 'Tag', 'menuWindowLevel');
-	hPanZoomMenu     = findobj(hToolMenu, 'Tag', 'menuPanZoom');
-	hROIToolMenu     = findobj(hToolMenu, 'Tag', 'menuROITool');
-	hViewImageMenu   = findobj(hToolMenu, 'Tag', 'menuViewImages');
-	hPointToolMenu   = findobj(hToolMenu, 'Tag', 'menuPointTool');
-	hRotateToolMenu  = findobj(hToolMenu, 'Tag', 'menuRotateTool');
-    hProfileToolMenu = findobj(hToolMenu, 'Tag', 'menuProfileTool');
-	
-	position = 9;
-	separator = 'On';
-	hMenus = [ hWindowLevelMenu, hPanZoomMenu,hROIToolMenu, hPointToolMenu, hRotateToolMenu, hProfileToolMenu];
-	if length(hMenus>0) 
-		position = position + length(hMenus);
-		separator = 'Off';
-	end;
-	
-	hNewMenu = uimenu(hToolMenu,'Position', position);
-	set(hNewMenu, 'Tag', 'menuViewImages','Label',...
-		'Movie Tool',...
-		'CallBack', 'MV_tool(''Menu_View_Images'')',...
-		'Separator', separator,...
-		'UserData', hNewButton...
-		); 
-	h_axis = findobj(gcf, 'Type', 'Axes');
-	
-	if isempty(getappdata(h_axis(1), 'CurrentImage'))
-		% current images do not have hidden dimension data
-		set(hNewButton, 'Enable', 'off');
-	end;
-	
-end;
+%Create Button
+[hButton, hToolbar] = hUtils.createButtonObject(hFig, ...
+    makeButtonImage, ...
+    'MV_tool(''Activate_MV'');', ...
+    'MV_tool(''Deactivate_MV'');',...
+    objNames.buttonTag, ...
+    objNames.buttonToolTipString);
+
+    
+hMenu  = hUtils.createMenuObject(hFig,...
+    objNames.menuTag, ...
+    objNames.menuLabel, ...
+    @Menu_MV);
+
+% If button doesn't exist
+if ~isempty(hButton)
+    aD.hUtils      =  hUtils;
+    aD.hRoot       =  groot;
+    aD.hFig        =  hFig;
+    aD.hButton     =  hButton;
+    aD.hMenu       =  hMenu;
+    aD.hToolbar    =  hToolbar;
+    aD.objectNames =  objNames;
+    
+    storeAD(aD);
+    
+    hAllAxes = findobj(aD.hFig, 'Type', 'Axes');
+    
+    if isempty(getappdata(hAllAxes(1), 'CurrentImage'))
+        % Current images do not have hidden dimension data
+        % Assume if one axis has hidden dimension, all do.
+        hButton.Enable=  'off';
+        if ~isempty(hMenu), hMenu.Enable= 'Off'; end
+    end;
+end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Activate_View_Images(varargin)
+function Activate_MV(varargin)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
-fig = gcf;
+%% PART I - Environment
+aD = getAD;
 
-if nargin ==0
-    set(0, 'ShowHiddenHandles', 'On');
-    hNewButton = gcbo;
-    set(findobj('Tag', 'menuViewImages'),'checked', 'on');
-else
-    hNewButton = varargin{1};
+if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
+
+aD.hToolbar = findall(aD.hFig, 'type', 'uitoolbar');
+aD.hToolbar = findobj(aD.hToolbar, 'Tag', 'FigureToolBar');
+
+if ~isempty(aD.hToolbar)
+    [aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates ] = ...
+        aD.hUtils.disableToolbarButtons(aD.hToolbar,aD.objectNames.buttonTag);
+  
+    % Enable save_prefs tool button
+    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
+    aD.hSP.Enable = 'On';
 end;
 
-% allows for calls from buttons other than those in toolbar
-fig = get(hNewButton, 'Parent');
-if ~strcmp(get(fig, 'Type'), 'figure'),
-    fig = get(fig, 'Parent');
-end
+% Store initial state of all axes in current figure for reset
+aD.hAllAxes = flipud(findobj(aD.hFig,'Type','Axes'));
+aD.hAllImages = findAxesChildIm(aD.hAllAxes);
 
-% Deactivate zoom and rotate buttons
-hToolbar = findall(fig, 'type', 'uitoolbar');
-hToolbar = findobj(hToolbar, 'Tag', 'FigureToolBar');
-
-if ~isempty(hToolbar)
-	hToolbar_Children = get(hToolbar, 'Children');
-	
-	% disable MATLAB's own tools
-	Rot3D = findobj(hToolbar_Children,'Tag', 'figToolRotate3D');
-	ZoomO = findobj(hToolbar_Children,'Tag', 'figToolZoomOut');
-	ZoomI = findobj(hToolbar_Children,'Tag', 'figToolZoomIn');
-
-	% try to disable other tools buttons - if they exist
-	WL = findobj(hToolbar_Children, 'Tag', 'figWindowLevel');
-	PZ = findobj(hToolbar_Children,'Tag', 'figPanZoom');
-	RT = findobj(hToolbar_Children,'Tag', 'figROITool');
-	MV = findobj(hToolbar_Children,'Tag', 'figViewImages');
-	PM = findobj(hToolbar_Children,'Tag', 'figPointTool');
-	RotT = findobj(hToolbar_Children,'Tag', 'figRotateTool');
-	Prof = findobj(hToolbar_Children, 'Tag', 'figProfileTool');
-	
-	old_ToolHandles  =     cat(1,Rot3D, ZoomO, ZoomI,WL,PZ,RT,PM,RotT,Prof);
-	old_ToolEnables  = get(cat(1,Rot3D, ZoomO, ZoomI,WL,PZ,RT,PM,RotT,Prof), 'Enable');
-	old_ToolStates   = get(cat(1,Rot3D, ZoomO, ZoomI,WL,PZ,RT,PM,RotT,Prof), 'State');
-	
-	for i = 1:length(old_ToolHandles)
-		if strcmp(old_ToolStates(i) , 'on')			
-			set(old_ToolHandles(i), 'State', 'Off');
-		end;
-		set(old_ToolHandles(i), 'Enable', 'Off');
-	end;
-        %LFG
-        %enable save_prefs tool button
-        SP = findobj(hToolbar_Children, 'Tag', 'figSavePrefsTool');
-        set(SP,'Enable','On');
+% Obtain current axis
+aD.hRoot.CurrentFigure = aD.hFig;
+aD.hCurrentAxes=aD.hFig.CurrentAxes;
+if isempty(aD.hCurrentAxes), 
+    aD.hCurrentAxes = aD.hAllAxes(1); 
+    aD.hFig.CurrentAxes = aD.hCurrentAxes;
 end;
 
-% Start PZ GUI
-fig2_old = findobj('Tag', 'MV_figure');
-% close the old WL figure to avoid conflicts
-if ~isempty(fig2_old) close(fig2_old);end;
+% Store the figure's old infor within the fig's own userdata
+aD.origProperties      = aD.hUtils.retrieveOrigData(aD.hFig);
+aD.origAxesProperties  = aD.hUtils.retrieveOrigData(aD.hAllAxes , {'ButtonDownFcn'});
+aD.origImageProperties = aD.hUtils.retrieveOrigData(aD.hAllImages , {'ButtonDownFcn'});
 
-% open new figure
-fig2_file = 'MV_tool_figure.fig';
-fig2 = openfig(fig2_file,'reuse');
-optional_uicontrols = { ...
+% Find and close the old WL figure to avoid conflicts
+hToolFigOld = aD.hUtils.findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
+if ~isempty(hToolFigOld), close(hToolFigOld);end;
+pause(0.5);
+
+% Make it easy to find this button (tack on 'On') 
+% Wait until after old fig is closed.
+aD.hButton.Tag = [aD.hButton.Tag,'_On'];
+aD.hMenuPZ.Tag   = [aD.hMenu.Tag, '_On'];
+aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
+aD.hFig.CloseRequestFcn = @Close_Parent_Figure;
+
+% Draw faster and without flashes
+aD.hFig.Renderer = 'zbuffer';
+aD.hRoot.CurrentFigure = aD.hFig;
+[aD.hAllAxes.SortMethod] = deal('Depth');
+
+%% PART II - Create GUI Figure
+aD.hToolFig = openfig(aD.objectNames.figFilename,'reuse');
+
+% Load Save preferences tool data
+optionalUIControls = { ...
     'Apply_radiobutton',    'Value'; ...
     'Frame_Rate_edit',      'String'; ...
     'Make_Avi_checkbox',    'Value'; ...
     'Make_Mat_checkbox',    'Value'; ...
-    'Show_Frames_checkbox', 'Value'; ...
-                   };
-set(SP,'Userdata',{fig2, fig2_file, optional_uicontrols});
+    'Show_Frames_checkbox', 'Value'; ... 
+    };
+aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
 
 % Generate a structure of handles to pass to callbacks, and store it. 
-handlesMV = guihandles(fig2);
+aD.hGUI = guihandles(aD.hToolFig);
 
-close_str = [ 'hNewButton = findobj(''Tag'', ''figViewImages'');' ...
-        ' if strcmp(get(hNewButton, ''Type''), ''uitoggletool''),'....
-        ' set(hNewButton, ''State'', ''off'' );' ...
-        ' else,  ' ...
-        ' MV_tool(''Deactivate_View_Images'',hNewButton);'...
-        ' set(hNewButton, ''Value'', 0);',...
-        ' end;',...
-		' clear hNewsButton;'];
-set(fig2, 'Name', 'Image Viewing Tool',...
-    'closerequestfcn', close_str);
+aD.hToolFig.Name = aD.objectNames.figName;
+aD.hToolFig.CloseRequestFcn = @Close_Request_Callback;
 
-% Record and store previous WBDF etc to restore state after PZ is done. 
-old_WBDF = get(fig, 'WindowButtonDownFcn');
-old_WBMF = get(fig, 'WindowButtonMotionFcn');
-old_WBUF = get(fig, 'WindowButtonUpFcn');
-old_UserData = get(fig, 'UserData');
-old_CRF = get(fig, 'Closerequestfcn');
+%%  PART III - Finish setup for other objects
+[aD.hAllAxes(:).ButtonDownFcn] = deal('MV_tool(''Set_Current_Axes'')');
+aD.hRoot.CurrentFigure = aD.hFig;
 
-% Store initial state of all axes in current figure for reset
-h_all_axes = flipud(findobj(fig,'Type','Axes'));
-h_axes = h_all_axes(1);
+% Add frame number to each axes
+aD.hFrameNumbers = createFrameNumbers(aD.hFig, aD.hAllAxes, aD.hAllImages);
+textVisibility = aD.hGUI.Show_Frames_checkbox.Value;
+if textVisibility, textVisibility = 'On' ;
+else               textVisibility = 'Off'; end;
+[aD.hFrameNumbers(:).Visible] = deal(textVisibility);
 
-for i = 1:length(find(h_all_axes(:)))
-    if (h_all_axes(i))
-		 old_axes_BDF{i} = get(h_all_axes(i), 'ButtonDownFcn');
-		 old_image_BDF{i} = get(findobj(h_all_axes(i), 'Type', 'Image'), 'ButtonDownFcn');
-    end;
-end;
+aD.hFig.CurrentAxes = aD.hCurrentAxes;
+aD.hRoot.CurrentFigure = aD.hToolFig;
 
-set(h_all_axes, 'ButtonDownFcn', 'MV_tool(''Set_Current_Axes'')');
-set(0,'currentfigure', fig);
-%set(fig, 'CurrentAxes', h_axes);
+aD.hGUI.Frame_Value_edit.String = num2str(getappdata(aD.hCurrentAxes,'CurrentImage'));	
+aD.hObjects = []; 
 
+storeAD(aD);
 
-handlesMV.Axes = h_all_axes;
-visibility = get(handlesMV.Show_Frames_checkbox, 'Value');
-if visibility, visibility = 'On' ;
-else           visibility = 'Off'; end;
-textFontSize = 20;
-figUnits = get(fig,'Units');
-set(fig, 'Units', 'inches');
-figSize = get(fig, 'position');
-reffigSize = 8;   % 8 inch figure gets 20 pt font
-textFontSize = textFontSize * figSize(3) / reffigSize;
-set(fig, 'Units', figUnits);
-
-for i = 1:length(h_all_axes)
-	set(findobj(h_all_axes(i), 'Type', 'image'), 'ButtonDownFcn', 'MV_tool(''Step'')'); 	
-	X = get(h_all_axes(i), 'xlim');
-	Y = get(h_all_axes(i), 'ylim');
-	set(fig, 'CurrentAxes', h_all_axes(i));
-	htFrameNumbers(i) = text(X(2)*0.98, Y(2), num2str(getappdata(h_all_axes(i), 'CurrentImage')) ,...
-		'Fontsize', textFontSize, 'color', [ 1 0.95 0], 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right', 'visible', visibility);
-end;
-set(fig, 'CurrentAxes', h_axes);
-set(0,'currentfigure', fig2);
-
-%%%CHUS%%%
-% draw temporal objects, if found
-h_objects = {};
-for i = 1:length(h_all_axes)
-    if isappdata(h_all_axes(i), 'Objects')
-        % Objects exist, Draw them
-        % Might be a problem if the first axes doesn't have objects but
-        % later ones do. FIX
-        [h_objects{i,1}, h_objects{i,2}] = Draw_Objects(getappdata(h_all_axes(i), 'Objects'),h_all_axes(i)) ;
-        % load the current axes objets onto popupmenu
-        if(h_all_axes(i)==h_axes)
-            popupstring = [repmat('Hide ',size(h_objects{i,2},1),1),h_objects{i,2}]
-            set(handlesMV.Object_List_popupmenu, 'String', popupstring);
-        end;
-        h_objects{i,3} = popupstring;
-    end;
-end;
-handlesMV.ObjectHandles = h_objects;    
-
-%%%CHUS%%%
-
-handlesMV.CurrentAxes = h_axes;
-handlesMV.ParentFigure = fig;
-handlesMV.htFrameNumbers = htFrameNumbers;
-set(handlesMV.Frame_Value_edit, 'String', getappdata(h_axes,'CurrentImage'));	
-
-guidata(fig2,handlesMV);
-Set_Current_Axes(h_axes);
-Show_Objects;
-
-
-% Draw faster and without flashes
-set(fig, 'Closerequestfcn', [ old_CRF , ',MV_tool(''Close_Parent_Figure'');']);
-set(fig, 'Renderer', 'zbuffer');
-set(0, 'ShowHiddenHandles', 'On', 'CurrentFigure', fig);
-set(gca,'Drawmode', 'Fast');
-
-% store the figure's old infor within the fig's own userdata
-set(fig, 'UserData', {fig2, old_WBDF, old_WBMF, old_WBUF, old_UserData,old_CRF, ...
-		old_axes_BDF, old_image_BDF, ...
-		old_ToolEnables, old_ToolHandles, old_ToolStates });
-set(fig, 'WindowButtonMotionFcn', '');  % entry function sets the WBMF
+Set_Current_Axes(aD.hCurrentAxes);
+%drawObjects(aD.hAllAxes);
+%Show_Objects;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Deactivate_View_Images(varargin)
+function Deactivate_MV(varargin)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 global GLOBAL_STOP_MOVIE 
 GLOBAL_STOP_MOVIE = 2;
 
-if nargin ==0
-    set(0, 'ShowHiddenHandles', 'On');    
-    hNewButton = gcbo;
-    set(findobj('Tag', 'menuViewImages'),'checked', 'Off');
-else
-    hNewButton = varargin{1};
-end;
-    
-% Reactivate other buttons
-fig = get(hNewButton, 'Parent');
-if ~strcmp(get(fig, 'Type'), 'figure'),
-    fig = get(fig, 'Parent');
+aD = getAD;
+
+if ~isempty(aD.hButton)
+    aD.hButton.Tag = aD.hButton.Tag(1:end-3);
 end
 
-hToolbar = findall(fig, 'type', 'uitoolbar');
-if ~isempty(hToolbar)    hToolbar_Children = get(hToolbar, 'Children');
-    set(findobj(hToolbar_Children,'Tag', 'figToolRotate3D'),'Enable', 'On');
-    set(findobj(hToolbar_Children,'Tag', 'figToolZoomOut'),'Enable', 'On');
-    set(findobj(hToolbar_Children,'Tag', 'figToolZoomIn'),'Enable', 'On');
+if ~isempty(aD.hMenu)
+    aD.hMenu.Checked = 'off';
+    aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
+end
+
+% Restore old figure settings
+ aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
+ aD.hUtils.restoreOrigData(aD.hAllAxes, aD.origAxesProperties);
+ aD.hUtils.restoreOrigData(aD.hAllImages, aD.origImageProperties);
+
+% Reactivate other buttons
+aD.hUtils.enableToolbarButtons(aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates )
+
+delete(aD.hFrameNumbers); % redrawn every call
+
+% Close MV figure
+delete(aD.hToolFig);
+
+if ~isempty(aD.hObjects)
+    delete(aD.hObjects(isgraphics(aD.hObjects))); % redrawn every call
 end;
 
-% Restore old BDFs
-old_info= get(fig,'UserData');
-set(fig, 'WindowButtonDownFcn', old_info{2});
-set(fig, 'WindowButtonUpFcn', old_info{3});
-set(fig, 'WindowButtonMotionFcn', old_info{4});
-
-% Restore old Pointer and UserData
-set(fig, 'UserData', old_info{5});
-set(fig, 'CloseRequestFcn', old_info{6});
-old_ToolEnables  = old_info{9};
-old_ToolHandles = old_info{10};
-old_ToolStates  = old_info{11};
-
-fig2 = old_info{1};
-
-handlesMV = guidata(fig2);
-delete(handlesMV.htFrameNumbers);
-
-%%%CHUS%%
-% Erase any of the objects created for display
-handlesMV
-if ~isempty(handlesMV.ObjectHandles);
-    for i = 1:size(handlesMV.ObjectHandles,1)
-        h = handlesMV.ObjectHandles{i};
-        delete(h(h~=0));
-    end;
-end;
-%%%CHUS%%%
-
-for i = 1:length(handlesMV.Axes)
-	set(handlesMV.Axes(i), 'ButtonDownFcn', char(old_info{7}(i)));
-	set(findobj(handlesMV.Axes(i), 'Type', 'image'), 'ButtonDownFcn', char(old_info{8}(i)));
-end;
-
-for i = 1:length(old_ToolHandles)
-	try
-		set(old_ToolHandles(i), 'Enable', old_ToolEnables{i}, 'State', old_ToolStates{i});
-	end;
-end;
-%LFG
-%disable save_prefs tool button
-SP = findobj(hToolbar_Children, 'Tag', 'figSavePrefsTool');
-set(SP,'Enable','Off');
-
-set(0, 'ShowHiddenHandles', 'Off');
-try
-    set(fig2, 'CloseRequestFcn', 'closereq'); 
-    close(fig2); 
-catch
-	delete(fig2);
-end;    
+%Disable save_prefs tool button
+if ishghandle(aD.hSP)
+aD.SP.Enable = 'Off';
+end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -413,7 +255,7 @@ end;
 function Step(varargin)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 global GLOBAL_STOP_MOVIE;
 
@@ -488,7 +330,7 @@ end;
 function Limit(varargin)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 fig2 = findobj('Tag', 'MV_figure');
 handlesMV = guidata(fig2);
@@ -539,7 +381,7 @@ figure(fig2);
 function Set_Frame
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 fig2 = findobj('Tag', 'MV_figure');
 handlesMV = guidata(fig2);
@@ -589,7 +431,7 @@ figure(fig2);
 function Set_Frame_Limit
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 fig2 = findobj('Tag', 'MV_figure');
 handlesMV = guidata(fig2);
@@ -624,7 +466,7 @@ end
 function Reset_Frame_Limit
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 fig2 = findobj('Tag', 'MV_figure');
 handlesMV = guidata(fig2);
@@ -652,7 +494,7 @@ Set_Current_Axes(handlesMV.CurrentAxes);
 function Play_Movie
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 global GLOBAL_STOP_MOVIE
 
@@ -749,7 +591,7 @@ end;
 function Make_Movie
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 fig2 = findobj('Tag', 'MV_figure');
 handlesMV = guidata(fig2);
@@ -895,7 +737,7 @@ end; %%%CHUS%%%
 function Stop_Movie
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 global GLOBAL_STOP_MOVIE
 GLOBAL_STOP_MOVIE = 1;
@@ -907,7 +749,7 @@ GLOBAL_STOP_MOVIE = 1;
 function Show_Frames
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 fig2 = findobj('Tag', 'MV_figure');
 handlesMV = guidata(fig2);
 visibility = get(handlesMV.Show_Frames_checkbox, 'Value');
@@ -922,100 +764,35 @@ set(handlesMV.htFrameNumbers, 'visible', visibility);
 function Set_Current_Axes(currentaxes)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
+aD = getAD;
 if isempty(currentaxes), currentaxes=gca; end;
-fig2 = findobj('Tag', 'MV_figure');
-handlesMV = guidata(fig2);
-handlesMV.CurrentAxes = currentaxes;
-image_range = getappdata(handlesMV.CurrentAxes, 'ImageRange');
-set(handlesMV.Min_Frame_edit, 'string', num2str(image_range(1)));
-set(handlesMV.Max_Frame_edit, 'string', num2str(image_range(2)));
+aD.hCurrentAxes = currentaxes;
+image_range = getappdata(aD.hCurrentAxes, 'ImageRange');
+aD.handlesMV.Min_Frame_edit.String =  num2str(image_range(1));
+aD.handlesMV.Max_Frame_edit.String =  num2str(image_range(2));
 
-%%%CHUS%%%
-if ~isempty(handlesMV.ObjectHandles)
-    set(handlesMV.Object_List_popupmenu, 'string', handlesMV.ObjectHandles{find(handlesMV.Axes==currentaxes),3});
-end;
-%%%CHUS%%%
-guidata(fig2, handlesMV);
+% if ~isempty(aD.hObjects)
+%     hCurrentAxes_idx = aD.Axes==aD.hCurrentAxes;
+%     aD.handlesMV.Object_List_popupmenu.String = ...
+%         aD.hObjects{hCurrentAxes_idx,3});
+% end;
+
+storeAD(aD);
+
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Menu_View_Images
+function Menu_MV(~,~)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
-
-hNewMenu = gcbo;
-checked=  umtoggle(hNewMenu);
-hNewButton = get(hNewMenu, 'userdata');
-
-if ~checked
-    % turn off button
-    %Deactivate_Pan_Zoom(hNewButton);
-    set(hNewMenu, 'Checked', 'off');
-    set(hNewButton, 'State', 'off' );
-else
-    %Activate_Pan_Zoom(hNewButton);
-    set(hNewMenu, 'Checked', 'on');
-    set(hNewButton, 'State', 'on' );
-end;
+dispDebug;
+aD = getAD;
+aD.hUtils.menuToggle(aD.hMenu,aD.hButton);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function [h_object, name_object] = Draw_Objects(ObjStruct, h_axes)
-% %%%CHUS%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
-
-CurrImage = getappdata(h_axes,'CurrentImage'); 
-fig = get(h_axes, 'Parent');
-
-old_nextplot = get(h_axes, 'nextplot');
-set(h_axes, 'Nextplot', 'add');
-
-name_object = [];
-
-for i = 1:size(ObjStruct,1)
-   
-    if strcmp(ObjStruct(i,CurrImage).type, 'Line')
-        h_object(i,1) = plot(h_axes, ObjStruct(i,CurrImage).xdata(:), ObjStruct(i,CurrImage).ydata(:),...
-            'color', ObjStruct(i,CurrImage).color );
-        linestyle = '-';
-        marker = 'none';
-    elseif strcmp(ObjStruct(i,CurrImage).type, 'Points')
-        h_object(i,1) = plot(h_axes, ObjStruct(i,CurrImage).xdata(:), ObjStruct(i,CurrImage).ydata(:),...
-            'color', ObjStruct(i,CurrImage).color );
-        linestyle = 'none';
-        marker = ObjStruct(i,CurrImage).marker;
-    
-    elseif strcmp(ObjStruct(i,CurrImage).type, 'Patch')
-        set(0, 'CurrentFigure', fig);
-        set(fig, 'CurrentAxes', h_axes)
-        h_object(i,1) = patch(ObjStruct(i,CurrImage).xdata(:), ObjStruct(i,CurrImage).ydata(:),...
-            ObjStruct(i,CurrImage).color);
-        linestyle = 'none';
-        marker = 'none';
-    else
-        disp('Unknown object type!');
-    end;
-
-    name_object = strvcat(name_object, ObjStruct(i,CurrImage).name);
-    
-    
-    % These apply to all objects (lines/points/patches)
-    set(h_object(i,1),...
-        'Marker', marker,...
-        'linestyle', linestyle,...
-        'Userdata', ObjStruct(i,CurrImage).name);
-
-end
-set(h_axes, 'Nextplot', old_nextplot);
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -1023,7 +800,7 @@ function  Show_Objects
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Function toggle the display of the objects
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 fig2 = findobj('Tag', 'MV_figure');
 handlesMV = guidata(fig2);
@@ -1063,7 +840,7 @@ function  Update_Object(ObjStruct, ObjectHandles, frame)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Function to update the relevant properties for each type of object
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 for j = 1:size(ObjectHandles,1)
     switch ObjStruct(j).type
@@ -1097,7 +874,7 @@ function  Toggle_Object(gcbo)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function to toggle display of an object(s)
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 popupmenu = gcbo;
 
 fig2 = findobj('Tag', 'MV_figure');
@@ -1140,20 +917,52 @@ guidata(fig2, handlesMV);
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Close_Parent_Figure
+function Close_Parent_Figure(hFig,~)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function to make sure that if parent figure is closed, 
 % the ROI info and ROI Tool are closed too.
-global DB; if DB disp(['MV_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 global GLOBAL_STOP_MOVIE 
 GLOBAL_STOP_MOVIE = 2;
 
-set(findobj('Tag', 'MV_figure'), 'Closerequestfcn', 'closereq');
-try 
-    close(findobj('Tag','MV_figure'));
+aD = getAD;
+if ~isempty(aD)
+    hToolFig = aD.hToolFig;
+else
+    % Parent Figure is already closed and aD is gone
+    dispDebug('ParFig closed!');
+    objNames = retrieveNames;
+    hToolFig = findobj(groot, 'Tag', objNames.figTag); 
+end
+
+hFigPZ.CloseRequestFcn = 'closereq';
+try
+    close(hFigPZ);
+catch
+    delete(hFigPZ);
 end;
+
+hFig.CloseRequestFcn = 'closereq';
+close(hFig);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function Close_Request_Callback(varargin)
+% using function handle for callback -> two input arguments are necessary
+dispDebug;
+
+aD = getAD;
+
+old_SHH = aD.hRoot.ShowHiddenHandles;
+aD.hRoot.ShowHiddenHandles = 'On';
+
+%call->MV_tool('Deactivate_MV');
+aD.hButton.State = 'off';
+aD.hRoot.ShowHiddenHandles= old_SHH;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1161,13 +970,246 @@ end;
 %%%%%%%%%%%%%%%%%%%%%%%%START SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% %%%%%%%%%%%%%%%%%%%%%%%% 
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  func_name = Get_Current_Function
+function  dispDebug(varargin)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Debug function - returns current function name
-x = dbstack;
-func_name = x(2).name;
+% Print a debug string if global debug flag is set
+global DB;
+
+if DB
+    objectNames = retrieveNames;
+    x = dbstack;
+    func_name = x(2).name;    loc = [];
+    if length(x) > 3
+        loc = [' (loc) ', repmat('|> ',1, length(x)-3)] ;
+    end
+    fprintf([objectNames.toolName, ':',loc , ' %s'], func_name);
+    if nargin>0
+        for i = 1:length(varargin)
+            str = varargin{i};
+            fprintf(': %s', str);
+        end
+    end
+    fprintf('\n');
+    
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function buttonImage = makeButtonImage
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The default button size is 15 x 16 x 3.
+dispDebug;
+
+buttonSize_x= 16;
+buttonImage = NaN* zeros(15,buttonSize_x);
+
+f= [...
+    9    10    11    12    13    14    15    24    30    39    45    50    51    52    53    54    60, ...
+    65    69    75    80    84    90    91    92    93    94    95    99   100   101   102   103   104, ...
+    105   106   110   116   121   125   131   135   136   140   141   142   143   144   145   146   149, ...
+    151   157   163   166   172   177   181   182   183   184   185   186   187   189   191   204   205, ...
+    219   220   221 ...
+    ];
+
+buttonImage(f) = 0;
+buttonImage = repmat(buttonImage, [1,1,3]);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function structNames = retrieveNames
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+structNames.toolName            = 'MV_tool';
+structNames.buttonTag           = 'figViewImages';
+structNames.buttonToolTipString = 'View Images & Make Movies';
+structNames.menuTag             = 'menuViewImages';
+structNames.menuLabel           = 'Movie Tool';
+structNames.figFilename         = 'MV_tool_figure.fig';
+structNames.figName             = 'MV Tool';
+structNames.figTag              = 'MV_figure';
+structNames.activeFigureName    = 'ActiveFigure';
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  storeAD(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+setappdata(aD.hFig, 'MVData', aD);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = getAD
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+
+% fastest way to find figure; doesn't work during Create
+tic
+aD = [];
+
+hFig = findobj(groot, 'Tag', 'ActiveFigure'); %flat?
+
+
+if isempty(hFig)
+    % Call from Activate
+    objNames = retrieveNames;
+    hUtils = MR_Toolbox_Utilities;
+    obj = hUtils.findHiddenObj('Tag', objNames.buttonTag);
+    while ~strcmpi(obj.Type, 'Figure')
+        obj = obj.Parent;
+    end
+    hFig = obj;
+end
+
+if isappdata(hFig, 'MVData')
+    aD = getappdata(hFig, 'MVData');
+end
+
+dispDebug(['end (',num2str(toc),')']);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function hIm = findAxesChildIm(hAllAxes)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+
+hIm = gobjects(size(hAllAxes));
+for i = 1:length(hAllAxes)
+    hIm(i) = findobj(hAllAxes(i), 'Type', 'Image');
+end    
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function hFrameNumbers = createFrameNumbers(hFig, hAllAxes, hIms)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Calc text size
+textFontSize = 20;
+figUnits = hFig.Units;
+hFig.Units = 'inches';
+figSize = hFig.Position;
+reffigSize = 8;   % 8 inch figure gets 20 pt font
+textFontSize = textFontSize * figSize(3) / reffigSize;
+hFig.Units = figUnits;
+
+% Create text object per axes
+hFrameNumbers = gobjects(size(hAllAxes));
+for i = 1:length(hAllAxes)
+	X = hAllAxes(i).XLim;
+	Y = hAllAxes(i).YLim;
+    str = num2str(getappdata(hAllAxes(i), 'CurrentImage')); 
+ 	hFrameNumbers(i) = text(hAllAxes(i), X(2)*0.98, Y(2), str);
+end;
+[hIms(:).ButtonDownFcn] = deal('MV_tool(''Step'')');
+[hFrameNumbers(:).FontSize] = deal(textFontSize);
+[hFrameNumbers(:).Color] = deal([ 1 0.95 0]);
+[hFrameNumbers(:).VerticalAlignment] = deal('bottom');
+[hFrameNumbers(:).HorizontalAlignment] = deal('right');
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function [h_object, name_object] = drawObjects(aD)
+% %%%CHUS%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Function to draw a series of pre-drawn objects per axis; 
+%  Objects change with temporal dimension
+
+%%%CHUS%%%
+% draw temporal objects, if found
+h_objects = {};
+for i = 1:length(h_all_axes)
+    if isappdata(h_all_axes(i), 'Objects')
+        % Objects exist, Draw them
+        % Might be a problem if the first axes doesn't have objects but
+        % later ones do. FIX
+        [h_objects{i,1}, h_objects{i,2}] = drawObject(getappdata(h_all_axes(i), 'Objects'),h_all_axes(i)) ;
+        % load the current axes objets onto popupmenu
+        if(h_all_axes(i)==h_axes)
+            popupstring = [repmat('Hide ',size(h_objects{i,2},1),1),h_objects{i,2}]
+            set(hGUI.Object_List_popupmenu, 'String', popupstring);
+        end;
+        h_objects{i,3} = popupstring;
+    end;
+end;
+hGUI.ObjectHandles = h_objects;    
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function [h_object, name_object] = drawObject(ObjStruct, h_axes)
+% %%%CHUS%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Function to cycle through drawing objects; 
+%  Each object (data loaded inti appdata 'Objects' for each axes, is
+%  composed of structure that contains field type (line,point,patch), 
+%  xdata ydata and color 
+
+dispDebug;
+
+CurrImage = getappdata(h_axes,'CurrentImage'); 
+fig = get(h_axes, 'Parent');
+
+old_nextplot = get(h_axes, 'nextplot');
+set(h_axes, 'Nextplot', 'add');
+
+name_object = [];
+
+for i = 1:size(ObjStruct,1)
+   
+    if strcmp(ObjStruct(i,CurrImage).type, 'Line')
+        h_object(i,1) = plot(h_axes, ObjStruct(i,CurrImage).xdata(:), ObjStruct(i,CurrImage).ydata(:),...
+            'color', ObjStruct(i,CurrImage).color );
+        linestyle = '-';
+        marker = 'none';
+    elseif strcmp(ObjStruct(i,CurrImage).type, 'Points')
+        h_object(i,1) = plot(h_axes, ObjStruct(i,CurrImage).xdata(:), ObjStruct(i,CurrImage).ydata(:),...
+            'color', ObjStruct(i,CurrImage).color );
+        linestyle = 'none';
+        marker = ObjStruct(i,CurrImage).marker;
+    
+    elseif strcmp(ObjStruct(i,CurrImage).type, 'Patch')
+        set(0, 'CurrentFigure', fig);
+        set(fig, 'CurrentAxes', h_axes)
+        h_object(i,1) = patch(ObjStruct(i,CurrImage).xdata(:), ObjStruct(i,CurrImage).ydata(:),...
+            ObjStruct(i,CurrImage).color);
+        linestyle = 'none';
+        marker = 'none';
+    else
+        disp('Unknown object type!');
+    end;
+
+    name_object = strvcat(name_object, ObjStruct(i,CurrImage).name);
+    
+        % These apply to all objects (lines/points/patches)
+    set(h_object(i,1),...
+        'Marker', marker,...
+        'linestyle', linestyle,...
+        'Userdata', ObjStruct(i,CurrImage).name);
+
+end
+set(h_axes, 'Nextplot', old_nextplot);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
