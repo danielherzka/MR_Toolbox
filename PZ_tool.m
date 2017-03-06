@@ -33,7 +33,7 @@ end
 global DB; DB = 1;
 
 switch Action
-    case 'New', 	                     Create_New_Button;
+    case 'New', 	                     Create_New_Objects;
     case 'Activate_PZ',                  Activate_PZ;
     case 'Deactivate_PZ',                Deactivate_PZ(varargin{2:end});
     case 'Adjust_On',                    Turn_Adjust_Pan_On;     % Entry
@@ -57,86 +57,43 @@ end;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%% 
 %
-function Create_New_Button
+function Create_New_Objects
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
+
+hUtils = MR_Toolbox_Utilities;
 
 hFig = gcf;
 
 objNames = retrieveNames;
 
-% Find handle for current image toolbar and menubar
-hToolbar = findall(hFig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
-hToolMenu = findall(hFig, 'Label', '&Tools');
+% Create button
+[hButton, hToolbar] = hUtils.createButtonObject(hFig, ...
+    makeButtonImage, ...
+    'PZ_tool(''Activate_PZ'');', ...
+    'PZ_tool(''Deactivate_PZ'');',...
+    objNames.buttonTag, ...
+    objNames.buttonToolTipString);
 
-% Tool should work with either one a pushbutton on the toolbar or a menu
-%  item, even if the other one isn't present.
-% If the toolbar exists and the button has not been previously created
-if ~isempty(hToolbar) && isempty(findobj(hToolbar, 'Tag', objNames.buttonTag))
-    hToolbar_Children = hToolbar.Children; 
-    
-    %Create Button Image
-    buttonImage = makeButtonImage;
-    
-  	buttonTags = defaultButtonTags;
-    separator = 'off';
-    
-    hButtons = cell(1,size(buttonTags,2));
-	for i = 1:length(buttonTags)
-        hButtons{i} = findobj(hToolbar_Children, 'Tag', buttonTags{i});
-	end;
-	if isempty(hButtons)
-		separator = 'on';
-	end;
-    
-    hButton = uitoggletool(hToolbar);
-    hButton.CData = buttonImage;
-    hButton.OnCallback = 'PZ_tool(''Activate_PZ'');';
-    hButton.OffCallback =  'PZ_tool(''Deactivate_PZ'');';
-    hButton.Tag = objNames.buttonTag;
-    hButton.TooltipString = objNames.buttonToolTipString;
-    hButton.Separator = separator;
-    hButton.UserData = hFig;
-    hButton.Enable = 'on';
-else
-    % Button already present    
-    hButton = [];
-end;
+% Create menu item
+hMenu  = hUtils.createMenuObject(hFig,...
+    objNames.menuTag, ...
+    objNames.menuLabel, ...
+    @Menu_PZ);
 
-% If the menubar exists, create menu item
-if ~isempty(hToolMenu) && isempty(findobj(hToolMenu, 'Tag', objNames.menuTag))
-  
-    hMenus = findobj(hToolMenu, '-regexp', 'Tag', 'menu\w*');
-   
-    position = 9;
-    separator = 'On';
-
-    if ~isempty(hMenus)
-        position = position + length(hMenus);
-        separator = 'Off';
-    end;
+if ~isempty(hButton)
+    aD.hUtils    =  hUtils;
+    aD.hRoot     =  groot;
+    aD.hFig      =  hFig;
+    aD.hButton   =  hButton;
+    aD.hMenu     =  hMenu;
+    aD.hToolbar  =  hToolbar;
+    aD.objectNames = objNames;
     
-    hMenuPZ = uimenu(hToolMenu,'Position', position);
-    hMenuPZ.Tag       = objNames.menuTag;
-    hMenuPZ.Label     = objNames.menuLabel;
-    hMenuPZ.Callback  = @Menu_PZ;
-    hMenuPZ.Separator = separator;
-    hMenuPZ.UserData  = hFig;
-else
-    hMenuPZ = [];
-end;
-
-aD.hRoot     = groot;
-aD.hFig      = hFig;
-aD.hButton =  hButton;
-aD.hMenuPZ   =  hMenuPZ;
-aD.hToolbar  =  hToolbar;
-aD.hToolMenu =  hToolMenu;
-aD.objectNames = objNames;
-
-% store app data structure
-storeAD(aD);
+    % store app data structure
+    storeAD(aD);
+end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -213,7 +170,7 @@ if ~isempty(aD.hToolbar)
     aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
     aD.hSP.Enable = 'On';
     optionalUIControls = {'Apply_radiobutton', 'Value'};
-    aD.hSP.UserData = {aD.objectNames.figFilename, optionalUIControls};
+    aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
 end
 
 % Generate a structure of handles to pass to callbacks, and store it. 
@@ -264,9 +221,9 @@ if ~isempty(aD.hButton)
     aD.hButton.Tag = aD.hButton.Tag(1:end-3);
 end
     
-if ~isempty(aD.hMenuPZ)
-    aD.hMenuPZ.Checked = 'off';
-    aD.hMenuPZ.Tag = aD.hMenuPZ.Tag(1:end-3);
+if ~isempty(aD.hMenu)
+    aD.hMenu.Checked = 'off';
+    aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
 end
    
 % Close PZ figure
@@ -276,13 +233,16 @@ zoom off;
 dispDebug('Zoom off');
 
 % Restore old BDFs
-restoreOrigData(aD.hFig, aD.origProperties);
+aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
 
 % Reactivate other buttons
-enableToolbarButtons(aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates )
+aD.hUtils.enableToolbarButtons(aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates )
  
-% Disable save_prefs tool button (only enabled when tool is active)
-aD.hSP.Enable = 'Off';
+
+%Disable save_prefs tool button
+if ishghandle(aD.hSP)
+    aD.hSP.Enable = 'Off';
+end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -619,25 +579,14 @@ dispDebug('end');
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% %%%%%%%%%%%%%%%%%%%%%%%% 
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function Menu_PZ(~,~)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
-
 aD = getAD;
-
-checked   = aD.hMenuPZ.Checked;
-
-if strcmpi(checked,'on')
-    % turn off button -> Deactivate_PZ
-    aD.hMenuPZ.Checked = 'off';
-    aD.hButton.State = 'off';
-else %hButton
-    aD.hMenuPZ.Checked = 'on';
-    aD.hButton.State = 'on';
-end;
+aD.hUtils.menuToggle(aD.hMenu,aD.hButton);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -890,24 +839,6 @@ structNames.activeFigureName    = 'ActiveFigure';
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function tags = defaultButtonTags
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-
-tags = { ...
-    'figWindowLevel',...
-    'figPanZoom',...
-    'figROITool',...
-    'figViewImages',...
-    'figPointTool',...
-    'figRotateTool',...
-    'figProfileTool'};
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
 function  storeAD(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -932,7 +863,7 @@ hFig = findobj(groot, 'Tag', 'ActiveFigure'); %flat?
 if isempty(hFig)
     % Call from Activate
     objNames = retrieveNames;
-    obj = findobj('Tag', objNames.buttonTag);
+    obj = findHiddenObj('Tag', objNames.buttonTag);
     if ~isempty(obj)
         while ~strcmpi(obj.Type, 'Figure')
             obj = obj.Parent;

@@ -44,19 +44,19 @@ function imagescn(I, scale, dims, FigureWidth, timedimension)
 %				NIH NHBI
 %
 Nd=ndims(I);
-if ~exist('timedimension')& Nd==5; timedimension=5; moviemodeflag=1; end 
-if ~exist('timedimension'); timedimension=[]; moviemodeflag=0; end
+if ~exist('timedimension','var')&& Nd==5; timedimension=5;  moviemodeflag=1; end
+if ~exist('timedimension','var');         timedimension=[]; moviemodeflag=0; end
 if nargin==5
-    if isempty(timedimension); moviemodeflag=0; else; moviemodeflag=1;end
-    if timedimension>Nd | timedimension<=2; moviemodeflag=0;end
+    if isempty(timedimension); moviemodeflag=0; else moviemodeflag=1;end
+    if timedimension>Nd || timedimension<=2; moviemodeflag=0;end
     if moviemodeflag==1
-        if Nd==4 & timedimension==3
+        if Nd==4 && timedimension==3
             I=permute(I,[1 2 4 3]);
         end
-        if Nd==5 & timedimension==3
+        if Nd==5 && timedimension==3
             I=permute(I,[1 2 4 5 3]);
         end
-        if Nd==5 & timedimension==4
+        if Nd==5 && timedimension==4
             I=permute(I,[1 2 3 5 4]);
         end
     end
@@ -64,29 +64,29 @@ end
 ntimeframes=size(I,Nd);
 if Nd==2; % case of single image
     N=1;
-	N1=1; N2=1;
+    N1=1; N2=1;
 elseif Nd==3; % case of array of images
     if moviemodeflag==0
         N=size(I,3);
-		N2=ceil(sqrt(N)); N1=ceil(N/N2);
-	else
+        N2=ceil(sqrt(N)); N1=ceil(N/N2);
+    else
         N=1;N1=1;N2=1;
-	end
+    end
 elseif Nd==4; % case of 2-d array of images
     if moviemodeflag==0
         N1=size(I,3);
         N2=size(I,4);
-		N=N1*N2;
-	else
+        N=N1*N2;
+    else
         N=size(I,3);
-		N2=ceil(sqrt(N)); N1=ceil(N/N2);
-	end
-elseif moviemodeflag==1 & Nd==5; % case of 2-d array of images
+        N2=ceil(sqrt(N)); N1=ceil(N/N2);
+    end
+elseif moviemodeflag==1 && Nd==5; % case of 2-d array of images
     N1=size(I,3);
     N2=size(I,4);
-	N=N1*N2;
+    N=N1*N2;
 end
-if exist('dims');
+if exist('dims','var');
 	if length(dims)==2; rows=dims(1);cols=dims(2);
 		N1=rows;N2=cols;
 	else
@@ -94,7 +94,7 @@ if exist('dims');
 	end
 end
 if ~exist('scale','var'); scale=[];end
-if 1<size(scale,1) & size(scale,1) < min(N,N1*N2)
+if 1<size(scale,1) && size(scale,1) < min(N,N1*N2)
     disp('scale vector must be either: empty, size 1x2, i.e. [min max],')
     disp('or a matrix [min1 max1;min2 max2;...] with # rows equal to number of plots');
     return
@@ -110,7 +110,7 @@ X0size=N2*Xsize+(N2-1)*deltaX; Y0size=N1*Ysize+(N1-1)*deltaY; % full figure size
 aspect_ratio=Y0size/X0size; % aspect ratio
 
 % center figure on screen with specified figure width in inches
-if ~exist('FigureWidth'); FigureWidth=6;end  % figure width in inches (default is 6")
+if ~exist('FigureWidth','var'); FigureWidth=6;end  % figure width in inches (default is 6")
 if isempty(FigureWidth); FigureWidth=6;end
 FigureHeight=FigureWidth*aspect_ratio; % figure height in inches
 FigureBottom=(ScreenHeight-FigureHeight)/2;

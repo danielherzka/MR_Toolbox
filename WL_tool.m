@@ -37,7 +37,7 @@ end;
 global DB; DB = 1;
 
 switch Action
-    case 'New', 	                     Create_New_Button;
+    case 'New', 	                     Create_New_Objects;
     case 'Activate_WL',		             Activate_WL(varargin{:});
     case 'Deactivate_WL',                Deactivate_WL(varargin{2:end});
     case 'Adjust_On', 		             Adjust_On;         % Entry
@@ -59,90 +59,43 @@ end;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Create_New_Button
+function Create_New_Objects
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
+
+hUtils = MR_Toolbox_Utilities;
 
 hFig = gcf;
 
 objNames = retrieveNames;
 
-% Find handle for current toolbar and current menubar
-hToolbar  = findall(hFig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
-hToolMenu = findall(hFig, 'Label', '&Tools');
+%Create Button
+[hButton, hToolbar] = hUtils.createButtonObject(hFig, ...
+    makeButtonImage, ...
+    'WL_tool(''Activate_WL'');', ...
+    'WL_tool(''Deactivate_WL'');',...
+    objNames.buttonTag, ...
+    objNames.buttonToolTipString);
 
-% Tool should work with either one a pushbutton on the toolbar or a menu
-%  item, even if the other one isn't present.
-% If the toolbar exists and the button has not been previously created
-if ~isempty(hToolbar) && isempty(findobj(hToolbar, 'Tag', objNames.buttonTag ))
-    hToolbar_Children = hToolbar.Children;
-    
-    % The default button size is 15 x 16 x 3. Create Button Image
-    buttonSize_x= 16;
-    buttonImage = repmat(linspace(0,1,buttonSize_x), [ 15 1 3]);
-    
-    buttonTags = defaultButtonTags;
-    separator = 'off';
-    
-    hButtons = cell(1,size(buttonTags,2));
-    for i = 1:length(buttonTags)
-        hButtons{i} = findobj(hToolbar_Children, 'Tag', buttonTags{i});
-    end;
-    if isempty(hButtons)
-        separator = 'on';
-    end;
-    
-    hButton = uitoggletool(hToolbar);
-    hButton.CData = buttonImage;
-    hButton.OnCallback = 'WL_tool(''Activate_WL'');';
-    hButton.OffCallback = 'WL_tool(''Deactivate_WL'');';
-    hButton.Tag = objNames.buttonTag;
-    hButton.TooltipString = objNames.buttonToolTipString;
-    hButton.Separator = separator;
-    hButton.UserData = [];
-    hButton.Enable = 'on';
-    
-else
-    % Button already present
-    hButton = [];
-end;
+hMenu  = hUtils.createMenuObject(hFig, ...
+    objNames.menuTag, ...
+    objNames.menuLabel, ...
+    @Menu_WL);
 
-% If menu exist and the menu item has not been previously created
-if ~isempty(hToolMenu) && isempty(findobj(hToolMenu,'Tag', objNames.menuTag))
+if ~isempty(hButton)
+    aD.hUtils      = hUtils;
+    aD.hRoot       = groot;
+    aD.hFig        = hFig;
+    aD.hButton     = hButton;
+    aD.hMenu       = hMenu;
+    aD.hToolbar    = hToolbar;
+    aD.objectNames = objNames;
+    aD.cMapData = [];
     
-    hExistingMenus = findobj(hToolMenu, '-regexp', 'Tag', 'menu\w*');
-    
-    position = 9;
-    separator = 'On';
-    
-    if ~isempty(hExistingMenus)
-        position = position + length(hExistingMenus);
-        separator = 'Off';
-    end;
-    
-    hMenu = uimenu(hToolMenu,'Position', position);
-    hMenu.Tag       = objNames.menuTag;
-    hMenu.Label     = objNames.menuLabel;
-    hMenu.Callback  = @Menu_WL;
-    hMenu.Separator = separator;
-    hMenu.UserData  = hFig;
-    
-else
-    hMenu = [];
-end;
-
-aD.hRoot       = groot;
-aD.hFig        = hFig;
-aD.hButton   =  hButton;
-aD.hMenu     =  hMenu;
-aD.hToolbar    =  hToolbar;
-aD.hToolMenu   =  hToolMenu;
-aD.objectNames = objNames;
-aD.cMapData = [];
-
-
-storeAD(aD);
+    % store app data structure
+    storeAD(aD);
+end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -216,7 +169,7 @@ if ~isempty(aD.hToolbar)
     aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
     aD.hSP.Enable = 'On';
     optionalUIControls = {'Apply_to_popupmenu', 'Value'};
-    aD.hSP.UserData = {aD.objectNames.figFilename, optionalUIControls};
+    aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
 end
 
 % Generate a structure of handles to pass to callbacks and store it.
@@ -287,10 +240,10 @@ if ~isempty(aD.hMenu)
 end
 
 % Restore old figure settings
-restoreOrigData(aD.hFig, aD.origProperties);
+aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
 
 % Reactivate other buttons
-enableToolbarButtons(aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates )
+aD.hUtils.enableToolbarButtons(aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates )
 
 % Store tool state for recovery on next button press in the appdata
 setappdata(aD.hButton, 'cMapData',...
@@ -302,8 +255,10 @@ setappdata(aD.hButton, 'cMapData',...
 % Close WL figure
 delete(aD.hToolFig);
 
-%Disable save_prefs tool button (only enabled when tool is active)
-aD.hSP.Enable = 'Off';
+%Disable save_prefs tool button
+if ishghandle(aD.hSP)
+    aD.hSP.Enable = 'Off';
+end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -881,6 +836,18 @@ end;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
+function buttonImage = makeButtonImage
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The default button size is 15 x 16 x 3.
+dispDebug;
+buttonSize_x= 16;
+buttonImage = repmat(linspace(0,1,buttonSize_x), [ 15 1 3]);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
 function updateColormapPopupmenu
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -964,24 +931,6 @@ structNames.figFilename         = 'WL_tool_figure.fig';
 structNames.figName             = 'WL Tool';
 structNames.figTag              = 'WL_figure';
 structNames.activeFigureName    = 'ActiveFigure';
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function tags = defaultButtonTags
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-
-tags = { ...
-    'figWindowLevel',...
-    'figPanZoom',...
-    'figROITool',...
-    'figViewImages',...
-    'figPointTool',...
-    'figRotateTool',...
-    'figProfileTool'};
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
