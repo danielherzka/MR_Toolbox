@@ -33,7 +33,7 @@ end
 global DB; DB = 1;
 
 switch Action
-    case 'New', 	                     Create_New_Button;
+    case 'New', 	                     Create_New_Objects;
     case 'Activate_PZ',                  Activate_PZ;
     case 'Deactivate_PZ',                Deactivate_PZ(varargin{2:end});
     case 'Adjust_On',                    Turn_Adjust_Pan_On;     % Entry
@@ -57,85 +57,43 @@ end;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%% 
 %
-function Create_New_Button
+function Create_New_Objects
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
+
+hUtils = MR_Toolbox_Utilities;
 
 hFig = gcf;
 
 objNames = retrieveNames;
 
-% Find handle for current image toolbar and menubar
-hToolbar = findall(hFig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
-hToolMenu = findall(hFig, 'Label', '&Tools');
+% Create button
+[hButton, hToolbar] = hUtils.createButtonObject(hFig, ...
+    makeButtonImage, ...
+    'PZ_tool(''Activate_PZ'');', ...
+    'PZ_tool(''Deactivate_PZ'');',...
+    objNames.buttonTag, ...
+    objNames.buttonToolTipString);
 
-% Tool should work with either one a pushbutton on the toolbar or a menu
-%  item, even if the other one isn't present.
-% If the toolbar exists and the button has not been previously created
-if ~isempty(hToolbar) && isempty(findobj(hToolbar, 'Tag', objNames.buttonTag))
-    hToolbar_Children = hToolbar.Children; 
-    
-    %Create Button Image
-    buttonImage = makeButtonImage;
-    
-  	buttonTags = defaultButtonTags;
-    separator = 'off';
-    
-    hButtons = cell(1,size(buttonTags,2));
-	for i = 1:length(buttonTags)
-        hButtons{i} = findobj(hToolbar_Children, 'Tag', buttonTags{i});
-	end;
-	if isempty(hButtons)
-		separator = 'on';
-	end;
-    
-    hButtonPZ = uitoggletool(hToolbar);
-    hButtonPZ.CData = buttonImage;
-    hButtonPZ.OnCallback = 'PZ_tool(''Activate_PZ'');';
-    hButtonPZ.OffCallback =  'PZ_tool(''Deactivate_PZ'');';
-    hButtonPZ.Tag = objNames.buttonTag;
-    hButtonPZ.TooltipString = objNames.buttonToolTipString;
-    hButtonPZ.Separator = separator;
-    hButtonPZ.UserData = hFig;
-    hButtonPZ.Enable = 'on';
-else
-    hButtonPZ = [];
-end;
+% Create menu item
+hMenu  = hUtils.createMenuObject(hFig,...
+    objNames.menuTag, ...
+    objNames.menuLabel, ...
+    @Menu_PZ);
 
-% If the menubar exists, create menu item
-if ~isempty(hToolMenu) && isempty(findobj(hToolMenu, 'Tag', objNames.menuTag))
-  
-    hMenus = findobj(hToolMenu, '-regexp', 'Tag', 'menu\w*');
-   
-    position = 9;
-    separator = 'On';
-
-    if ~isempty(hMenus)
-        position = position + length(hMenus);
-        separator = 'Off';
-    end;
+if ~isempty(hButton)
+    aD.hUtils    =  hUtils;
+    aD.hRoot     =  groot;
+    aD.hFig      =  hFig;
+    aD.hButton   =  hButton;
+    aD.hMenu     =  hMenu;
+    aD.hToolbar  =  hToolbar;
+    aD.objectNames = objNames;
     
-    hMenuPZ = uimenu(hToolMenu,'Position', position);
-    hMenuPZ.Tag       = objNames.menuTag;
-    hMenuPZ.Label     = objNames.menuLabel;
-    hMenuPZ.Callback  = @Menu_PZ;
-    hMenuPZ.Separator = separator;
-    hMenuPZ.UserData  = hFig;
-else
-    hMenuPZ = [];
-end;
-
-aD.hRoot     = groot;
-aD.hFig      = hFig;
-aD.hButtonPZ =  hButtonPZ;
-aD.hMenuPZ   =  hMenuPZ;
-aD.hToolbar  =  hToolbar;
-aD.hToolMenu =  hToolMenu;
-aD.objectNames = objNames;
-
-% store app data structure
-storeAD(aD);
+    % store app data structure
+    storeAD(aD);
+end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -151,7 +109,7 @@ dispDebug;
 aD = getAD;
     
 % Check the menu object
-if ~isempty(aD.hMenuPZ), aD.hMenuPZ.Checked = 'on'; end
+if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
 
 % Find toolbar and deactivate other buttons
 aD.hToolbar = findall(aD.hFig, 'type', 'uitoolbar');
@@ -159,11 +117,7 @@ aD.hToolbar = findobj(aD.hToolbar, 'Tag', 'FigureToolBar');
 
 if ~isempty(aD.hToolbar)
     [aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates ] = ...
-        disableToolbarButtons(aD.hToolbar, aD.objectNames.buttonTag);
-    
-    % Enable save_prefs tool button
-    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
-    aD.hSP.Enable = 'On';
+        aD.hUtils.disableToolbarButtons(aD.hToolbar, aD.objectNames.buttonTag);
 end;
 
 % Store initial state of all axes in current figure for reset
@@ -177,32 +131,25 @@ end;
 
 % Obtain current axis
 aD.hRoot.CurrentFigure = aD.hFig;
-aD.hAxes=aD.hFig.CurrentAxes;
-if isempty(aD.hAxes), 
-    aD.hAxes = hAllAxes(1); 
-    aD.hFig.CurrentAxes = hAxes;
+aD.hCurrentAxes=aD.hFig.CurrentAxes;
+if isempty(aD.hCurrentAxes), 
+    aD.hCurrentAxes = aD.hAllAxes(1); 
+    aD.hFig.CurrentAxes = aD.hCurrentAxes;
 end;
 
 % Store the figure's old infor within the fig's own userdata
 aD.origProperties = retreiveOrigData(aD.hFig);
 
 % Find and close the old PZ figure to avoid conflicts
-hFigPZOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
-if ~isempty(hFigPZOld), close(hFigPZOld); end;
+hToolFigOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
+if ~isempty(hToolFigOld), close(hToolFigOld); end;
 pause(0.5);
 
 % Make it easy to find this button (tack on 'On') 
 % Wait until after old fig is closed.
-aD.hButtonPZ.Tag = [aD.hButtonPZ.Tag,'_On'];
-aD.hMenuPZ.Tag   = [aD.hMenuPZ.Tag, '_On'];
+aD.hButton.Tag = [aD.hButton.Tag,'_On'];
+aD.hMenu.Tag   = [aD.hMenu.Tag, '_On'];
 aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
-
-%% PART II Create Figure
-aD.hFigPZ = openfig(aD.objectNames.figFilename,'reuse');
-
-% Load Save preferences tool data
-optionalUIControls = {'Apply_radiobutton', 'Value'};
-aD.hSP.UserData = {aD.objectNames.figFilename, optionalUIControls};
 
 aD.hFig.WindowButtonDownFcn   = 'PZ_tool(''Adjust_On'');'; %entry
 aD.hFig.WindowButtonUpFcn     = 'PZ_tool(''Adjust_Pan_For_All'');'; %exit
@@ -210,30 +157,41 @@ aD.hFig.WindowButtonMotionFcn = '';
 aD.hFig.WindowKeyPressFcn  = @Key_Press_CopyPaste;
 
 % Draw faster and without flashes
-%aD.hFig.CloseRequestFcn = [ origCRF , ',PZ_tool(''Close_Parent_Figure'')'];
 aD.hFig.CloseRequestFcn = @Close_Parent_Figure;
 aD.hFig.Renderer = 'zbuffer';
 aD.hRoot.CurrentFigure = aD.hFig;
 [aD.hAllAxes.SortMethod] = deal('Depth');
 
+%% PART II Create GUI Figure
+aD.hToolFig = openfig(aD.objectNames.figFilename,'reuse');
+
+% Enable save_prefs tool button
+if ~isempty(aD.hToolbar)
+    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
+    aD.hSP.Enable = 'On';
+    optionalUIControls = {'Apply_radiobutton', 'Value'};
+    aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
+end
+
 % Generate a structure of handles to pass to callbacks, and store it. 
-aD.hGUI = guihandles(aD.hFigPZ);
+aD.hGUI = guihandles(aD.hToolFig);
 
-aD.hFigPZ.Name = aD.objectNames.figName;
-aD.hFigPZ.CloseRequestFcn = @Close_Request_Callback;
+aD.hToolFig.Name = aD.objectNames.figName;
+aD.hToolFig.CloseRequestFcn = @Close_Request_Callback;
 
+%%  PART III - Finish setup for other objects
 % Change the pointer and store the old pointer data
 [openHandPointerImage, closedHandPointerImage ] =  definePointers;
 aD.hFig.Pointer =  'Custom';
 aD.hFig.PointerShapeCData = openHandPointerImage;
 
-hIm = findobj(aD.hAxes, 'Type', 'Image');
+hIm = findobj(aD.hCurrentAxes, 'Type', 'Image');
 imCData = hIm.CData;
-zoom_factor = max([size(imCData,2)/diff(allXlims(aD.hAxes==aD.hAllAxes,:)),...
-    size(imCData,1)/diff(allYlims(aD.hAxes==aD.hAllAxes,:))]);
+zoom_factor = max([size(imCData,2)/diff(allXlims(aD.hCurrentAxes==aD.hAllAxes,:)),...
+    size(imCData,1)/diff(allYlims(aD.hCurrentAxes==aD.hAllAxes,:))]);
 
 % Store all relevant info for faster use during calls
-%hGUI.Reset_pushbutton.UserData =  {hFig, hFigPZ, hAllAxes, all_xlims, all_ylims, hAxes };
+%hGUI.Reset_pushbutton.UserData =  {hFig, hToolFig, hAllAxes, all_xlims, all_ylims, hAxes };
 aD.hGUI.Reset_pushbutton.Enable = 'Off';
 aD.hGUI.Zoom_value_edit.String  = num2str(zoom_factor,3);
 
@@ -259,29 +217,32 @@ function Deactivate_PZ
 dispDebug;
 
 aD = getAD;
-if ~isempty(aD.hButtonPZ)
-    aD.hButtonPZ.Tag = aD.hButtonPZ.Tag(1:end-3);
+if ~isempty(aD.hButton)
+    aD.hButton.Tag = aD.hButton.Tag(1:end-3);
 end
     
-if ~isempty(aD.hMenuPZ)
-    aD.hMenuPZ.Checked = 'off';
-    aD.hMenuPZ.Tag = aD.hMenuPZ.Tag(1:end-3);
+if ~isempty(aD.hMenu)
+    aD.hMenu.Checked = 'off';
+    aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
 end
    
 % Close PZ figure
-delete(aD.hFigPZ);
+delete(aD.hToolFig);
 
 zoom off;
 dispDebug('Zoom off');
 
 % Restore old BDFs
-restoreOrigData(aD.hFig, aD.origProperties);
+aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
 
 % Reactivate other buttons
-enableToolbarButtons(aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates )
+aD.hUtils.enableToolbarButtons(aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates )
  
-% Disable save_prefs tool button (only enabled when tool is active)
-aD.hSP.Enable = 'Off';
+
+%Disable save_prefs tool button
+if ishghandle(aD.hSP)
+    aD.hSP.Enable = 'Off';
+end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -327,12 +288,12 @@ dispDebug
 
 aD = getAD; 
 
-aD.hAxes = gca;
-currPoint = aD.hAxes.CurrentPoint;
+aD.hCurrentAxes = gca;
+currPoint = aD.hCurrentAxes.CurrentPoint;
 refPoint = aD.ReferencePoint;
 
-xlim = aD.hAxes.XLim;
-ylim = aD.hAxes.YLim;
+xlim = aD.hCurrentAxes.XLim;
+ylim = aD.hCurrentAxes.YLim;
 
 % Use fraction  i.e. relative to position to the originally clicked point
 % to determine the change in window and level
@@ -342,8 +303,8 @@ xlim = xlim - deltas(1);
 ylim = ylim - deltas(2);
 
 % set the xlims and the ylims after motion
-aD.hAxes.XLim = xlim;
-aD.hAxes.YLim = ylim;
+aD.hCurrentAxes.XLim = xlim;
+aD.hCurrentAxes.YLim = ylim;
 
 storeAD(aD);
 
@@ -366,8 +327,8 @@ aD.hFig.WindowButtonMotionFcn = ' ';
 apply_all = aD.hGUI.Apply_radiobutton.Value;
 %most_current_data = hGUI.Apply_radiobutton.UserData
 
-currentXLim = aD.hAxes.XLim;
-currentYLim = aD.hAxes.YLim;
+currentXLim = aD.hCurrentAxes.XLim;
+currentYLim = aD.hCurrentAxes.YLim;
 
 if apply_all
     [aD.hAllAxes.XLim] =  deal(currentXLim);
@@ -377,7 +338,7 @@ end;
 aD.hFig.PointerShapeCData = aD.openHandPointerImage;
 aD.hGUI.Reset_pushbutton.Enable = 'On';
 
-%figure(aD.hFigPZ);
+%figure(aD.hToolFig);
 aD.hRoot.CurrentFigure = aD.hFig;
 dispDebug('end');
 %
@@ -399,10 +360,10 @@ zoom_factor = str2double(aD.hGUI.Zoom_value_edit.String);
 if ~isnan(zoom_factor)
     
     if apply_all, all_axes = aD.hAllAxes;
-    else          all_axes = aD.hAxes;
+    else          all_axes = aD.hCurrentAxes;
     end;
     
-    hIm = findobj(aD.hAxes, 'Type', 'Image');
+    hIm = findobj(aD.hCurrentAxes, 'Type', 'Image');
     im = hIm.CData;
     xsize = size(im,2);
     ysize = size(im,1);
@@ -440,13 +401,13 @@ apply_all = aD.hGUI.Apply_radiobutton.Value;
 if isempty(aD.hFig.CurrentAxes)
     aD.hFig.CurrentAxes = hAllAxes(1);
 end
-aD.hAxes = aD.hFig.CurrentAxes;
+aD.hCurrentAxes = aD.hFig.CurrentAxes;
     
-hAxes_idx = find(aD.hAllAxes==aD.hAxes);
+hAxes_idx = find(aD.hAllAxes==aD.hCurrentAxes);
 
 
-aD.hAxes.XLim = aD.origXLims(hAxes_idx,:);
-aD.hAxes.YLim = aD.origYLims(hAxes_idx,:);
+aD.hCurrentAxes.XLim = aD.origXLims(hAxes_idx,:);
+aD.hCurrentAxes.YLim = aD.origYLims(hAxes_idx,:);
 
 if apply_all,
     for i = 1:length(aD.hAllAxes)
@@ -456,11 +417,11 @@ if apply_all,
     aD.hGUI.Reset_pushbutton.Enable = 'Off';
 end
 
-hIm = findobj(aD.hAxes, 'Type', 'image');
+hIm = findobj(aD.hCurrentAxes, 'Type', 'image');
 im = hIm.CData;
 
-zoom_factor_x = size(im,2) / diff(aD.hAxes.XLim);
-zoom_factor_y = size(im,1) / diff(aD.hAxes.YLim);
+zoom_factor_x = size(im,2) / diff(aD.hCurrentAxes.XLim);
+zoom_factor_y = size(im,1) / diff(aD.hCurrentAxes.YLim);
 
 aD.hGUI.Zoom_value_edit.String = num2str(max([zoom_factor_x, zoom_factor_y]),3);
 aD.hRoot.CurrentFigure = aD.hFig;
@@ -482,15 +443,15 @@ aD = getAD;
 apply_all = aD.hGUI.Apply_radiobutton.Value;
 
 if ~isempty(aD.hFig.CurrentAxes)
-    aD.hAxes = aD.hFig.CurrentAxes;
+    aD.hCurrentAxes = aD.hFig.CurrentAxes;
 else
-    aD.hAxes = aD.hAllAxes(1);
+    aD.hCurrentAxes = aD.hAllAxes(1);
 end
 
 aD.hRoot.CurrentFigure = aD.hFig;
 
-aD.hAxes.XLimMode = 'auto';
-aD.hAxes.YLimMode = 'auto';
+aD.hCurrentAxes.XLimMode = 'auto';
+aD.hCurrentAxes.YLimMode = 'auto';
 axis('image');
 
 if apply_all    
@@ -501,7 +462,7 @@ if apply_all
         axis('image');
     end;
 end
-aD.hFig.CurrentAxes = aD.hAxes;
+aD.hFig.CurrentAxes = aD.hCurrentAxes;
 aD.hGUI.Zoom_value_edit.String = num2str(1);
 aD.hGUI.Reset_pushbutton.Enable = 'On';
 aD.hRoot.CurrentFigure = aD.hFig;
@@ -584,15 +545,15 @@ aD = getAD;
 if isempty(aD.hFig.CurrentAxes)
     aD.hFig.CurrentAxes = aD.hAllAxes(1);
 end
-aD.hAxes = aD.hFig.CurrentAxes;
+aD.hCurrentAxes = aD.hFig.CurrentAxes;
 
-hIm = findobj(aD.hAxes, 'Type', 'image');
+hIm = findobj(aD.hCurrentAxes, 'Type', 'image');
 im = hIm.CData;
 
 % Ta daa
 %axis('equal');
-xlim = aD.hAxes.XLim;
-ylim = aD.hAxes.YLim;
+xlim = aD.hCurrentAxes.XLim;
+ylim = aD.hCurrentAxes.YLim;
 
 zoom_factor_x = size(im,2) / diff(xlim);
 zoom_factor_y = size(im,1) / diff(ylim);
@@ -607,7 +568,7 @@ if apply_all
     [aD.hAllAxes.YLim] = deal(ylim);
 end;
 
-figure(aD.hFigPZ);
+figure(aD.hToolFig);
 
 aD.hGUI.Reset_pushbutton.Enable = 'On';
 aD.hRoot.CurrentFigure = aD.hFig;
@@ -618,25 +579,14 @@ dispDebug('end');
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% %%%%%%%%%%%%%%%%%%%%%%%% 
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function Menu_PZ(~,~)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
-
 aD = getAD;
-
-checked   = aD.hMenuPZ.Checked;
-
-if strcmpi(checked,'on')
-    % turn off button -> Deactivate_PZ
-    aD.hMenuPZ.Checked = 'off';
-    aD.hButtonPZ.State = 'off';
-else %hButtonPZ
-    aD.hMenuPZ.Checked = 'on';
-    aD.hButtonPZ.State = 'on';
-end;
+aD.hUtils.menuToggle(aD.hMenu,aD.hButton);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -651,8 +601,8 @@ aD = getAD;
 
 switch data.Key
     case 'c' %copy
-        aD.copy.XLim = aD.hAxes.XLim;
-        aD.copy.YLim = aD.hAxes.YLim;
+        aD.copy.XLim = aD.hCurrentAxes.XLim;
+        aD.copy.YLim = aD.hCurrentAxes.YLim;
         storeAD(aD);
     case {'p','v'} %paste
         apply_all = aD.hGUI.Apply_radiobutton.Value;
@@ -661,8 +611,8 @@ switch data.Key
                 [aD.hAllAxes.XLim ]= deal(aD.copy.XLim);
                 [aD.hAllAxes.YLim ]= deal(aD.copy.YLim);
             else
-                aD.hAxes.XLim = aD.copy.XLim;
-                aD.hAxes.YLim = aD.copy.YLim;
+                aD.hCurrentAxes.XLim = aD.copy.XLim;
+                aD.hCurrentAxes.YLim = aD.copy.YLim;
             end
         end
 end
@@ -681,7 +631,7 @@ old_SHH = aD.hRoot.ShowHiddenHandles;
 aD.hRoot.ShowHiddenHandles = 'On';
 
 %call->PZ_tool('Deactivate_PZ');
-aD.hButtonPZ.State = 'off';
+aD.hButton.State = 'off';
 
 aD.hRoot.ShowHiddenHandles= old_SHH;
 %
@@ -698,20 +648,20 @@ dispDebug;
 
 aD = getAD;
 if ~isempty(aD)
-    hFigPZ = aD.hFigPZ;
+    hToolFig = aD.hToolFig;
 else
     % Parent Figure is already closed and aD is gone
     dispDebug('ParFig closed!');
     objNames = retrieveNames;
-    hFigPZ = findobj(groot, 'Tag', objNames.figTag); 
+    hToolFig = findobj(groot, 'Tag', objNames.figTag); 
 end
 
 
-hFigPZ.CloseRequestFcn = 'closereq';
+hToolFig.CloseRequestFcn = 'closereq';
 try
-    close(hFigPZ);
+    close(hToolFig);
 catch
-    delete(hFigPZ);
+    delete(hToolFig);
 end;
 
 hFig.CloseRequestFcn = 'closereq';
@@ -720,7 +670,7 @@ close(hFig);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%START SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
@@ -818,57 +768,57 @@ button_image = repmat(button_image, [1,1,3]);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function [hToolbar_Children, origToolEnables, origToolStates ] = disableToolbarButtons(hToolbar, currentToolName)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
+% %% %%%%%%%%%%%%%%%%%%%%%%%%
+% %
+% function [hToolbar_Children, origToolEnables, origToolStates ] = disableToolbarButtons(hToolbar, currentToolName)
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% dispDebug;
+% 
+% hRoot = groot;
+% old_SHH = hRoot.ShowHiddenHandles;
+% hRoot.ShowHiddenHandles = 'on';
+% 
+% hToolbar_Children = hToolbar.Children;
+% 
+% origToolEnables = cell(size(hToolbar_Children));
+% origToolStates  = cell(size(hToolbar_Children));
+% 
+% 
+% for i = 1:length(hToolbar_Children) 
+%     if ~strcmpi(hToolbar_Children(i).Tag, currentToolName)
+%         if isprop(hToolbar_Children(i), 'Enable')
+%             origToolEnables{i} =  hToolbar_Children(i).Enable;
+%             hToolbar_Children(i).Enable ='off';
+%         end
+%         if isprop(hToolbar_Children(i), 'State')
+%             origToolStates{i}  =  hToolbar_Children(i).State;
+%             hToolbar_Children(i).Enable ='off';
+%         end
+%     end
+% end
+% 
+% hRoot.ShowHiddenHandles = old_SHH;
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-hRoot = groot;
-old_SHH = hRoot.ShowHiddenHandles;
-hRoot.ShowHiddenHandles = 'on';
-
-hToolbar_Children = hToolbar.Children;
-
-origToolEnables = cell(size(hToolbar_Children));
-origToolStates  = cell(size(hToolbar_Children));
-
-
-for i = 1:length(hToolbar_Children) 
-    if ~strcmpi(hToolbar_Children(i).Tag, currentToolName)
-        if isprop(hToolbar_Children(i), 'Enable')
-            origToolEnables{i} =  hToolbar_Children(i).Enable;
-            hToolbar_Children(i).Enable ='off';
-        end
-        if isprop(hToolbar_Children(i), 'State')
-            origToolStates{i}  =  hToolbar_Children(i).State;
-            hToolbar_Children(i).Enable ='off';
-        end
-    end
-end
-
-hRoot.ShowHiddenHandles = old_SHH;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function enableToolbarButtons(hToolbar_Children, origToolEnables, origToolStates)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-
-for i = 1:length(hToolbar_Children)
-    if isprop(hToolbar_Children(i), 'Enable') && ~isempty(origToolEnables{i})
-        hToolbar_Children(i).Enable = origToolEnables{i};
-    end
-    if isprop(hToolbar_Children(i), 'State') && ~isempty(origToolStates{i})
-        hToolbar_Children(i).State = origToolStates{i};
-    end
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %% %%%%%%%%%%%%%%%%%%%%%%%%
+% %
+% function enableToolbarButtons(hToolbar_Children, origToolEnables, origToolStates)
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% dispDebug;
+% 
+% for i = 1:length(hToolbar_Children)
+%     if isprop(hToolbar_Children(i), 'Enable') && ~isempty(origToolEnables{i})
+%         hToolbar_Children(i).Enable = origToolEnables{i};
+%     end
+%     if isprop(hToolbar_Children(i), 'State') && ~isempty(origToolStates{i})
+%         hToolbar_Children(i).State = origToolStates{i};
+%     end
+% end
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -884,24 +834,6 @@ structNames.figFilename         = 'PZ_tool_figure.fig';
 structNames.figName             = 'PZ Tool';
 structNames.figTag              = 'PZ_figure';
 structNames.activeFigureName    = 'ActiveFigure';
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function tags = defaultButtonTags
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-
-tags = { ...
-    'figWindowLevel',...
-    'figPanZoom',...
-    'figROITool',...
-    'figViewImages',...
-    'figPointTool',...
-    'figRotateTool',...
-    'figProfileTool'};
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -931,7 +863,7 @@ hFig = findobj(groot, 'Tag', 'ActiveFigure'); %flat?
 if isempty(hFig)
     % Call from Activate
     objNames = retrieveNames;
-    obj = findobj('Tag', objNames.buttonTag);
+    obj = findHiddenObj('Tag', objNames.buttonTag);
     if ~isempty(obj)
         while ~strcmpi(obj.Type, 'Figure')
             obj = obj.Parent;
@@ -974,18 +906,18 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function restoreOrigData(hFig, propList)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Restore previous WBDF etc to restore state after WL is done.
-dispDebug;
-for i = 1:size(propList,1)
-  hFig.(propList{i,1}) = propList{i,2};
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %% %%%%%%%%%%%%%%%%%%%%%%%%
+% %
+% function restoreOrigData(hFig, propList)
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % Restore previous WBDF etc to restore state after WL is done.
+% dispDebug;
+% for i = 1:size(propList,1)
+%   hFig.(propList{i,1}) = propList{i,2};
+% end
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function  dispDebug(varargin)
 %
@@ -997,7 +929,7 @@ if DB
     objectNames = retrieveNames;
     x = dbstack;
     func_name = x(2).name;    loc = [];
-    if length(x) > 3
+    if length(x) > 4
         loc = [' (loc) ', repmat('|> ',1, length(x)-3)] ;
     end
     fprintf([objectNames.toolName, ':',loc , ' %s'], func_name);
