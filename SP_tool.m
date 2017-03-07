@@ -9,7 +9,7 @@ else
 end
 
 switch Action,
-    case  'New',                 Create_New_Button;
+    case  'New',                 Create_New_Objects;
     case 'Save',                 Save_Prefs;
     otherwise
         disp(['Unimplemented Functionality: ', Action]);
@@ -19,64 +19,38 @@ end;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
-function Create_New_Button
+function Create_New_Objects
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
+
+hUtils = MR_Toolbox_Utilities;
 
 hFig = gcf;
 
 objNames = retrieveNames;
 
-% Find handle for current image toolbar and menubar
-hToolbar = findall(hFig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
+%Create Button
+hButton = hUtils.createButtonObject(hFig, ...
+    makeButtonImage, ...
+    [],...
+    [],...
+    objNames.buttonTag, ...
+    objNames.buttonToolTipString);
 
-if ~isempty(hToolbar) && isempty(findobj(hToolbar, 'Tag', 'figSavePrefsTool')),
-    hToolbar_Children = hToolbar.Children;
-    
-    % The default button size is 15 x 16 x 3. Create Button Image
-    button_size_x= 16;
-    button_image = NaN* zeros(15,button_size_x);
-    
-    f = [ ...
-        50    51    52    53    54    55    56    57    65    68 ...
-        72    80    84    87    95    100   102   110   116   117 ...
-        125   130   132   140   144   147   155   156   157   158 ...
-        159   160   161   162   172   186   200   214   228 ...
-        ];
-    
-    button_image(f) = 0;
-    button_image = repmat(button_image, [1,1,3]);
-    
-    buttonTags = defaultButtonTags;
-    separator = 'off';
-    
-    % If no buttons exist, put menu item separator on
-    hButtons = cell(1,size(buttonTags,2));
-	for i = 1:length(buttonTags)
-        hButtons{i} = findobj(hToolbar_Children, 'Tag', buttonTags{i});
-	end;
-	if isempty(hButtons)
-		separator = 'on';
-	end;
-    
-    hButtonSP = uipushtool(hToolbar);
-    hButtonSP.CData = button_image;
-    hButtonSP.ClickedCallback = 'SP_tool(''Save'')';
-    hButtonSP.Tag = objNames.buttonTag;'figSavePrefsTool';
-    hButtonSP.TooltipString = objNames.buttonToolTipString;
-    hButtonSP.Separator = separator;
-    hButtonSP.UserData = [];
-    hButtonSP.Enable = 'off';
-else
-    hButtonSP = [];
-end;
+if ~isempty(hButton)
 
-aD.hRoot     = groot;
-aD.hFig      = hFig;
-aD.hButtonSP =  hButtonSP;
+    hButton.ClickedCallback = 'SP_tool(''Save'')';
+    hButton.Enable = 'off';
+    hButton.UserData = [];
 
-storeAD(aD);
+    aD.hUtils    =  hUtils;
+    aD.hRoot     = groot;
+    aD.hFig      = hFig;
+    aD.hButton   = hButton;
+    
+    storeAD(aD);
+end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -93,13 +67,16 @@ dispDebug;
 aD = getAD;
 
 % Retrive info loaded during Activate_ function of a tool
-udata = aD.hButtonSP.UserData;
-figFilename = udata{1};
-optionalUIControls = udata{2};
+udata = aD.hButton.UserData;
+hCurrToolFig = udata{1};
+figFilename = udata{2};
+optionalUIControls = udata{3};
 
-hTemplateToolFig  = openfig(figFilename, 'invisible');
-handles = guihandles(hTemplateToolFig);
+%hTemplateToolFig  = openfig(figFilename, 'invisible');
+hTemplateToolFig  = openfig(figFilename);
 
+%handlesTemplate = guihandles(hTemplateToolFig);
+handlesCurrent  = guihandles(hCurrToolFig);
 
 %For each "child" object member of the GUI
 for i=1:length(hTemplateToolFig.Children),
@@ -107,9 +84,9 @@ for i=1:length(hTemplateToolFig.Children),
         % For each GUI control that is listed as 'storable'
         for j=1:size(optionalUIControls,1),
             if strcmpi( hTemplateToolFig.Children(i).Tag, optionalUIControls{j,1}),
-                %disp('Found a matching object')
+                %disp('Found a matching control object')
                 hTemplateToolFig.Children(i).(optionalUIControls{j,2}) = ....
-                handles.(optionalUIControls{j,1}).(optionalUIControls{j,2});
+                handlesCurrent.(optionalUIControls{j,1}).(optionalUIControls{j,2});
             end;
         end;
     end;
@@ -119,6 +96,7 @@ hTemplateToolFig.Visible = 'on';
 savefig(hTemplateToolFig, figFilename)
 
 close(hTemplateToolFig);
+aD.hButton.State = 'Off';
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -139,19 +117,24 @@ structNames.buttonToolTipString = 'Save Preferences Tool';
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function tags = defaultButtonTags
+function buttonImage = makeButtonImage
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The default button size is 15 x 16 x 3.
 dispDebug;
 
-tags = { ...
-    'figWindowLevel',...
-    'figPanZoom',...
-    'figROITool',...
-    'figViewImages',...
-    'figPointTool',...
-    'figRotateTool',...
-    'figProfileTool'};
+buttonSize_x= 16;
+buttonImage = NaN* zeros(15,buttonSize_x);
+
+f = [ ...
+    50    51    52    53    54    55    56    57    65    68 ...
+    72    80    84    87    95    100   102   110   116   117 ...
+    125   130   132   140   144   147   155   156   157   158 ...
+    159   160   161   162   172   186   200   214   228 ...
+    ];
+
+buttonImage(f) = 0;
+buttonImage = repmat(buttonImage, [1,1,3]);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 

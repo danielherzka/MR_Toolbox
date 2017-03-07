@@ -20,6 +20,8 @@ function WL_tool(varargin)
 % National Heart, Lung and Blood Institute, NIH, DHHS
 % Bethesda, MD 20892
 
+% Test for Github
+
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -35,7 +37,7 @@ end;
 global DB; DB = 1;
 
 switch Action
-    case 'New', 	                     Create_New_Button;
+    case 'New', 	                     Create_New_Objects;
     case 'Activate_WL',		             Activate_WL(varargin{:});
     case 'Deactivate_WL',                Deactivate_WL(varargin{2:end});
     case 'Adjust_On', 		             Adjust_On;         % Entry
@@ -57,89 +59,43 @@ end;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Create_New_Button
+function Create_New_Objects
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
+
+hUtils = MR_Toolbox_Utilities;
 
 hFig = gcf;
 
 objNames = retrieveNames;
 
-% Find handle for current toolbar and current menubar
-hToolbar  = findall(hFig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
-hToolMenu = findall(hFig, 'Label', '&Tools');
+%Create Button
+[hButton, hToolbar] = hUtils.createButtonObject(hFig, ...
+    makeButtonImage, ...
+    'WL_tool(''Activate_WL'');', ...
+    'WL_tool(''Deactivate_WL'');',...
+    objNames.buttonTag, ...
+    objNames.buttonToolTipString);
 
-% Tool should work with either one a pushbutton on the toolbar or a menu
-%  item, even if the other one isn't present.
-% If the toolbar exists and the button has not been previously created
-if ~isempty(hToolbar) && isempty(findobj(hToolbar, 'Tag', objNames.buttonTag ))
-    hToolbar_Children = hToolbar.Children;
-    
-    % The default button size is 15 x 16 x 3. Create Button Image
-    buttonSize_x= 16;
-    buttonImage = repmat(linspace(0,1,buttonSize_x), [ 15 1 3]);
-    
-    buttonTags = defaultButtonTags;
-    separator = 'off';
-    
-    hButtons = cell(1,size(buttonTags,2));
-    for i = 1:length(buttonTags)
-        hButtons{i} = findobj(hToolbar_Children, 'Tag', buttonTags{i});
-    end;
-    if isempty(hButtons)
-        separator = 'on';
-    end;
-    
-    hButtonWL = uitoggletool(hToolbar);
-    hButtonWL.CData = buttonImage;
-    hButtonWL.OnCallback = 'WL_tool(''Activate_WL'');';
-    hButtonWL.OffCallback = 'WL_tool(''Deactivate_WL'');';
-    hButtonWL.Tag = objNames.buttonTag;
-    hButtonWL.TooltipString = objNames.buttonToolTipString;
-    hButtonWL.Separator = separator;
-    hButtonWL.UserData = [];
-    hButtonWL.Enable = 'on';
-    
-else
-    hButtonWL = [];
-end;
+hMenu  = hUtils.createMenuObject(hFig, ...
+    objNames.menuTag, ...
+    objNames.menuLabel, ...
+    @Menu_WL);
 
-% If menu exist and the menu item has not been previously created
-if ~isempty(hToolMenu) && isempty(findobj(hToolMenu,'Tag', objNames.menuTag))
+if ~isempty(hButton)
+    aD.hUtils      = hUtils;
+    aD.hRoot       = groot;
+    aD.hFig        = hFig;
+    aD.hButton     = hButton;
+    aD.hMenu       = hMenu;
+    aD.hToolbar    = hToolbar;
+    aD.objectNames = objNames;
+    aD.cMapData = [];
     
-    hExistingMenus = findobj(hToolMenu, '-regexp', 'Tag', 'menu\w*');
-    
-    position = 9;
-    separator = 'On';
-    
-    if ~isempty(hExistingMenus)
-        position = position + length(hExistingMenus);
-        separator = 'Off';
-    end;
-    
-    hMenuWL = uimenu(hToolMenu,'Position', position);
-    hMenuWL.Tag       = objNames.menuTag;
-    hMenuWL.Label     = objNames.menuLabel;
-    hMenuWL.Callback  = @Menu_WL;
-    hMenuWL.Separator = separator;
-    hMenuWL.UserData  = hFig;
-    
-else
-    hMenuWL = [];
-end;
-
-aD.hRoot       = groot;
-aD.hFig        = hFig;
-aD.hButtonWL   =  hButtonWL;
-aD.hMenuWL     =  hMenuWL;
-aD.hToolbar    =  hToolbar;
-aD.hToolMenu   =  hToolMenu;
-aD.objectNames = objNames;
-aD.cMapData = [];
-
-
-storeAD(aD);
+    % store app data structure
+    storeAD(aD);
+end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -154,7 +110,7 @@ dispDebug;
 aD = getAD;
 
 % Check the menu object
-if ~isempty(aD.hMenuWL), aD.hMenuWL.Checked = 'on'; end
+if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
 
 % Deactivate other toolbar buttons to avoid callback conflicts
 aD.hToolbar = findall(aD.hFig, 'type', 'uitoolbar');
@@ -162,11 +118,7 @@ aD.hToolbar = findobj(aD.hToolbar, 'Tag', 'FigureToolBar');
 
 if ~isempty(aD.hToolbar)
     [aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates ] = ...
-        disableToolbarButtons(aD.hToolbar,  aD.objectNames.buttonTag);
-  
-    % Enable save_prefs tool button
-    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
-    aD.hSP.Enable = 'On';
+        aD.hUtils.disableToolbarButtons(aD.hToolbar,  aD.objectNames.buttonTag);
 end;
 
 % Store initial state of all axes in current figure for reset
@@ -187,22 +139,15 @@ end;
 aD.origProperties = retreiveOrigData(aD.hFig);
 
 % Find and close the old WL figure to avoid conflicts
-hFigWLOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
-if ~isempty(hFigWLOld), close(hFigWLOld);end;
+hToolFigOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
+if ~isempty(hToolFigOld), close(hToolFigOld);end;
 pause(0.5);
 
 % Make it easy to find this button (tack on 'On')
 % Wait until after old fig is closed.
-aD.hButtonWL.Tag = [aD.hButtonWL.Tag,'_On'];
-aD.hMenuWL.Tag   = [aD.hMenuWL.Tag, '_On'];
+aD.hButton.Tag = [aD.hButton.Tag,'_On'];
+aD.hMenu.Tag   = [aD.hMenu.Tag, '_On'];
 aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
-
-%% PART II Create Figure
-aD.hFigWL = openfig(aD.objectNames.figFilename,'reuse');
-
-% Load Save preferences tool data
-optionalUIControls = {'Apply_to_popupmenu', 'Value'};
-aD.hSP.UserData = {aD.objectNames.figFilename, optionalUIControls};
 
 % Set callbacks
 aD.hFig.WindowButtonDownFcn   = 'WL_tool(''Adjust_On'');';
@@ -216,19 +161,33 @@ aD.hFig.Renderer = 'zbuffer';
 aD.hRoot.CurrentFigure = aD.hFig;
 [aD.hAllAxes.SortMethod] = deal('Depth');
 
+%% PART II Create GUI Figure
+aD.hToolFig = openfig(aD.objectNames.figFilename,'reuse');
+
+% Enable save_prefs tool button
+if ~isempty(aD.hToolbar)
+    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
+    aD.hSP.Enable = 'On';
+    optionalUIControls = {'Apply_to_popupmenu', 'Value'};
+    aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
+end
+
 % Generate a structure of handles to pass to callbacks and store it.
-aD.hGUI = guihandles(aD.hFigWL);
-%guidata(aD.hFigWL,aD.hGUI);
+aD.hGUI = guihandles(aD.hToolFig);
 
-aD.hFigWL.Name = aD.objectNames.figName;
-aD.hFigWL.CloseRequestFcn = @Close_Request_Callback;
+aD.hToolFig.Name = aD.objectNames.figName;
+aD.hToolFig.CloseRequestFcn = @Close_Request_Callback;
 
-% Store the figure's old infor within the fig's own userdata
+
+%%  PART III - Finish setup for other objects
+
+% Store the figure's old info
 aD.origData = retreiveOrigData(aD.hFig);
 aD.copy.CLim       = [];
 aD.copy.CMapValue  = [];
 aD.copy.CMap       = [];
 
+% Update colormap information
 if isempty(aD.cMapData)
     
     dispDebug;('First Call');
@@ -257,12 +216,9 @@ else
     restoreColormap;
     
 end
-
-%hGUI.Reset_pushbutton.UserData = {hAllAxes, allClims, hCurrentAxes };
 aD.hGUI.Reset_pushbutton.Enable   = 'Off';
 aD.hGUI.Window_value_edit.Enable  = 'Off';
 aD.hGUI.Level_value_edit.Enable   = 'Off';
-
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -274,33 +230,35 @@ function Deactivate_WL(varargin)
 dispDebug;
 
 aD = getAD;
-if ~isempty(aD.hButtonWL)
-    aD.hButtonWL.Tag = aD.hButtonWL.Tag(1:end-3);
+if ~isempty(aD.hButton)
+    aD.hButton.Tag = aD.hButton.Tag(1:end-3);
 end
     
-if ~isempty(aD.hMenuWL)
-    aD.hMenuWL.Checked = 'off';
-    aD.hMenuWL.Tag = aD.hMenuWL.Tag(1:end-3);
+if ~isempty(aD.hMenu)
+    aD.hMenu.Checked = 'off';
+    aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
 end
 
 % Restore old figure settings
-restoreOrigData(aD.hFig, aD.origProperties);
+aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
 
 % Reactivate other buttons
-enableToolbarButtons(aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates )
+aD.hUtils.enableToolbarButtons(aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates )
 
 % Store tool state for recovery on next button press in the appdata
-setappdata(aD.hButtonWL, 'cMapData',...
+setappdata(aD.hButton, 'cMapData',...
     {aD.cMapData.allColormaps, ...               % colormaps-per-axes
      aD.cMapData.allCmapValues, ...               % value-per-axes
      aD.hGUI.Colormap_popupmenu.String, ...      % current colormap names
      aD.hGUI.Apply_to_popupmenu.Value});         % apply to current value
 
 % Close WL figure
-delete(aD.hFigWL);
+delete(aD.hToolFig);
 
-%Disable save_prefs tool button (only enabled when tool is active)
-aD.hSP.Enable = 'Off';
+%Disable save_prefs tool button
+if ishghandle(aD.hSP)
+    aD.hSP.Enable = 'Off';
+end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -322,7 +280,7 @@ point = aD.hCurrentAxes.CurrentPoint;
 % Store reference point and the refereonce CLim
 aD.refPoint = [point(1,1) point(1,2)];
 aD.refCLim  = aD.hCurrentAxes.CLim;
-%hButtonWL.UserData = [point(1,1) point(1,2), Clim];
+%hButton.UserData = [point(1,1) point(1,2), Clim];
 storeAD(aD);
 updateColormapPopupmenu;
 Adjust_WL;
@@ -341,7 +299,7 @@ aD = getAD;
 aD.hCurrentAxes = gca;
 point = aD.hCurrentAxes.CurrentPoint;
 
-%ref_coor = hButtonWL.UserData;
+%ref_coor = hButton.UserData;
 
 clim= aD.refCLim;
 xlim= aD.hCurrentAxes.XLim;
@@ -368,7 +326,7 @@ aD.hCurrentAxes.CLim = [new_level - new_window/2 , new_level + new_window/2];
 
 storeAD(aD); % Need hCurrentAxes to be perm? If not, don't need store
 
-%hApply_to_popupmenu = findHiddenObj(hFigWL, 'Tag', 'Apply_to_popupmenu');
+%hApply_to_popupmenu = findHiddenObj(hToolFig, 'Tag', 'Apply_to_popupmenu');
 %aD.hGUI.Apply_to_popupmenu.UserData =  { [new_level, new_window], hCurrentAxes, hFig};
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -427,9 +385,8 @@ Update_Window_Level(newWin, newLev);
 
 Set_Colormap;
 
-figure(aD.hFigWL);
+figure(aD.hToolFig);
 figure(aD.hFig);
-
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -586,7 +543,7 @@ aD.cMapData.allColormaps  = outCmaps;
 
 storeAD(aD);
 
-figure(aD.hFigWL);
+figure(aD.hToolFig);
 figure(aD.hFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -773,19 +730,19 @@ dispDebug;
 
 aD = getAD;
 
-checked = aD.hMenuWL.Checked;
+checked = aD.hMenu.Checked;
 
 % Changing button state engages button callback
 if strcmpi(checked,'on')
     % turn off button ->Deactivate_WL
     dispDebug(' Deactivate');
-    aD.hMenuWL.Checked = 'off';
-    aD.hButtonWL.State = 'off';
+    aD.hMenu.Checked = 'off';
+    aD.hButton.State = 'off';
 else
     % turn on button -> Activate_WL
     dispDebug(' Activate');
-    aD.hMenuWL.Checked = 'on';
-    aD.hButtonWL.State = 'on';
+    aD.hMenu.Checked = 'on';
+    aD.hButton.State = 'on';
 end;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -802,7 +759,7 @@ old_SHH = aD.hRoot.ShowHiddenHandles;
 aD.hRoot.ShowHiddenHandles = 'On';
 
 %call->WL_tool('Deactivate_WL');
-aD.hButtonWL.State = 'off';
+aD.hButton.State = 'off';
 
 aD.hRoot.ShowHiddenHandles= old_SHH;
 %
@@ -819,22 +776,22 @@ dispDebug;
 
 aD = getAD;
 if ~isempty(aD)
-    hFigWL = aD.hFigWL;
+    hToolFig = aD.hToolFig;
 else
     % Parent Figure is already closed and aD is gone (shouldn't happen!)
     dispDebug('ParFig closed!');
     objNames = retrieveNames;
-    hFigWL = findobj(groot, 'Tag', objNames.figTag);
+    hToolFig = findobj(groot, 'Tag', objNames.figTag);
 end
 
-delete(hFigWL);
+delete(hToolFig);
 hFig.CloseRequestFcn = 'closereq';
 close(hFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%START SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
@@ -879,6 +836,18 @@ end;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
+function buttonImage = makeButtonImage
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The default button size is 15 x 16 x 3.
+dispDebug;
+buttonSize_x= 16;
+buttonImage = repmat(linspace(0,1,buttonSize_x), [ 15 1 3]);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
 function updateColormapPopupmenu
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -912,7 +881,7 @@ dispDebug;
 
 aD = getAD;
 
-storageData = getappdata(aD.hButtonWL, 'cMapData');
+storageData = getappdata(aD.hButton, 'cMapData');
 
 outCmaps     = storageData{1};
 outCmapValues= storageData{2};
@@ -967,24 +936,6 @@ structNames.activeFigureName    = 'ActiveFigure';
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function tags = defaultButtonTags
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-
-tags = { ...
-    'figWindowLevel',...
-    'figPanZoom',...
-    'figROITool',...
-    'figViewImages',...
-    'figPointTool',...
-    'figRotateTool',...
-    'figProfileTool'};
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
 function h = findHiddenObj(Handle, Property, Value)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1004,54 +955,54 @@ h_root.ShowHiddenHandles = old_SHH;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function [hToolbar_Children, origToolEnables, origToolStates ] = disableToolbarButtons(hToolbar, currentToolName)
+% function [hToolbar_Children, origToolEnables, origToolStates ] = disableToolbarButtons(hToolbar, currentToolName)
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% dispDebug;
+% hRoot = groot;
+% old_SHH = hRoot.ShowHiddenHandles;
+% hRoot.ShowHiddenHandles = 'on';
+% 
+% hToolbar_Children = hToolbar.Children;
+% 
+% origToolEnables = cell(size(hToolbar_Children));
+% origToolStates  = cell(size(hToolbar_Children));
+% 
+% 
+% for i = 1:length(hToolbar_Children)
+%     if ~strcmpi(hToolbar_Children(i).Tag, currentToolName)
+%         if isprop(hToolbar_Children(i), 'Enable')
+%             origToolEnables{i} =  hToolbar_Children(i).Enable;
+%             hToolbar_Children(i).Enable ='off';
+%         end
+%         if isprop(hToolbar_Children(i), 'State')
+%             origToolStates{i}  =  hToolbar_Children(i).State;
+%             hToolbar_Children(i).Enable ='off';
+%         end
+%     end
+% end
+% 
+% hRoot.ShowHiddenHandles = old_SHH;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-hRoot = groot;
-old_SHH = hRoot.ShowHiddenHandles;
-hRoot.ShowHiddenHandles = 'on';
 
-hToolbar_Children = hToolbar.Children;
-
-origToolEnables = cell(size(hToolbar_Children));
-origToolStates  = cell(size(hToolbar_Children));
-
-
-for i = 1:length(hToolbar_Children)
-    if ~strcmpi(hToolbar_Children(i).Tag, currentToolName)
-        if isprop(hToolbar_Children(i), 'Enable')
-            origToolEnables{i} =  hToolbar_Children(i).Enable;
-            hToolbar_Children(i).Enable ='off';
-        end
-        if isprop(hToolbar_Children(i), 'State')
-            origToolStates{i}  =  hToolbar_Children(i).State;
-            hToolbar_Children(i).Enable ='off';
-        end
-    end
-end
-
-hRoot.ShowHiddenHandles = old_SHH;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function enableToolbarButtons(hToolbar_Children, origToolEnables, origToolStates)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-
-for i = 1:length(hToolbar_Children)
-    if isprop(hToolbar_Children(i), 'Enable') && ~isempty(origToolEnables{i})
-        hToolbar_Children(i).Enable = origToolEnables{i};
-    end
-    if isprop(hToolbar_Children(i), 'State') && ~isempty(origToolStates{i})
-        hToolbar_Children(i).State = origToolStates{i};
-    end
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %% %%%%%%%%%%%%%%%%%%%%%%%%
+% %
+% function enableToolbarButtons(hToolbar_Children, origToolEnables, origToolStates)
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% dispDebug;
+% 
+% for i = 1:length(hToolbar_Children)
+%     if isprop(hToolbar_Children(i), 'Enable') && ~isempty(origToolEnables{i})
+%         hToolbar_Children(i).Enable = origToolEnables{i};
+%     end
+%     if isprop(hToolbar_Children(i), 'State') && ~isempty(origToolStates{i})
+%         hToolbar_Children(i).State = origToolStates{i};
+%     end
+% end
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -1106,7 +1057,7 @@ if DB
     objectNames = retrieveNames;
     x = dbstack;
     func_name = x(2).name;    loc = [];
-    if length(x) > 3
+    if length(x) > 4
         loc = [' (loc) ', repmat('|> ',1, length(x)-3)] ;
     end
     fprintf([objectNames.toolName, ':',loc , ' %s'], func_name);
@@ -1148,18 +1099,18 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function restoreOrigData(hFig, propList)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Restore previous WBDF etc to restore state after WL is done.
-dispDebug;
-for i = 1:size(propList,1)
-  hFig.(propList{i,1}) = propList{i,2};
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %% %%%%%%%%%%%%%%%%%%%%%%%%
+% %
+% function restoreOrigData(hFig, propList)
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % Restore previous WBDF etc to restore state after WL is done.
+% dispDebug;
+% for i = 1:size(propList,1)
+%   hFig.(propList{i,1}) = propList{i,2};
+% end
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
