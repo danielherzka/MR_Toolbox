@@ -326,14 +326,8 @@ new_window =  window + window * (deltas(1) / diff(xlim))^sensitivity_factor;
 % make sure clims stay ascending
 if (new_window < 0), new_window = 0.1; end;
 aD.hCurrentAxes.CLim = [new_level - new_window/2 , new_level + new_window/2];
-% aD.newCLim = aD.hCurrentAxes.CLim;
-% aD.newLev  = new_level;
-% aD.newWin  = new_window;
 
 storeAD(aD); % Need hCurrentAxes to be perm? If not, don't need store
-
-%hApply_to_popupmenu = findHiddenObj(hToolFig, 'Tag', 'Apply_to_popupmenu');
-%aD.hGUI.Apply_to_popupmenu.UserData =  { [new_level, new_window], hCurrentAxes, hFig};
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -437,11 +431,10 @@ apply_all    = aD.hGUI.Apply_to_popupmenu.Value;
 aD.hCurrentAxes     = aD.hFig.CurrentAxes;
 hCurrentAxes_index  = find(aD.hAllAxes==aD.hCurrentAxes);
 
-%currCMapName = hColormap_popupmenu.String{allCmapValues(h_axes_index)}
-
 defaultCmapNames = defineColormaps; % base names
 
 % use the previous pmenu value to put the old string back on top...
+newMapFlag = 0;
 switch inCmapName
 
     case 'More...'
@@ -450,7 +443,6 @@ switch inCmapName
         %  but have to make sure that the right value is displayed in the
         %  popupmenu.
         dispDebug('More');
-        newMapFlag = 0;
         outCmapNames = [defaultCmapNames; 'Less...'];
         %newCmapName = inCmapName;
         %outCmapValue = find(strncmp(newCmapName, newCmapNames, 3));
@@ -471,8 +463,7 @@ switch inCmapName
 
         % If current cmap is not parula(1) or gray(2), keep name on string.
         % Check and add all Cmaps being used in all the axes
-        newMapFlag = 0;
-
+        
         outCmapNames  = cell(length(aD.hAllAxes),1);
         for i = 1:length(aD.hAllAxes)
             outCmapNames(i) = defaultCmapNames(findColormap(outCmaps{i}, defaultCmapNames));
@@ -484,40 +475,30 @@ switch inCmapName
             outCmapValues(i) = findColormap(outCmaps{i}, outCmapNames);
         end
 
-        %outCmapName = outCmapNames{outCmapValues(h_axes_index)};
-
         outCmapValue = outCmapValues(hCurrentAxes_index);
-
-        %hColormap_popupmenu.Value  = allCmapValues(h_axes_index);
-        %hColormap_popupmenu.String = newCmapNames;
-
-        %newCmapValue = find(strncmp(currCMapName, newCmapNames,3));
-
         % When you do this, the 'values' may need to be updated (i.e. if
         % the position of a name changes in the list, then value needs to
         % be updated;
 
+    otherwise
+ 
+        for i=1:length(defaultCmapNames)
 
-    case 'Parula',    cmap = parula(sizeCmap); newMapFlag = 1;
-    case 'Gray'  ,    cmap = gray  (sizeCmap); newMapFlag = 1;
-    case 'Jet'   ,    cmap = jet   (sizeCmap); newMapFlag = 1;
-    case 'Hsv'   ,    cmap = hsv   (sizeCmap); newMapFlag = 1;
-    case 'Hot'   ,    cmap = hot   (sizeCmap); newMapFlag = 1;
-    case 'Bone'  ,    cmap = bone  (sizeCmap); newMapFlag = 1;
-    case 'Copper',    cmap = copper(sizeCmap); newMapFlag = 1;
-    case 'Pink'  ,    cmap = pink  (sizeCmap); newMapFlag = 1;
-    case 'White' ,    cmap = white (sizeCmap); newMapFlag = 1;
-    case 'Flag'  ,    cmap = flag  (sizeCmap); newMapFlag = 1;
-    case 'Lines' ,    cmap = lines (sizeCmap); newMapFlag = 1;
-    case 'Colorcube', cmap = colorcube(sizeCmap); newMapFlag = 1;
-    case 'Prism' ,    cmap = prism (sizeCmap); newMapFlag = 1;
-    case 'Cool'  ,    cmap = cool  (sizeCmap); newMapFlag = 1;
-    case 'Autumn',    cmap = autumn(sizeCmap); newMapFlag = 1;
-    case 'Spring',    cmap = spring(sizeCmap); newMapFlag = 1;
-    case 'Winter',    cmap = winter(sizeCmap); newMapFlag = 1;
-    case 'Summer',    cmap = summer(sizeCmap); newMapFlag = 1;
-
-
+            if strcmpi(inCmapName, defaultCmapNames{i})
+                cmapFcn = str2func(lower(inCmapName));
+                cmap= cmapFcn(sizeCmap);
+                newMapFlag = 1;
+            end
+          
+        end
+        
+        if ~newMapFlag
+            % didn't find a matching colormap; do nothing;
+            %outCmaps     = aD.cMapData.allColormaps ;
+            %outCmapValues= aD.cMapData.allCmapValues;
+            outCmapValue  = inCmapValue ;
+            outCmapNames  = inCmapNames;
+        end
 end
 
 if newMapFlag
@@ -610,7 +591,7 @@ function Auto_WL_Reset(~,~,hFig)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-aD = getAD(hFig)
+aD = getAD(hFig);
 
 apply_all = aD.hGUI.Apply_to_popupmenu.Value;
 clims = aD.allClims;
@@ -659,7 +640,6 @@ hCurrentAxes_index = find(aD.hAllAxes==aD.hCurrentAxes);
 
 win = str2double(aD.hGUI.Window_value_edit.String);
 lev = str2double(aD.hGUI.Level_value_edit.String);
-
 
 if isnumeric(win) && isnumeric(lev)
     % update the current graph or all the graphs...
@@ -723,9 +703,9 @@ switch data.Key
             end;
         end
         Set_Colormap([], [], aD.hFig)
-
 end
-
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -804,38 +784,21 @@ close(hFig);
 function Cmap_Value = findColormap(Current_Cmap, CmapListCellString)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Determine the current figure's colomrap by comparing it with
+% Determine the current figure's colormap by comparing it with
 % the established colormaps of the same size
 dispDebug;
 
 Cmap_Value = 1; % default
 
-for i = 1:length(CmapListCellString)
-    switch CmapListCellString{i}
-        case 'Parula', test_cmap = parula(size(Current_Cmap,1));
-        case 'Gray',   test_cmap = gray(  size(Current_Cmap,1));
-        case 'Jet',    test_cmap = jet(   size(Current_Cmap,1));
-        case 'Hsv',    test_cmap = hsv(   size(Current_Cmap,1));
-        case 'Hot',    test_cmap = hot(   size(Current_Cmap,1));
-        case 'Bone',   test_cmap = bone(  size(Current_Cmap,1));
-        case 'Copper', test_cmap = copper(size(Current_Cmap,1));
-        case 'Pink',   test_cmap = pink(  size(Current_Cmap,1));
-        case 'White',  test_cmap = white( size(Current_Cmap,1));
-        case 'Flag',   test_cmap = flag(  size(Current_Cmap,1));
-        case 'Lines',  test_cmap = lines( size(Current_Cmap,1));
-        case 'Colorcube', test_cmap = colorcube(size(Current_Cmap,1));
-        case 'Prism',  test_cmap = prism( size(Current_Cmap,1));
-        case 'Cool',   test_cmap = cool(  size(Current_Cmap,1));
-        case 'Autumn', test_cmap = autumn(size(Current_Cmap,1));
-        case 'Spring', test_cmap = spring(size(Current_Cmap,1));
-        case 'Winter', test_cmap = winter(size(Current_Cmap,1));
-        case 'Summer', test_cmap = summer(size(Current_Cmap,1));
-    end;
-    if isempty(find(test_cmap - Current_Cmap, 1))
+for i=1:length(CmapListCellString)
+    cmapFcn = str2func(lower(CmapListCellString{i}));
+    testCmap= cmapFcn(size(Current_Cmap,1));
+    
+    if isempty(find(testCmap - Current_Cmap, 1))
         Cmap_Value = i;
         return;
     end;
-end;
+end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -913,12 +876,14 @@ function cmap_cell = defineColormaps
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 cmap_cell = {...
-    'Parula','Gray'  ,'Jet'    ,...
-    'Hsv'   ,'Hot'   ,'Bone'   ,...
-    'Copper','Pink'  ,'White'  ,...
-    'Flag'  ,'Lines' ,'Colorcube',...
-    'Prism' ,'Cool'  ,'Autumn',...
-    'Spring','Winter','Summer'}';  %add new colormaps at the end of the list;
+    'Parula';'Gray'  ;'Jet'    ;...
+    'Hsv'   ;'Hot'   ;'Bone'   ;...
+    'Copper';'Pink'  ;'White'  ;...
+    'Flag'  ;'Lines' ;'Colorcube';...
+    'Prism' ;'Cool'  ;'Autumn' ;...
+    'Spring';'Winter';'Summer' ;...
+    'ecg_cmap'; 't1_cmap'; 'perfusion_cmap';...
+    };  %add new colormaps at the end of the list;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1054,16 +1019,3 @@ for i = 1:size(propList,1)
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% %% %%%%%%%%%%%%%%%%%%%%%%%%
-% %
-% function restoreOrigData(hFig, propList)
-% %
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% % Restore previous WBDF etc to restore state after WL is done.
-% dispDebug;
-% for i = 1:size(propList,1)
-%   hFig.(propList{i,1}) = propList{i,2};
-% end
-% %
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%
