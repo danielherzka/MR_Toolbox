@@ -33,6 +33,7 @@ end;
 % Set or clear global debug flag
 global DB; DB = 1;
 
+% List of Actions responding to GUI 
 switch Action
     case 'New', 	                     Create_New_Objects;
     case 'Activate_WL',		             Activate_WL(varargin{:});
@@ -70,8 +71,8 @@ objNames = retrieveNames;
 %Create Button
 [hButton, hToolbar] = hUtils.createButtonObject(hFig, ...
     makeButtonImage, ...
-    'WL_tool(''Activate_WL'');', ...
-    'WL_tool(''Deactivate_WL'');',...
+    {@Activate_WL,hFig}, ...
+    {@Deactivate_WL,hFig},...
     objNames.buttonTag, ...
     objNames.buttonToolTipString);
 
@@ -81,6 +82,7 @@ hMenu  = hUtils.createMenuObject(hFig, ...
     @Menu_WL);
 
 if ~isempty(hButton)
+    aD.Name        = 'WL';
     aD.hUtils      = hUtils;
     aD.hRoot       = groot;
     aD.hFig        = hFig;
@@ -98,13 +100,13 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Activate_WL(varargin)
+function Activate_WL(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
 %% PART I - Environment
-aD = getAD;
+aD = getAD(hFig);
 
 % Check the menu object
 if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
@@ -147,13 +149,13 @@ aD.hMenu.Tag   = [aD.hMenu.Tag, '_On'];
 aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
 
 % Set callbacks
-aD.hFig.WindowButtonDownFcn   = 'WL_tool(''Adjust_On'');';
-aD.hFig.WindowButtonUpFcn     = 'WL_tool(''Adjust_WL_For_All''); ';
+aD.hFig.WindowButtonDownFcn   = {@Adjust_On, aD.hFig};
+aD.hFig.WindowButtonUpFcn     = {@Adjust_WL_For_All, aD.hFig};
 aD.hFig.WindowButtonMotionFcn = '';
 aD.hFig.WindowKeyPressFcn     = @Key_Press_CopyPaste;
 
 % Draw faster and without flashes
-aD.hFig.CloseRequestFcn = @Close_Parent_Figure;
+aD.hFig.CloseRequestFcn       = @Close_Parent_Figure;
 aD.hFig.Renderer = 'zbuffer';
 aD.hRoot.CurrentFigure = aD.hFig;
 [aD.hAllAxes.SortMethod] = deal('Depth');
@@ -173,8 +175,14 @@ end
 aD.hGUI = guihandles(aD.hToolFig);
 
 aD.hToolFig.Name = aD.objectNames.figName;
-aD.hToolFig.CloseRequestFcn = @Close_Request_Callback;
+aD.hToolFig.CloseRequestFcn = {@Close_Request_Callback, aD.hFig};
 
+% Set Object callbacks; return hFig for speed
+aD.hGUI.Colormap_popupmenu.Callback = {@Set_Colormap, aD.hFig};
+aD.hGUI.Window_value_edit.Callback  = {@Edit_Adjust, aD.hFig};
+aD.hGUI.Level_value_edit.Callback   = {@Edit_Adjust, aD.hFig};
+aD.hGUI.Auto_pushbutton.Callback    = {@Auto_WL_Reset, aD.hFig};
+aD.hGUI.Reset_pushbutton.Callback   = {@WL_Reset, aD.hFig};
 
 %%  PART III - Finish setup for other objects
 
@@ -203,7 +211,7 @@ if isempty(aD.cMapData)
 
     storeAD(aD);
     updateColormapPopupmenu
-    Set_Colormap; %(aD.hGUI.Colormap_popupmenu);
+    Set_Colormap([], [], aD.hFig); %(aD.hGUI.Colormap_popupmenu);
 
 else
     dispDebug('Return Call');
@@ -221,12 +229,13 @@ aD.hGUI.Level_value_edit.Enable   = 'Off';
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Deactivate_WL(varargin)
+function Deactivate_WL(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
+
 if ~isempty(aD.hButton)
     aD.hButton.Tag = aD.hButton.Tag(1:end-3);
 end
@@ -261,15 +270,15 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Adjust_On
+function Adjust_On(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Execute once at the beggining of a drag cycle
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
-aD.hFig.WindowButtonMotionFcn = 'WL_tool(''Adjust_WL'');';
+aD.hFig.WindowButtonMotionFcn = {@Adjust_WL, aD.hFig};
 aD.hCurrentAxes = gca;
 
 
@@ -280,18 +289,18 @@ aD.refCLim  = aD.hCurrentAxes.CLim;
 %hButton.UserData = [point(1,1) point(1,2), Clim];
 storeAD(aD);
 updateColormapPopupmenu;
-Adjust_WL;
+Adjust_WL([],[],aD.hFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Adjust_WL
+function Adjust_WL(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
 aD.hCurrentAxes = gca;
 point = aD.hCurrentAxes.CurrentPoint;
@@ -330,14 +339,14 @@ storeAD(aD); % Need hCurrentAxes to be perm? If not, don't need store
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Adjust_WL_For_All
+function Adjust_WL_For_All(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Execute once after window/level is done
 % Check to see if all images in slice should be rescaled
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
 aD.hFig.WindowButtonMotionFcn = ' ';
 
@@ -380,7 +389,7 @@ storeAD(aD);
 % Update editable text boxes
 Update_Window_Level(newWin, newLev);
 
-Set_Colormap;
+Set_Colormap([], [], aD.hFig);
 
 figure(aD.hToolFig);
 figure(aD.hFig);
@@ -401,7 +410,7 @@ aD.hGUI.Level_value_edit.String  = num2str(lev,5) ;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Set_Colormap
+function Set_Colormap(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Change the colormap to the one specified by the popupmenu
@@ -410,7 +419,7 @@ function Set_Colormap
 % Take advantage of colormap-per-axes functionality.
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
 inCmapValue = aD.hGUI.Colormap_popupmenu.Value;
 inCmapNames = aD.hGUI.Colormap_popupmenu.String;
@@ -547,12 +556,12 @@ figure(aD.hFig);
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function WL_Reset
+function WL_Reset(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
 apply_all = aD.hGUI.Apply_to_popupmenu.Value;
 clims = aD.allClims;
@@ -596,12 +605,12 @@ Update_Window_Level(win, lev);
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Auto_WL_Reset
+function Auto_WL_Reset(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig)
 
 apply_all = aD.hGUI.Apply_to_popupmenu.Value;
 clims = aD.allClims;
@@ -638,12 +647,12 @@ Update_Window_Level(win, lev);
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Edit_Adjust
+function Edit_Adjust(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
 apply_all      = aD.hGUI.Apply_to_popupmenu.Value;
 hCurrentAxes_index = find(aD.hAllAxes==aD.hCurrentAxes);
@@ -713,7 +722,7 @@ switch data.Key
                 aD.hGUI.Colormap_popupmenu.Value = aD.copy.CMapValue;
             end;
         end
-        Set_Colormap;
+        Set_Colormap([], [], aD.hFig)
 
 end
 
@@ -746,11 +755,11 @@ end;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Close_Request_Callback(varargin)
+function Close_Request_Callback(~,~,hFig)
 %
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
 old_SHH = aD.hRoot.ShowHiddenHandles;
 aD.hRoot.ShowHiddenHandles = 'On';
@@ -764,7 +773,7 @@ aD.hRoot.ShowHiddenHandles= old_SHH;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Close_Parent_Figure
+function Close_Parent_Figure(hFig,~)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function to make sure that if parent figure is closed,
@@ -780,7 +789,6 @@ else
     objNames = retrieveNames;
     hToolFig = findobj(groot, 'Tag', objNames.figTag);
 end
-
 delete(hToolFig);
 hFig.CloseRequestFcn = 'closereq';
 close(hFig);
@@ -920,7 +928,7 @@ function structNames = retrieveNames
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 structNames.toolName            = 'WL_tool';
-structNames.buttonTag           = 'figWindowLevel';
+structNames.buttonTag           = 'figButtonWL';
 structNames.buttonToolTipString = 'Set Image Window Level';
 structNames.menuTag             = 'menuWindowLevel';
 structNames.menuLabel           = 'Window and Level';
@@ -952,93 +960,44 @@ h_root.ShowHiddenHandles = old_SHH;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-% function [hToolbar_Children, origToolEnables, origToolStates ] = disableToolbarButtons(hToolbar, currentToolName)
-% %
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% dispDebug;
-% hRoot = groot;
-% old_SHH = hRoot.ShowHiddenHandles;
-% hRoot.ShowHiddenHandles = 'on';
-%
-% hToolbar_Children = hToolbar.Children;
-%
-% origToolEnables = cell(size(hToolbar_Children));
-% origToolStates  = cell(size(hToolbar_Children));
-%
-%
-% for i = 1:length(hToolbar_Children)
-%     if ~strcmpi(hToolbar_Children(i).Tag, currentToolName)
-%         if isprop(hToolbar_Children(i), 'Enable')
-%             origToolEnables{i} =  hToolbar_Children(i).Enable;
-%             hToolbar_Children(i).Enable ='off';
-%         end
-%         if isprop(hToolbar_Children(i), 'State')
-%             origToolStates{i}  =  hToolbar_Children(i).State;
-%             hToolbar_Children(i).Enable ='off';
-%         end
-%     end
-% end
-%
-% hRoot.ShowHiddenHandles = old_SHH;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% %% %%%%%%%%%%%%%%%%%%%%%%%%
-% %
-% function enableToolbarButtons(hToolbar_Children, origToolEnables, origToolStates)
-% %
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% dispDebug;
-%
-% for i = 1:length(hToolbar_Children)
-%     if isprop(hToolbar_Children(i), 'Enable') && ~isempty(origToolEnables{i})
-%         hToolbar_Children(i).Enable = origToolEnables{i};
-%     end
-%     if isprop(hToolbar_Children(i), 'State') && ~isempty(origToolStates{i})
-%         hToolbar_Children(i).State = origToolStates{i};
-%     end
-% end
-% %
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
 function  storeAD(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
-setappdata(aD.hFig, 'WLData', aD);
+setappdata(aD.hFig, aD.Name, aD);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  aD = getAD
+function  aD = getAD(hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Retrieve application data stored within Active Figure (aka image figure)
+%  Appdata name depends on tool. 
 dispDebug;
+tic %dbg
 
-% fastest way to find figure; doesn't work during Create
-tic
-aD = [];
-hFig = findobj(groot, 'Tag', 'ActiveFigure'); %flat?
+aDName=dbstack;
+aDName=aDName(end).file(1:2);
 
-
-if isempty(hFig)
-    % Call from Activate
-    objNames = retrieveNames;
-    obj = findHiddenObj('Tag', objNames.buttonTag);
-    while ~strcmpi(obj.Type, 'Figure')
-        obj = obj.Parent;
+if nargin==0
+    % Search the children of groot
+    hFig = findobj(groot, 'Tag', 'ActiveFigure', '-depth', 1); 
+    if isempty(hFig)
+        % hFig hasn't been found (likely first call) during Activate
+        obj = findobj('-regexp', 'Tag', ['\w*Button', aDName,'\w*']);
+        hFig = obj(1).Parent.Parent;
     end
-    hFig = obj;
 end
 
-if isappdata(hFig, 'WLData')
-    aD = getappdata(hFig, 'WLData');
+if isappdata(hFig, aDName)
+    aD = getappdata(hFig, aDName);
+else
+    aD = [];
 end
 
-dispDebug(['end (',num2str(toc),')']);
+dispDebug(['end (',num2str(toc),')']); %dbg
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
