@@ -59,7 +59,7 @@ function Create_New_Objects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-hUtils = MR_Toolbox_Utilities;
+hUtils = MR_utilities;
 
 hFig = gcf;
 
@@ -81,6 +81,7 @@ hMenu  = hUtils.createMenuObject(hFig,...
 
 % If button doesn't exist
 if ~isempty(hButton)
+    aD.Name        = 'MV';
     aD.hUtils      =  hUtils;
     aD.hRoot       =  groot;
     aD.hFig        =  hFig;
@@ -112,6 +113,7 @@ dispDebug;
 
 %% PART I - Environment
 aD = getAD;
+aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
 
 if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
 
@@ -121,10 +123,6 @@ aD.hToolbar = findobj(aD.hToolbar, 'Tag', 'FigureToolBar');
 if ~isempty(aD.hToolbar)
     [aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates ] = ...
         aD.hUtils.disableToolbarButtons(aD.hToolbar,aD.objectNames.buttonTag);
-  
-    % Enable save_prefs tool button
-    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
-    aD.hSP.Enable = 'On';
 end;
 
 % Store initial state of all axes in current figure for reset
@@ -151,9 +149,10 @@ pause(0.5);
 
 % Make it easy to find this button (tack on 'On') 
 % Wait until after old fig is closed.
-aD.hButton.Tag = [aD.hButton.Tag,'_On'];
+aD.hButton.Tag   = [aD.hButton.Tag,'_On'];
 aD.hMenuPZ.Tag   = [aD.hMenu.Tag, '_On'];
-aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
+
+% Set callbacks
 aD.hFig.CloseRequestFcn = @Close_Parent_Figure;
 
 % Draw faster and without flashes
@@ -164,21 +163,43 @@ aD.hRoot.CurrentFigure = aD.hFig;
 %% PART II - Create GUI Figure
 aD.hToolFig = openfig(aD.objectNames.figFilename,'reuse');
 
-% Load Save preferences tool data
-optionalUIControls = { ...
-    'Apply_radiobutton',    'Value'; ...
-    'Frame_Rate_edit',      'String'; ...
-    'Make_Avi_checkbox',    'Value'; ...
-    'Make_Mat_checkbox',    'Value'; ...
-    'Show_Frames_checkbox', 'Value'; ... 
-    };
-aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
+% Enable save_prefs tool button
+if ~isempty(aD.hToolbar)
+    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
+    aD.hSP.Enable = 'On';
+    optionalUIControls = { ...
+        'Apply_radiobutton',     'Value'; ...
+        'Frame_Rate_edit',       'String'; ...
+        'Make_Avi_checkbox',     'Value'; ...
+        'Make_Mat_checkbox',     'Value'; ...
+        'Show_Frames_checkbox',  'Value'; ...
+        'Show_Objects_checkbox', 'Value';...
+        };
+    aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
+end
 
 % Generate a structure of handles to pass to callbacks, and store it. 
 aD.hGUI = guihandles(aD.hToolFig);
 
 aD.hToolFig.Name = aD.objectNames.figName;
-aD.hToolFig.CloseRequestFcn = @Close_Request_Callback;
+aD.hToolFig.CloseRequestFcn = {@aD.hUtils.Close_Request_Callback, aD.hFig};
+
+% Set Object callbacks; return hFig for speed
+aD.hGUI.Reset_pushbutton.Callback        = {@Reset_Frame_Limit, aD.hFig};
+aD.hGUI.Min_Frame_edit.Callback          = {@Set_Frame_Limit, aD.hFig};
+aD.hGUI.Frame_Value_edit.Callback        = {@Set_Fram, aD.hFig};
+aD.hGUI.Max_Frame_edit.Callback          = {@Set_Frame_Limit, aD.hFig};
+aD.hGUI.Rewind_pushbutton.Callback       = {@Limit, aD.hFig, -1};
+aD.hGUI.Step_Rewind_pushbutton.Callback  = {@Step, aD.hFig, -1};
+aD.hGUI.Step_Forward_pushbutton.Callback = {@Step, aD.hFig, 1};
+aD.hGUI.Forward_pushbutton.Callback      = {@Limit, aD.hFig 1};
+aD.hGUI.Stop_pushbutton.Callback         = {@Stop_Movie, aD.hFig};
+aD.hGUI.Play_pushbutton.Callback         = {@Play_Movie, aD.hFig};
+aD.hGUI.Frame_Rate_edit.Callback         = {@Set_Frame, aD.hFig};
+aD.hGUI.Make_Movie_pushbutton.Callback   = {@Make_Movie, aD.hFig};
+aD.hGUI.Show_Frames_checkbox.Callback    = {@Show_Frames, aD.hFig};
+aD.hGUI.Show_Objects_checkbox.Callback   = {@Show_Objects, aD.hFig};
+aD.hGUI.Object_List_popupmenu.Callback   = {@Toggle_Object, aD.hFig};
 
 %%  PART III - Finish setup for other objects
 [aD.hAllAxes(:).ButtonDownFcn] = deal('MV_tool(''Set_Current_Axes'')');
@@ -244,8 +265,8 @@ if ~isempty(aD.hObjects)
 end;
 
 %Disable save_prefs tool button
-if ishghandle(aD.hSP)
-aD.SP.Enable = 'Off';
+if ~isempty(aD.hSP) %?ishghandle?
+    aD.SP.Enable = 'Off';
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -944,22 +965,7 @@ close(hFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function Close_Request_Callback(varargin)
-% using function handle for callback -> two input arguments are necessary
-dispDebug;
 
-aD = getAD;
-
-old_SHH = aD.hRoot.ShowHiddenHandles;
-aD.hRoot.ShowHiddenHandles = 'On';
-
-%call->MV_tool('Deactivate_MV');
-aD.hButton.State = 'off';
-aD.hRoot.ShowHiddenHandles= old_SHH;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%START SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1040,42 +1046,77 @@ function  storeAD(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
-setappdata(aD.hFig, 'MVData', aD);
+setappdata(aD.hFig, aD.Name, aD);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% %% %%%%%%%%%%%%%%%%%%%%%%%%
+% %
+% function  aD = getAD
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% dispDebug;
+% 
+% % fastest way to find figure; doesn't work during Create
+% tic
+% aD = [];
+% 
+% hFig = findobj(groot, 'Tag', 'ActiveFigure'); %flat?
+% 
+% 
+% if isempty(hFig)
+%     % Call from Activate
+%     objNames = retrieveNames;
+%     hUtils = MR_Toolbox_Utilities;
+%     obj = hUtils.findHiddenObj('Tag', objNames.buttonTag);
+%     while ~strcmpi(obj.Type, 'Figure')
+%         obj = obj.Parent;
+%     end
+%     hFig = obj;
+% end
+% 
+% if isappdata(hFig, 'MVData')
+%     aD = getappdata(hFig, 'MVData');
+% end
+% 
+% dispDebug(['end (',num2str(toc),')']);
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  aD = getAD
+function  aD = getAD(hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Retrieve application data stored within Active Figure (aka image figure)
+%  Appdata name depends on tool. 
 dispDebug;
+tic %dbg
 
-% fastest way to find figure; doesn't work during Create
-tic
-aD = [];
+aDName=dbstack;
+aDName=aDName(end).file(1:2);
 
-hFig = findobj(groot, 'Tag', 'ActiveFigure'); %flat?
-
-
-if isempty(hFig)
-    % Call from Activate
-    objNames = retrieveNames;
-    hUtils = MR_Toolbox_Utilities;
-    obj = hUtils.findHiddenObj('Tag', objNames.buttonTag);
-    while ~strcmpi(obj.Type, 'Figure')
-        obj = obj.Parent;
+if nargin==0
+    % Search the children of groot
+    hFig = findobj(groot, 'Tag', 'ActiveFigure', '-depth', 1); 
+    if isempty(hFig)
+        % hFig hasn't been found (likely first call) during Activate
+        obj = findobj('-regexp', 'Tag', ['\w*Button', aDName,'\w*']);
+        hFig = obj(1).Parent.Parent;
     end
-    hFig = obj;
 end
 
-if isappdata(hFig, 'MVData')
-    aD = getappdata(hFig, 'MVData');
+if isappdata(hFig, aDName)
+    aD = getappdata(hFig, aDName);
+else
+    dispDebug('no aD!'); %dbg
+    aD = [];
 end
 
-dispDebug(['end (',num2str(toc),')']);
+dispDebug(['end (',num2str(toc),')']); %dbg
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %

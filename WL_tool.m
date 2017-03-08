@@ -22,40 +22,28 @@ function WL_tool(varargin)
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Lobby Function
-
-if isempty(varargin)
-    Action = 'New';
-else
-    Action = varargin{1};
-end;
 
 % Set or clear global debug flag
 global DB; DB = 1;
 dispDebug('Lobby');
+Create_New_Objects;
 
+% List of callback functions acceesed from outside in response to GUI 
+%      Activate_WL,		           Activate_WL
+%      Deactivate_WL,              Deactivate_WL
+%      Adjust_On, 		           Adjust_On;         % Entry
+%      Adjust_WL, 	 	           Adjust_WL;         % Cycle
+%      Adjust_WL_For_All,          Adjust_WL_For_All; % Exit
+%      Edit_Adjust,                Edit_Adjust;
+%      Set_Colormap,               Set_Colormap;
+%      Menu_WL,                    Menu_WL;
+%      WL_Reset,                   WL_Reset;
+%      Auto_WL_Reset,              Auto_WL_Reset;
+%      Key_Press_CopyPaste,        Key_Press_CopyPaste
+%      Close_Request_Callback,     Close_Request_Callback;
+%      Close_Parent_Figure,    	   Close_Parent_Figure;
 
-
-% List of Actions responding to GUI 
-switch Action
-    case 'New', 	                       Create_New_Objects;
-%     case 'Activate_WL',		           Activate_WL(varargin{:});
-%     case 'Deactivate_WL',                Deactivate_WL(varargin{2:end});
-%     case 'Adjust_On', 		           Adjust_On;         % Entry
-%     case 'Adjust_WL', 	 	           Adjust_WL;         % Cycle
-%     case 'Adjust_WL_For_All',            Adjust_WL_For_All; % Exit
-%     case 'Edit_Adjust',                  Edit_Adjust;
-%     case 'Set_Colormap',                 Set_Colormap;
-%     case 'Menu_WL',                      Menu_WL;
-%     case 'WL_Reset',                     WL_Reset;
-%     case 'Auto_WL_Reset',                Auto_WL_Reset;
-%     case 'Key_Press_CopyPaste',          Key_Press_CopyPaste(varargin{2:end});
-%     case 'Close_Request_Callback',       Close_Request_Callback;
-%     case 'Close_Parent_Figure',    	     Close_Parent_Figure;
-    otherwise
-        disp(['Unimplemented Functionality: ', Action]);
-end;
-%
+%  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,7 +53,7 @@ function Create_New_Objects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-hUtils = MR_Toolbox_Utilities;
+hUtils = MR_utilities;
 
 hFig = gcf;
 
@@ -110,6 +98,7 @@ dispDebug;
 
 %% PART I - Environment
 aD = getAD(hFig);
+aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
 
 % Check the menu object
 if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
@@ -149,16 +138,15 @@ pause(0.5);
 % Wait until after old fig is closed.
 aD.hButton.Tag = [aD.hButton.Tag,'_On'];
 aD.hMenu.Tag   = [aD.hMenu.Tag, '_On'];
-aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
 
 % Set callbacks
 aD.hFig.WindowButtonDownFcn   = {@Adjust_On, aD.hFig};
 aD.hFig.WindowButtonUpFcn     = {@Adjust_WL_For_All, aD.hFig};
 aD.hFig.WindowButtonMotionFcn = '';
 aD.hFig.WindowKeyPressFcn     = @Key_Press_CopyPaste;
+aD.hFig.CloseRequestFcn       = @Close_Parent_Figure;
 
 % Draw faster and without flashes
-aD.hFig.CloseRequestFcn       = @Close_Parent_Figure;
 aD.hFig.Renderer = 'zbuffer';
 aD.hRoot.CurrentFigure = aD.hFig;
 [aD.hAllAxes.SortMethod] = deal('Depth');
@@ -178,7 +166,7 @@ end
 aD.hGUI = guihandles(aD.hToolFig);
 
 aD.hToolFig.Name = aD.objectNames.figName;
-aD.hToolFig.CloseRequestFcn = {@Close_Request_Callback, aD.hFig};
+aD.hToolFig.CloseRequestFcn = {@aD.hUtils.Close_Request_Callback, aD.hFig};
 
 % Set Object callbacks; return hFig for speed
 aD.hGUI.Colormap_popupmenu.Callback = {@Set_Colormap, aD.hFig};
@@ -671,11 +659,11 @@ function Key_Press_CopyPaste(~, data)
 dispDebug;
 
 aD = getAD;
+hCurrentAxes_idx = find(aD.hCurrentAxes==aD.hAllAxes);
 
 switch data.Key
     case 'c' %copy
         aD.copy.CLim = aD.hCurrentAxes.CLim;
-        hCurrentAxes_idx = find(aD.hCurrentAxes==aD.hAllAxes);
         aD.copy.CMapValue = aD.cMapData.allCmapValues(hCurrentAxes_idx);
         aD.copy.CMap      = aD.cMapData.allColormaps{hCurrentAxes_idx};
         storeAD(aD);
@@ -685,18 +673,17 @@ switch data.Key
         if     apply_all == 1,                hAxesInterest = aD.hCurrentAxes;
         elseif apply_all == 2,                hAxesInterest = aD.hAllAxes;
         elseif apply_all == 3,
-            if (mod(hCurrentAxes_index,2)),   hAxesInterest = aD.hAllAxes(1:2:end);
+            if (mod(hCurrentAxes_idx,2)),     hAxesInterest = aD.hAllAxes(1:2:end);
             else                              hAxesInterest = aD.hAllAxes(2:2:end);
             end;
-        elseif apply_all == 4,                hAxesInterest = aD.hAllAxes(1:hCurrentAxes_index);
-        elseif apply_all == 5,                hAxesInterest = aD.hAllAxes(hCurrentAxes_index:end);
+        elseif apply_all == 4,                hAxesInterest = aD.hAllAxes(1:hCurrentAxes_idx);
+        elseif apply_all == 5,                hAxesInterest = aD.hAllAxes(hCurrentAxes_idx:end);
         end
 
         aD.copy
 
         if ~isempty(aD.copy.CLim)
-            % XXX what happens if there is a change in CMap_PUP String and
-            % Value is not longer suitable/correct?
+
             for i = 1:length(hAxesInterest)
                 hAxesInterest(i).CLim = aD.copy.CLim;
                 aD.cMapData.allColormaps{hAxesInterest(i)==aD.hAllAxes} = aD.copy.CMap;
@@ -736,23 +723,23 @@ end;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function Close_Request_Callback(~,~,hFig)
-%
-dispDebug;
-
-aD = getAD(hFig);
-
-old_SHH = aD.hRoot.ShowHiddenHandles;
-aD.hRoot.ShowHiddenHandles = 'On';
-
-%call->WL_tool('Deactivate_WL');
-aD.hButton.State = 'off';
-
-aD.hRoot.ShowHiddenHandles= old_SHH;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %% %%%%%%%%%%%%%%%%%%%%%%%%
+% %
+% function Close_Request_Callback(~,~,hFig)
+% %
+% dispDebug;
+% 
+% aD = getAD(hFig);
+% 
+% old_SHH = aD.hRoot.ShowHiddenHandles;
+% aD.hRoot.ShowHiddenHandles = 'On';
+% 
+% %call->WL_tool('Deactivate_WL');
+% aD.hButton.State = 'off';
+% 
+% aD.hRoot.ShowHiddenHandles= old_SHH;
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -763,7 +750,7 @@ function Close_Parent_Figure(hFig,~)
 % the ROI info and ROI Tool are closed too.
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 if ~isempty(aD)
     hToolFig = aD.hToolFig;
 else
@@ -885,7 +872,7 @@ cmap_cell = {...
     'Flag'  ;'Lines' ;'Colorcube';...
     'Prism' ;'Cool'  ;'Autumn' ;...
     'Spring';'Winter';'Summer' ;...
-    'ecg_cmap'; 't1_cmap'; 'perfusion_cmap';...
+    'ecv_cmap'; 't1_cmap'; 'perf_cmap';...
     };  %add new colormaps at the end of the list;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -962,6 +949,7 @@ end
 if isappdata(hFig, aDName)
     aD = getappdata(hFig, aDName);
 else
+    dispDebug('no aD!'); %dbg
     aD = [];
 end
 
