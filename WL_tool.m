@@ -35,24 +35,23 @@ global DB; DB = 1;
 
 % List of Actions responding to GUI 
 switch Action
-    case 'New', 	                     Create_New_Objects;
-    case 'Activate_WL',		             Activate_WL(varargin{:});
-    case 'Deactivate_WL',                Deactivate_WL(varargin{2:end});
-    case 'Adjust_On', 		             Adjust_On;         % Entry
-    case 'Adjust_WL', 	 	             Adjust_WL;         % Cycle
-    case 'Adjust_WL_For_All',            Adjust_WL_For_All; % Exit
-    case 'Edit_Adjust',                  Edit_Adjust;
-    case 'Set_Colormap',                 Set_Colormap;
-    case 'Menu_WL',                      Menu_WL;
-    case 'WL_Reset',                     WL_Reset;
-    case 'Auto_WL_Reset',                Auto_WL_Reset;
-    case 'Key_Press_CopyPaste',          Key_Press_CopyPaste(varargin{2:end});
-    case 'Close_Request_Callback',       Close_Request_Callback;
-    case 'Close_Parent_Figure',    	     Close_Parent_Figure;
+    case 'New', 	                       Create_New_Objects;
+%     case 'Activate_WL',		           Activate_WL(varargin{:});
+%     case 'Deactivate_WL',                Deactivate_WL(varargin{2:end});
+%     case 'Adjust_On', 		           Adjust_On;         % Entry
+%     case 'Adjust_WL', 	 	           Adjust_WL;         % Cycle
+%     case 'Adjust_WL_For_All',            Adjust_WL_For_All; % Exit
+%     case 'Edit_Adjust',                  Edit_Adjust;
+%     case 'Set_Colormap',                 Set_Colormap;
+%     case 'Menu_WL',                      Menu_WL;
+%     case 'WL_Reset',                     WL_Reset;
+%     case 'Auto_WL_Reset',                Auto_WL_Reset;
+%     case 'Key_Press_CopyPaste',          Key_Press_CopyPaste(varargin{2:end});
+%     case 'Close_Request_Callback',       Close_Request_Callback;
+%     case 'Close_Parent_Figure',    	     Close_Parent_Figure;
     otherwise
         disp(['Unimplemented Functionality: ', Action]);
 end;
-
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
