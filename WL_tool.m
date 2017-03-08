@@ -32,6 +32,9 @@ end;
 
 % Set or clear global debug flag
 global DB; DB = 1;
+dispDebug('Lobby');
+
+
 
 % List of Actions responding to GUI 
 switch Action

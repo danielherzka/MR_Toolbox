@@ -192,7 +192,6 @@ h_root.ShowHiddenHandles = old_SHH;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function  [hButton, hToolbar] = createButtonObject(...
@@ -204,6 +203,7 @@ function  [hButton, hToolbar] = createButtonObject(...
     buttonToolTipString)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+utilDispDebug;
 hToolbar = findall(hFig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
 
 % If the toolbar exists and the button has not been previously created
@@ -243,6 +243,7 @@ end
 function  hMenu = createMenuObject(hFig, menuTag,menuLabel,callback)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+utilDispDebug;
 hToolMenu = findall(hFig, 'Label', '&Tools');
 
 if ~isempty(hToolMenu) && isempty(findobj(hToolMenu,'Tag', menuTag))
@@ -267,7 +268,6 @@ if ~isempty(hToolMenu) && isempty(findobj(hToolMenu,'Tag', menuTag))
 else
     hMenu = [];
 end
-
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -287,10 +287,9 @@ else %hButton
     hMenu.Checked = 'on';
     hButton.State = 'on';
 end;
-%
+
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 
