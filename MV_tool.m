@@ -68,8 +68,8 @@ objNames = retrieveNames;
 %Create Button
 [hButton, hToolbar] = hUtils.createButtonObject(hFig, ...
     makeButtonImage, ...
-    'MV_tool(''Activate_MV'');', ...
-    'MV_tool(''Deactivate_MV'');',...
+    {@Activate_MV, hFig}, ...
+    {@Deactivate_MV, hFig},...
     objNames.buttonTag, ...
     objNames.buttonToolTipString);
 
@@ -79,41 +79,39 @@ hMenu  = hUtils.createMenuObject(hFig,...
     objNames.menuLabel, ...
     @Menu_MV);
 
-% If button doesn't exist
-if ~isempty(hButton)
-    aD.Name        = 'MV';
-    aD.hUtils      =  hUtils;
-    aD.hRoot       =  groot;
-    aD.hFig        =  hFig;
-    aD.hButton     =  hButton;
-    aD.hMenu       =  hMenu;
-    aD.hToolbar    =  hToolbar;
-    aD.objectNames =  objNames;
-    
-    storeAD(aD);
-    
-    hAllAxes = findobj(aD.hFig, 'Type', 'Axes');
-    
-    
-    if isempty(getappdata(hAllAxes(1), 'CurrentImage'))
-        % Current images do not have hidden dimension data
-        % Assume if one axis has hidden dimension, all do.
-        hButton.Enable=  'off';
-        if ~isempty(hMenu), hMenu.Enable= 'Off'; end
-    end;
-end
+aD.Name        = 'MV';
+aD.hUtils      =  hUtils;
+aD.hRoot       =  groot;
+aD.hFig        =  hFig;
+aD.hButton     =  hButton;
+aD.hMenu       =  hMenu;
+aD.hToolbar    =  hToolbar;
+aD.objectNames =  objNames;
+
+% store app data structure in tool-specific field
+setappdata(aD.hFig, aD.Name, aD);
+
+hAllAxes = findobj(aD.hFig, 'Type', 'Axes');
+
+if isempty(getappdata(hAllAxes(1), 'CurrentImage'))
+    % Current images do not have hidden dimension data
+    % Assume if one axis has hidden dimension, all do.
+    hButton.Enable=  'off';
+    if ~isempty(hMenu), hMenu.Enable= 'Off'; end
+end;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Activate_MV(varargin)
+function Activate_MV(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
 %% PART I - Environment
-aD = getAD;
+objNames = retrieveNames;
+aD = getappdata(hFig, objNames.Name); 
 aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
 
 if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
@@ -128,15 +126,11 @@ end;
 
 % Store initial state of all axes in current figure for reset
 aD.hAllAxes = flipud(findobj(aD.hFig,'Type','Axes'));
+aD.hCurrentAxes = aD.hAllAxes(1);
 aD.hAllImages = findAxesChildIm(aD.hAllAxes);
 
-% Obtain current axis
-aD.hRoot.CurrentFigure = aD.hFig;
-aD.hCurrentAxes=aD.hFig.CurrentAxes;
-if isempty(aD.hCurrentAxes)
-    aD.hCurrentAxes = aD.hAllAxes(1); 
-    aD.hFig.CurrentAxes = aD.hCurrentAxes;
-end;
+% Set current figure and axis
+aD = aD.hUtils.getHCurrentFigAxes(aD);
 
 % Store the figure's old infor within the fig's own userdata
 aD.origProperties      = aD.hUtils.retrieveOrigData(aD.hFig);
@@ -148,17 +142,15 @@ hToolFigOld = aD.hUtils.findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.f
 if ~isempty(hToolFigOld), close(hToolFigOld);end;
 pause(0.5);
 
-% Make it easy to find this button (tack on 'On') 
-% Wait until after old fig is closed.
+% Make it easy to find this button (tack on 'On') after old fig is closed
 aD.hButton.Tag   = [aD.hButton.Tag,'_On'];
 aD.hMenuPZ.Tag   = [aD.hMenu.Tag, '_On'];
 
-% Set callbacks
+% Set figure clsoe callback
 aD.hFig.CloseRequestFcn = @Close_Parent_Figure;
 
 % Draw faster and without flashes
 aD.hFig.Renderer = 'zbuffer';
-aD.hRoot.CurrentFigure = aD.hFig;
 [aD.hAllAxes.SortMethod] = deal('Depth');
 
 %% PART II - Create GUI Figure
@@ -166,7 +158,7 @@ aD.hToolFig = openfig(aD.objectNames.figFilename,'reuse');
 
 % Enable save_prefs tool button
 if ~isempty(aD.hToolbar)
-    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
+    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figButtonSP');
     aD.hSP.Enable = 'On';
     optionalUIControls = { ...
         'Apply_radiobutton',     'Value'; ...
@@ -183,12 +175,12 @@ end
 aD.hGUI = guihandles(aD.hToolFig);
 
 aD.hToolFig.Name = aD.objectNames.figName;
-aD.hToolFig.CloseRequestFcn = {@aD.hUtils.Close_Request_Callback, aD.hFig};
+aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};
 
 % Set Object callbacks; return hFig for speed
 aD.hGUI.Reset_pushbutton.Callback        = {@Reset_Frame_Limit, aD.hFig};
 aD.hGUI.Min_Frame_edit.Callback          = {@Set_Frame_Limit, aD.hFig};
-aD.hGUI.Frame_Value_edit.Callback        = {@Set_Fram, aD.hFig};
+aD.hGUI.Frame_Value_edit.Callback        = {@Set_Frame, aD.hFig};
 aD.hGUI.Max_Frame_edit.Callback          = {@Set_Frame_Limit, aD.hFig};
 aD.hGUI.Rewind_pushbutton.Callback       = {@Limit, aD.hFig, -1};
 aD.hGUI.Step_Rewind_pushbutton.Callback  = {@Step, aD.hFig, -1};
@@ -196,14 +188,14 @@ aD.hGUI.Step_Forward_pushbutton.Callback = {@Step, aD.hFig, 1};
 aD.hGUI.Forward_pushbutton.Callback      = {@Limit, aD.hFig 1};
 aD.hGUI.Stop_pushbutton.Callback         = {@Stop_Movie, aD.hFig};
 aD.hGUI.Play_pushbutton.Callback         = {@Play_Movie, aD.hFig};
-aD.hGUI.Frame_Rate_edit.Callback         = {@Set_Frame, aD.hFig};
+%aD.hGUI.Frame_Rate_edit.Callback         = {@Set_Frame, aD.hFig};
 aD.hGUI.Make_Movie_pushbutton.Callback   = {@Make_Movie, aD.hFig};
 aD.hGUI.Show_Frames_checkbox.Callback    = {@Show_Frames, aD.hFig};
 aD.hGUI.Show_Objects_checkbox.Callback   = {@Show_Objects, aD.hFig};
 aD.hGUI.Object_List_popupmenu.Callback   = {@Toggle_Object, aD.hFig};
 
 %%  PART III - Finish setup for other objects
-[aD.hAllAxes(:).ButtonDownFcn] = deal('MV_tool(''Set_Current_Axes'')');
+[aD.hAllAxes(:).ButtonDownFcn] = deal({@Set_Current_Axes, aD.hFig});
 aD.hRoot.CurrentFigure = aD.hFig;
 
 % Add frame number to each axes
@@ -217,11 +209,15 @@ aD.hFig.CurrentAxes = aD.hCurrentAxes;
 aD.hRoot.CurrentFigure = aD.hToolFig;
 
 aD.hGUI.Frame_Value_edit.String = num2str(getappdata(aD.hCurrentAxes,'CurrentImage'));	
+imageRangeAll = getappdata(aD.hCurrentAxes,'ImageRangeAll');
+aD.hGUI.Max_Frame_edit.String = num2str(imageRangeAll(2));	
+aD.hGUI.Min_Frame_edit.String = num2str(imageRangeAll(1));	
+
 aD.hObjects = []; 
 
 storeAD(aD);
 
-Set_Current_Axes(aD.hCurrentAxes);
+Set_Current_Axes(aD.hFig, aD.hCurrentAxes);
 %drawObjects(aD.hAllAxes);
 %Show_Objects;
 %
@@ -229,7 +225,7 @@ Set_Current_Axes(aD.hCurrentAxes);
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Deactivate_MV(varargin)
+function Deactivate_MV(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
@@ -237,7 +233,7 @@ dispDebug;
 global GLOBAL_STOP_MOVIE
 GLOBAL_STOP_MOVIE = 2;
 
-aD = getAD;
+aD = getAD(hFig);
 
 if ~isempty(aD.hButton)
     aD.hButton.Tag = aD.hButton.Tag(1:end-3);
@@ -260,6 +256,10 @@ delete(aD.hFrameNumbers); % redrawn every call
 
 % Close MV figure
 delete(aD.hToolFig);
+
+% Store aD in tool-specific apdata for next Activate call
+setappdata(aD.hFig, aD.Name, aD);
+rmappdata(aD.hFig, 'AD');
 
 if ~isempty(aD.hObjects)
     delete(aD.hObjects(isgraphics(aD.hObjects))); % redrawn every call
@@ -284,14 +284,14 @@ if ~GLOBAL_STOP_MOVIE
 	Stop_Movie;
 end
 
+hFig = varargin{3};
+aD = getAD(hFig);
+
 if nargin==4
-    % Button call
-    hFig = varargin{3};
+    % Button call (direction defined by which button was pressed)
     direction = varargin{4};
-    aD = getAD(hFig);
-elseif nargin==2 
-    % axis click callback
-    aD = getAD;
+elseif nargin==3 
+    % axis/image click callback (direction define by type of click)
     aD.hCurrentAxes = gca;
     selectionType = aD.hFig.SelectionType;
     
@@ -301,7 +301,7 @@ elseif nargin==2
         case 'alt'
             direction = -1;
         case 'open'
-            Play_Movie;
+            Play_Movie(hFig);
             return;
     end;
 
@@ -332,7 +332,7 @@ for i = 1:length(hAxesOfInterest)
     if (aD.hAllAxes == hAxesOfInterest(i))
         % if doing the single current axes, update the
         aD.hGUI.Frame_Value_edit.String =  num2str(currentFrame);
-        Set_Current_Axes(hAxesOfInterest(i));
+        Set_Current_Axes(aD.hFig, hAxesOfInterest(i));
     end;
 
     if ~isempty(aD.hObjects)
@@ -343,7 +343,6 @@ for i = 1:length(hAxesOfInterest)
     
 end;
 figure(aD.hToolFig);
-
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 	
@@ -354,10 +353,11 @@ function Limit(varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-aD = getAD;
-
 % call from buttons
-direction = varargin{1};
+hFig = varargin{3};
+direction = varargin{4};
+
+aD = getAD(hFig);
 
 % Specify single or all axes
 hAxesOfInterest = aD.hCurrentAxes;
@@ -377,13 +377,13 @@ for i = 1:length(hAxesOfInterest)
 	end;
 	
 	setappdata( CurrentAxes(i), 'CurrentImage', currentFrame);
-	aD.htFrameNumbers(handlesMV.Axes == CurrentAxes(i)).String = num2str(currentFrame);
+	aD.hFrameNumbers(handlesMV.Axes == CurrentAxes(i)).String = num2str(currentFrame);
 	aD.hAllImages(aD.hAllAxes == hAxesOfInterest(i)).CData =  squeeze(imageData(:,:,currentFrame));
    
     % if doing the single current axes, update frame numbers        
     if (aD.hAllAxes == hAxesOfInterest(i))
         aD.hGUI.Frame_Value_edit.String =  num2str(currentFrame);
-        Set_Current_Axes(hAxesOfInterest(i));
+        Set_Current_Axes(aD.hFig, hAxesOfInterest(i));
     end;
            
     if ~isempty(aD.ObjectHandles)
@@ -393,18 +393,18 @@ for i = 1:length(hAxesOfInterest)
     
     
 end;
-figure(aD.hFigMV);
+figure(aD.hToolFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Set_Frame
+function Set_Frame(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
 currentFrame = str2double(aD.hGUI.Frame_Value_edit.String);
 
@@ -429,7 +429,7 @@ for i = 1:length(hAxesOfInterest)
 	aD.hAllImages( hAxesOfInterest(i) == aD.hCurrentAxes ).CData = squeeze(imageData(:,:,currentFrame));
 	if ( hAxesOfInterest(i) == aD.hCurrentAxes)
 		aD.hGUI.Frame_Value_edit.String = num2str(currentFrame);	
-		Set_Current_Axes(hAxesOfInterest(i));
+		Set_Current_Axes(aD.hFig, hAxesOfInterest(i));
 	end;
 
     % Objects Exist- update the xdata/ydata for each object
@@ -450,7 +450,7 @@ function Set_Frame_Limit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
 hAxesOfInterest = aD.hCurrentAxes;
 applyAll = aD.hGUI.Apply_radiobutton.Value;
@@ -485,7 +485,7 @@ function Reset_Frame_Limit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
 hCurrentAxes = aD.CurrentAxes;
 applyAll = aD.hGUI.Apply_radiobutton.Value;
@@ -500,103 +500,134 @@ for i = 1:length(hCurrentAxes)
 	aD.hGUI.Max_Frame_edit.String =  num2str(ImageRangeAll(2)) ;
 end;
 
-Set_Current_Axes(aD.hCurrentAxes);
+Set_Current_Axes(aD.hFig, aD.hCurrentAxes);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Play_Movie
+function Play_Movie(varargin)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
 global GLOBAL_STOP_MOVIE
 
-fig2 = findobj('Tag', 'MV_figure');
-handlesMV = guidata(fig2);
-apply_all = get(handlesMV.Apply_radiobutton, 'Value');
-frame_rate = str2num(get(handlesMV.Frame_Rate_edit, 'String'));
+if nargin==1
+    hFig = varargin{1}; % Internal call
+elseif nargin==3
+    hFig = varargin{3}; % Button Call
+end
+aD = getAD(hFig);
 
-set([handlesMV.Reset_pushbutton, handlesMV.Min_Frame_edit, handlesMV.Max_Frame_edit, ...
-		handlesMV.Frame_Value_edit, handlesMV.Rewind_pushbutton, handlesMV.Step_Rewind_pushbutton, ....
-		handlesMV.Step_Forward_pushbutton, handlesMV.Forward_pushbutton, handlesMV.Play_pushbutton, ...
-		handlesMV.Frame_Rate_edit, handlesMV.Make_Movie_pushbutton, ...
-		handlesMV.Make_Mat_checkbox, handlesMV.Make_Avi_checkbox, handlesMV.Show_Frames_checkbox,...
-        handlesMV.Show_Objects_checkbox, handlesMV.Object_List_popupmenu], 'Enable', 'off');
+applyAll = aD.hGUI.Apply_radiobutton.Value;
+frameRate = str2double(aD.hGUI.Frame_Rate_edit.String);
+
+
+%set(aD.hGUI, 'Enable', 'Off')
+
+origEnable = disableGUI(aD.hGUI);
+aD.hGUI.Stop_pushbutton.Enable ='On';
+
+aD.hGUI
+% 
+% set([aD.hGUI.Reset_pushbutton, aD.hGUI.Min_Frame_edit, aD.hGUI.Max_Frame_edit, ...
+% 		aD.hGUI.Frame_Value_edit, aD.hGUI.Rewind_pushbutton, aD.hGUI.Step_Rewind_pushbutton, ....
+% 		aD.hGUI.Step_Forward_pushbutton, aD.hGUI.Forward_pushbutton, aD.hGUI.Play_pushbutton, ...
+% 		aD.hGUI.Frame_Rate_edit, aD.hGUI.Make_Movie_pushbutton, ...
+% 		aD.hGUI.Make_Mat_checkbox, aD.hGUI.Make_Avi_checkbox, aD.hGUI.Show_Frames_checkbox,...
+%         aD.hGUI.Show_Objects_checkbox, aD.hGUI.Object_List_popupmenu], 'Enable', 'off');
     %%%CHUS%%%Added objects to disable
 		
-
 % specify single or all axes
-CurrentAxes = handlesMV.CurrentAxes;
-if apply_all
-	CurrentAxes = handlesMV.Axes;
+hAxesOfInterest = aD.hCurrentAxes;
+if applyAll
+	hAxesOfInterest = aD.hAllAxes;
 end;
 
-for i = 1:length(CurrentAxes)
-	current_frame{i} = getappdata(CurrentAxes(i), 'CurrentImage');
-	image_range{i}   = getappdata(CurrentAxes(i), 'ImageRange');
-	image_data{i}    = getappdata(CurrentAxes(i), 'ImageData');
-   
-    if ~isempty(handlesMV.ObjectHandles);
-        object_data{i} = getappdata(CurrentAxes(i), 'Objects');
+% Collect data needed for display (images, ranges, objects)
+currentFrame = cell(size(hAxesOfInterest));
+imageRange = cell(size(hAxesOfInterest));
+imageData = cell(size(hAxesOfInterest));
+objectData = cell(size(hAxesOfInterest));
+for i = 1:length(hAxesOfInterest)
+	currentFrame{i} = getappdata(hAxesOfInterest(i), 'CurrentImage');
+	imageRange{i}   = getappdata(hAxesOfInterest(i), 'ImageRange');
+	imageData{i}    = getappdata(hAxesOfInterest(i), 'ImageData');
+    if ~isempty(aD.hObjects);
+        objectData{i} = getappdata(hAxesOfInterest(i), 'Objects');
     end;    
 end;
 
 GLOBAL_STOP_MOVIE = 0;
 t = 0;
+
 while ~GLOBAL_STOP_MOVIE
 	tic
-	for i = 1:length(CurrentAxes)
+	for i = 1:length(hAxesOfInterest)
 		direction = 1;
-		if     (current_frame{i} + direction) > image_range{i}(2), current_frame{i} = image_range{i}(1); 
-		elseif (current_frame{i} + direction) < image_range{i}(1), current_frame{i} = image_range{i}(2); 
-		else                                                       current_frame{i} = current_frame{i} + direction; end;		
-		set(findobj(CurrentAxes(i), 'Type', 'image'), 'CData', image_data{i}(:,:,current_frame{i}));
-		set(handlesMV.htFrameNumbers(find(handlesMV.Axes == CurrentAxes(i))), 'String', num2str(current_frame{i}));
+        if     (currentFrame{i} + direction) > imageRange{i}(2), currentFrame{i} = imageRange{i}(1);
+        elseif (currentFrame{i} + direction) < imageRange{i}(1), currentFrame{i} = imageRange{i}(2);
+        else                                                     currentFrame{i} = currentFrame{i} + direction;
+        end
         
-        %%%CHUS%%%
-        if ~isempty(handlesMV.ObjectHandles)
+        % Update image and frame number (go faster?)
+        aD.hAllImages(hAxesOfInterest(i)==aD.hAllAxes).CData = imageData{i}(:,:,currentFrame{i});
+        aD.hFrameNumbers(hAxesOfInterest(i)==aD.hAllAxes).String =  num2str(currentFrame{i});
+        
+        if (aD.hCurrentAxes == hAxesOfInterest(i))
+            aD.hGUI.Frame_Value_edit.String = num2str(currentFrame{i});
+        end
+%       %set(findobj(hAxesOfInterest(i), 'Type', 'image'), 'CData', imageData{i}(:,:,currentFrame{i}));
+% 		set(handlesMV.hFrameNumbers(find(handlesMV.Axes == hAxesOfInterest(i))), 'String', num2str(currentFrame{i}));
+        
+        if ~isempty(aD.hObjects)
             % Objects Exist- update the xdata/ydata for each object for each axis
-            for j = 1:size(handlesMV.ObjectHandles{i},1)
-                Update_Object(object_data{i}, handlesMV.ObjectHandles{find(handlesMV.Axes==CurrentAxes(i))},current_frame{i});
+            for j = 1:size(aD.hObjects{i},1)
+                Update_Object(objectData{i}, aD.hObjects{ hAxesOfInterest(i)==aD.hAllAxes }, currentFrame{i});
             end;                            
         end;
-        %%%CHUS%%%
         
 	end;
 	drawnow;
+    
 	pause(t);
-	if 1/toc > frame_rate, t = t+0.01; end;	
+	if 1/toc > frameRate, t = t+0.01; end;	
 end;
 
-% exit - update values for each of the axes in movie to correspond to last
+% Exit - update values for each of the axes in movie to correspond to last
 % frame played
+
 if (GLOBAL_STOP_MOVIE ~= 2)
-	for i = 1:length(CurrentAxes)
-		setappdata( CurrentAxes(i), 'CurrentImage', current_frame{i});		
-		set(findobj(CurrentAxes(i), 'Type', 'image'), 'CData', image_data{i}(:,:,current_frame{i}));
+	for i = 1:length(hAxesOfInterest)
+		setappdata( hAxesOfInterest(i), 'CurrentImage', currentFrame{i});
+        aD.hFrameNumbers(hAxesOfInterest(i)==aD.hAllAxes).String =  num2str(currentFrame{i});
+        aD.hAllIms(hAxesOfInterest(i)==aD.hAllAxes).CData = imageData{i}(:,:,currentFrame{i});
+		%set(findobj(hAxesOfInterest(i), 'Type', 'image'), 'CData', imageData{i}(:,:,currentFrame{i}));
 		drawnow;
-		if (handlesMV.CurrentAxes==CurrentAxes(i))
+
+        if (aD.hCurrentAxes==hAxesOfInterest(i))
 			% if doing the single current axes 
-			set(handlesMV.Frame_Value_edit, 'String', num2str(current_frame{i}));	
-			Set_Current_Axes(CurrentAxes(i));
+			aD.hGUI.Frame_Value_edit.String = num2str(currentFrame{i});	
+			Set_Current_Axes(aD.hFig, hAxesOfInterest(i));
 		end;
 	end;
 	
     % Turn objects back on
-    set([handlesMV.Reset_pushbutton, handlesMV.Min_Frame_edit, handlesMV.Max_Frame_edit, ...
-        handlesMV.Frame_Value_edit, handlesMV.Rewind_pushbutton, handlesMV.Step_Rewind_pushbutton, ....
-        handlesMV.Step_Forward_pushbutton, handlesMV.Forward_pushbutton, handlesMV.Play_pushbutton, ...
-        handlesMV.Frame_Rate_edit, handlesMV.Make_Movie_pushbutton, ...
-        handlesMV.Make_Mat_checkbox, handlesMV.Make_Avi_checkbox, handlesMV.Show_Frames_checkbox], 'Enable', 'On');
+    enableGUI(aD.hGUI, origEnable);
+    
+%     set([handlesMV.Reset_pushbutton, handlesMV.Min_Frame_edit, handlesMV.Max_Frame_edit, ...
+%         handlesMV.Frame_Value_edit, handlesMV.Rewind_pushbutton, handlesMV.Step_Rewind_pushbutton, ....
+%         handlesMV.Step_Forward_pushbutton, handlesMV.Forward_pushbutton, handlesMV.Play_pushbutton, ...
+%         handlesMV.Frame_Rate_edit, handlesMV.Make_Movie_pushbutton, ...
+%         handlesMV.Make_Mat_checkbox, handlesMV.Make_Avi_checkbox, handlesMV.Show_Frames_checkbox], 'Enable', 'On');
 
-    %%%CHUS%%%
-    if ~isempty(handlesMV.ObjectHandles)
-        set([handlesMV.Show_Objects_checkbox, handlesMV.Object_List_popupmenu], 'Enable', 'On');
+    if ~isempty(aD.hObjects)
+        set([aD.hGUI.Show_Objects_checkbox, aD.hGUI.Object_List_popupmenu], 'Enable', 'On');
     end;
-    %%%CHUS%%%
-    figure(fig2);
+
+    figure(aD.hToolFig);
+    figure(aD.hFig);
 end;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -681,7 +712,7 @@ while ~stop_movie
 		elseif (current_frame{i} + direction) < image_range{i}(1), current_frame{i} = image_range{i}(2); 
 		else                                                       current_frame{i} = current_frame{i} + direction; end;	
 		set(findobj(CurrentAxes(i), 'Type', 'image'), 'CData', image_data{i}(:,:,current_frame{i}));
-		set(handlesMV.htFrameNumbers(find(handlesMV.Axes == CurrentAxes(i))), 'String', num2str(current_frame{i}));
+		set(handlesMV.hFrameNumbers(find(handlesMV.Axes == CurrentAxes(i))), 'String', num2str(current_frame{i}));
         
         %%%CHUS%%%
         if ~isempty(handlesMV.ObjectHandles)
@@ -765,22 +796,31 @@ function Show_Frames_Numbers
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
-aD = getAD;
+aD = getAD(hFig);
 
 visibility = aD.hGUI.Show_Frames_checkbox.Value;
 if visibility, visibility = 'On' ;
-else,          visibility = 'Off'; end
+else           visibility = 'Off'; end
 aD.hFrameNumbers.Visible = visibility;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Set_Current_Axes(currentaxes)
+function Set_Current_Axes(varargin)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
-aD = getAD;
+
+if length(varargin)==2     % internal call
+    hFig = varargin{1};
+    currentaxes = varargin{2};
+elseif length(varargin)==3 % allback on axes btdwnfcn
+    currentaxes = varargin{1}
+    hFig = varargin{3};
+end
+        
+aD = getAD(hFig);
 if isempty(currentaxes), currentaxes=gca; end;
 aD.hCurrentAxes = currentaxes;
 image_range = getappdata(aD.hCurrentAxes, 'ImageRange');
@@ -804,7 +844,7 @@ function Menu_MV(~,~)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
-aD = getAD;
+aD = getAD(hFig);
 aD.hUtils.menuToggle(aD.hMenu,aD.hButton);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -942,7 +982,7 @@ dispDebug;
 global GLOBAL_STOP_MOVIE 
 GLOBAL_STOP_MOVIE = 2;
 
-aD = getAD;
+aD = getAD(hFig);
 if ~isempty(aD)
     hToolFig = aD.hToolFig;
 else
@@ -955,7 +995,6 @@ end
 delete(hToolFig);
 hFig.CloseRequestFcn = 'closereq';
 close(hFig);
-
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1022,6 +1061,7 @@ buttonImage = repmat(buttonImage, [1,1,3]);
 function structNames = retrieveNames
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+structNames.Name                = 'MV';
 structNames.toolName            = 'MV_tool';
 structNames.buttonTag           = 'figButtonMV';
 structNames.buttonToolTipString = 'View Images & Make Movies';
@@ -1040,7 +1080,7 @@ function  storeAD(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
-setappdata(aD.hFig, aD.Name, aD);
+setappdata(aD.hFig, 'AD', aD);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1062,24 +1102,24 @@ h_root.ShowHiddenHandles = old_SHH;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function h = findHiddenObjRegexp(Handle, Property, Value)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-
-h_root = groot;
-old_SHH = h_root.ShowHiddenHandles;
-h_root.ShowHiddenHandles = 'On';
-if nargin <3
-    h = findobj('-regexp', Handle, Property);
-else
-    h = findobj(Handle, '-regexp', Property, Value);
-end;
-h_root.ShowHiddenHandles = old_SHH;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %% %%%%%%%%%%%%%%%%%%%%%%%%
+% %
+% function h = findHiddenObjRegexp(Handle, Property, Value)
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% dispDebug;
+% 
+% h_root = groot;
+% old_SHH = h_root.ShowHiddenHandles;
+% h_root.ShowHiddenHandles = 'On';
+% if nargin <3
+%     h = findobj('-regexp', Handle, Property);
+% else
+%     h = findobj(Handle, '-regexp', Property, Value);
+% end;
+% h_root.ShowHiddenHandles = old_SHH;
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -1089,29 +1129,31 @@ function  aD = getAD(hFig)
 % Retrieve application data stored within Active Figure (aka image figure)
 %  Appdata name depends on tool. 
 dispDebug;
+
 tic %dbg
+aD = getappdata(hFig, 'AD');
 
-aDName=dbstack;
-aDName=aDName(end).file(1:2);
-
-if nargin==0
-    % Search the children of groot
-    hFig = findobj(groot, 'Tag', 'ActiveFigure', '-depth', 1); 
-    if isempty(hFig)
-        % hFig hasn't been found (likely first call) during Activate
-        obj = findHiddenObjRegexp('Tag', ['\w*Button', aDName,'\w*']);
-        hFig = obj(1).Parent.Parent;
-    end
-end
-
-if isappdata(hFig, aDName)
-    aD = getappdata(hFig, aDName);
-else
-    dispDebug('no aD!'); %dbg
-    aD = [];
-end
-
-dispDebug(['end (',num2str(toc),')']); %dbg
+% aDName=dbstack;
+% aDName=aDName(end).file(1:2);
+% 
+% if nargin==0
+%     % Search the children of groot
+%     hFig = findobj(groot, 'Tag', 'ActiveFigure', '-depth', 1); 
+%     if isempty(hFig)
+%         % hFig hasn't been found (likely first call) during Activate
+%         obj = findHiddenObjRegexp('Tag', ['\w*Button', aDName,'\w*']);
+%         hFig = obj(1).Parent.Parent;
+%     end
+% end
+% 
+% if isappdata(hFig, aDName)
+%     aD = getappdata(hFig, aDName);
+% else
+%     dispDebug('no aD!'); %dbg
+%     aD = [];
+% end
+% 
+% dispDebug(['end (',num2str(toc),')']); %dbg
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1129,6 +1171,41 @@ for i = 1:length(hAllAxes)
 end    
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function origEnable = disableGUI(hGUI)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+
+h = fieldnames(hGUI);
+origEnable = cell(size(h));
+for i = 1:length(h)
+    if strcmpi('uicontrol', hGUI.(h{i}).Type)
+        origEnable{i} = hGUI.(h{i}).Enable;
+        hGUI.(h{i}).Enable = 'Off';
+    end
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function enableGUI(hGUI, origEnable)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+h = fieldnames(hGUI);
+for i =1:length(h)
+    if strcmpi('uicontrol', hGUI.(h{i}).Type)
+        hGUI.(h{i}).Enable = origEnable{i};
+    end
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -1153,7 +1230,7 @@ for i = 1:length(hAllAxes)
     str = num2str(getappdata(hAllAxes(i), 'CurrentImage')); 
  	hFrameNumbers(i) = text(hAllAxes(i), X(2)*0.98, Y(2), str);
 end;
-[hIms(:).ButtonDownFcn] = deal('MV_tool(''Step'')');
+[hIms(:).ButtonDownFcn] = deal({@Step, hFig});
 [hFrameNumbers(:).FontSize] = deal(textFontSize);
 [hFrameNumbers(:).Color] = deal([ 1 0.95 0]);
 [hFrameNumbers(:).VerticalAlignment] = deal('bottom');

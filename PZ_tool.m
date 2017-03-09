@@ -82,19 +82,17 @@ hMenu  = hUtils.createMenuObject(hFig,...
     objNames.menuLabel, ...
     @Menu_PZ);
 
-if ~isempty(hButton)
-    aD.Name        = 'PZ';
-    aD.hUtils    =  hUtils;
-    aD.hRoot     =  groot;
-    aD.hFig      =  hFig;
-    aD.hButton   =  hButton;
-    aD.hMenu     =  hMenu;
-    aD.hToolbar  =  hToolbar;
-    aD.objectNames = objNames;
-    
-    % store app data structure
-    storeAD(aD);
-end
+aD.Name        = 'PZ';
+aD.hUtils    =  hUtils;
+aD.hRoot     =  groot;
+aD.hFig      =  hFig;
+aD.hButton   =  hButton;
+aD.hMenu     =  hMenu;
+aD.hToolbar  =  hToolbar;
+aD.objectNames = objNames;
+
+% store app data structure in tool-specific field
+setappdata(aD.hFig, aD.Name, aD);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -106,8 +104,8 @@ function Activate_PZ(~,~,hFig)
 dispDebug;
 
 %% PART I - Environment
-
-aD = getAD(hFig);
+objNames = retrieveNames;
+aD = getappdata(hFig, objNames.Name); 
 aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
 
 % Check the menu object
@@ -131,13 +129,8 @@ for i = 1:length(aD.hAllAxes)
     allYlims(i,:) = aD.hAllAxes(i).YLim;
 end;
 
-% Obtain current axis
-aD.hRoot.CurrentFigure = aD.hFig;
-aD.hCurrentAxes=aD.hFig.CurrentAxes;
-if isempty(aD.hCurrentAxes)
-    aD.hCurrentAxes = aD.hAllAxes(1); 
-    aD.hFig.CurrentAxes = aD.hCurrentAxes;
-end;
+% Set current figure and axis
+aD = aD.hUtils.getHCurrentFigAxes(aD);
 
 % Store the figure's old infor within the fig's own userdata
 aD.origProperties = retreiveOrigData(aD.hFig);
@@ -147,21 +140,20 @@ hToolFigOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
 if ~isempty(hToolFigOld), close(hToolFigOld); end;
 pause(0.5);
 
-% Make it easy to find this button (tack on 'On') 
-% Wait until after old fig is closed.
+% Make it easy to find this button (tack on 'On') after old fig is closed
 aD.hButton.Tag = [aD.hButton.Tag,'_On'];
 aD.hMenu.Tag   = [aD.hMenu.Tag, '_On'];
-aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
 
-aD.hFig.WindowButtonDownFcn   = {@Adjust_Pan_On, aD.hFig};          %entry
+aD.hFig.WindowButtonDownFcn   = {@Adjust_Pan_On, aD.hFig};      %entry
 aD.hFig.WindowButtonUpFcn     = {@Adjust_Pan_For_All, aD.hFig}; %exit
 aD.hFig.WindowButtonMotionFcn = '';  
 aD.hFig.WindowKeyPressFcn  = @Key_Press_CopyPaste;
 
-% Draw faster and without flashes
+% Set figure clsoe callback
 aD.hFig.CloseRequestFcn = @Close_Parent_Figure;
+
+% Draw faster and without flashes
 aD.hFig.Renderer = 'zbuffer';
-aD.hRoot.CurrentFigure = aD.hFig;
 [aD.hAllAxes.SortMethod] = deal('Depth');
 
 %% PART II Create GUI Figure
@@ -169,7 +161,7 @@ aD.hToolFig = openfig(aD.objectNames.figFilename,'reuse');
 
 % Enable save_prefs tool button
 if ~isempty(aD.hToolbar)
-    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
+    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figButtonSP');
     aD.hSP.Enable = 'On';
     optionalUIControls = {'Apply_radiobutton', 'Value'};
     aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
@@ -179,8 +171,7 @@ end
 aD.hGUI = guihandles(aD.hToolFig);
 
 aD.hToolFig.Name = aD.objectNames.figName;
-aD.hToolFig.CloseRequestFcn = {@aD.hUtils.Close_Request_Callback, aD.hFig};
-
+aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};
 % Set Object callbacks; return hFig for speed
 aD.hGUI.Zoom_value_edit.Callback  = {@Apply_Zoom_Factor, aD.hFig};
 aD.hGUI.Pan_radiobutton.Callback  = {@Switch_PZ, aD.hFig};
@@ -246,10 +237,13 @@ aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
 
 % Reactivate other buttons
 aD.hUtils.enableToolbarButtons(aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates )
- 
+
+% Store aD in tool-specific apdata for next Activate call
+setappdata(aD.hFig, aD.Name, aD);
+
 
 %Disable save_prefs tool button
-if ishghandle(aD.hSP)
+if ~isempty(aD.hSP)
     aD.hSP.Enable = 'Off';
 end
 %
@@ -295,7 +289,7 @@ function Adjust_Pan(varargin)
 dispDebug
 
 if nargin == 1, hFig = varargin{1};     % inside call
-else,           hFig = varargin{3}; end;% outside call
+else            hFig = varargin{3}; end;% outside call
 
 aD = getAD(hFig); 
 
@@ -371,7 +365,7 @@ zoom_factor = str2double(aD.hGUI.Zoom_value_edit.String);
 if ~isnan(zoom_factor)
     
     if apply_all, all_axes = aD.hAllAxes;
-    else,         all_axes = aD.hCurrentAxes;
+    else          all_axes = aD.hCurrentAxes;
     end
     
     hIm = findobj(aD.hCurrentAxes, 'Type', 'Image');
@@ -493,7 +487,7 @@ function Switch_PZ(varargin)
 dispDebug;
 
 if nargin==1, hFig=varargin{1};  % inside call
-else, hFig = varargin{3}; end     % outside call
+else  hFig = varargin{3}; end     % outside call
  
 aD = getAD(hFig);
 
@@ -505,12 +499,12 @@ hCurrentRadiobutton = gcbo;
 if strcmp(hCurrentRadiobutton.Tag, 'Pan_radiobutton')
     % pan button was last to be used
     if Pan_On,  Panning = 1;
-    else,       Panning = 0;
+    else        Panning = 0;
     end;
 else
     % zoom button was last to be used (or no button was used)
     if Zoom_On, Panning = 0;
-    else,       Panning = 1;
+    else        Panning = 1;
     end;
 end;
 
@@ -653,8 +647,7 @@ else
     hToolFig = findobj(groot, 'Tag', objNames.figTag); 
 end
 
-
-hdelete(hToolFig);
+delete(hToolFig);
 hFig.CloseRequestFcn = 'closereq';
 close(hFig);
 %
@@ -765,6 +758,7 @@ button_image = repmat(button_image, [1,1,3]);
 function structNames = retrieveNames
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+structNames.Name                = 'PZ';
 structNames.toolName            = 'PZ_tool';
 structNames.buttonTag           = 'figButtonPZ';
 structNames.buttonToolTipString = 'Pan and Zoom Figure';
@@ -783,7 +777,7 @@ function  storeAD(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
-setappdata(aD.hFig, aD.Name, aD);
+setappdata(aD.hFig, 'AD', aD);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -798,28 +792,29 @@ function  aD = getAD(hFig)
 %  Appdata name depends on tool. 
 dispDebug;
 tic %dbg
+aD = getappdata(hFig, 'AD');
 
-aDName=dbstack;
-aDName=aDName(1).file(1:2);
-
-if nargin==0
-    % Search the children of groot
-    hFig = findobj(groot, 'Tag', 'ActiveFigure', '-depth', 1); 
-    if isempty(hFig)
-        % hFig hasn't been found (likely first call) during Activate
-        obj = findobj('-regexp', 'Tag', ['\w*Button', aDName,'\w*']);
-        hFig = obj(1).Parent.Parent;
-    end
-end
-
-if isappdata(hFig, aDName)
-    aD = getappdata(hFig, aDName);
-else
-    dispDebug('no aD!'); %dbg
-    aD = [];
-end
-
-dispDebug(['end (',num2str(toc),')']); %dbg
+% aDName=dbstack;
+% aDName=aDName(1).file(1:2);
+% 
+% if nargin==0
+%     % Search the children of groot
+%     hFig = findobj(groot, 'Tag', 'ActiveFigure', '-depth', 1); 
+%     if isempty(hFig)
+%         % hFig hasn't been found (likely first call) during Activate
+%         obj = findobj('-regexp', 'Tag', ['\w*Button', aDName,'\w*']);
+%         hFig = obj(1).Parent.Parent;
+%     end
+% end
+% 
+% if isappdata(hFig, aDName)
+%     aD = getappdata(hFig, aDName);
+% else
+%     dispDebug('no aD!'); %dbg
+%     aD = [];
+% end
+% 
+% dispDebug(['end (',num2str(toc),')']); %dbg
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 

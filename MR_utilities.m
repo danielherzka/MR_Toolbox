@@ -8,6 +8,7 @@ fs={...
     'disableToolbarButtons';...
     'retrieveOrigData'; ...
     'restoreOrigData';...
+    'getHCurrentFigAxes';...
     'findHiddenObj';...
     'findHiddenObjRegexp';...
     'createButtonObject';...
@@ -15,6 +16,7 @@ fs={...
     'menuToggle';...
     'closeRequestCallback';...
     'storeAD';...
+    'limitAD';...
     'getAD';...
     };
 
@@ -158,6 +160,184 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
+function aD = getHCurrentFigAxes(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+aD.hRoot.CurrentFigure = aD.hFig;
+aD.hCurrentAxes=aD.hFig.CurrentAxes;
+if isempty(aD.hCurrentAxes)
+    aD.hCurrentAxes = aD.hAllAxes(1); 
+    aD.hFig.CurrentAxes = aD.hCurrentAxes;
+end;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  hMenu = createMenuObject(hFig, menuTag,menuLabel,callback)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+utilDispDebug;
+hToolMenu = findall(hFig, 'Label', '&Tools');
+
+if ~isempty(hToolMenu) && isempty(findobj(hToolMenu,'Tag', menuTag))
+
+    % If the menubar exists and the menu item has not been previously created
+    hExistingMenus = findobj(hToolMenu, '-regexp', 'Tag', 'menu\w*');
+    
+    position = 9;
+    separator = 'On';
+    
+    if ~isempty(hExistingMenus)
+        position = position + length(hExistingMenus);
+        separator = 'Off';
+    end;
+    
+    hMenu = uimenu(hToolMenu,'Position', position);
+    hMenu.Tag       = menuTag;
+    hMenu.Label     = menuLabel;
+    hMenu.Callback  = callback;
+    hMenu.Separator = separator;
+    hMenu.UserData  = hFig;
+else
+    hMenu = [];
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function menuToggle(hMenu, hButton)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+utilDispDebug;
+
+checked   = hMenu.Checked;
+if strcmpi(checked,'on')
+    % turn off button -> Deactivate_PZ
+    hMenu.Checked = 'off';
+    hButton.State = 'off';
+else %hButton
+    hMenu.Checked = 'on';
+    hButton.State = 'on';
+end;
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function closeRequestCallback(~,~,uaD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+utilDispDebug;
+old_SHH = uaD.hRoot.ShowHiddenHandles;
+uaD.hRoot.ShowHiddenHandles = 'On';
+
+%calls deactivate
+uaD.hButton.State = 'off';
+uaD.hRoot.ShowHiddenHandles= old_SHH;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  storeAD(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+utilDispDebug;
+setappdata(aD.hFig, aD.Name, aD);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  uaD = limitAD(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Return micro aD
+utilDispDebug;
+uaD = struct;
+uaD.hRoot    = aD.hRoot;
+uaD.hFig     = aD.hFig;
+uaD.hToolFig = aD.hToolFig;
+uaD.hButton  = aD.hButton;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = getAD(hFig)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Retrieve application data stored within Active Figure (aka image figure)
+%  Appdata name depends on tool. 
+utilDispDebug;
+tic %dbg
+
+aDName=dbstack;
+aDName=aDName(end).file(1:2);
+
+if nargin==0
+    % Search the children of groot
+    hFig = findobj(groot, 'Tag', 'ActiveFigure', '-depth', 1); 
+    if isempty(hFig)
+        % hFig hasn't been found (likely first call) during Activate
+        obj = findobj('-regexp', 'Tag', ['\w*Button', aDName,'\w*']);
+        hFig = obj(1).Parent.Parent;
+    end
+end
+
+if isappdata(hFig, aDName)
+    aD = getappdata(hFig, aDName);
+else
+    utilDispDebug('no aD!'); %dbg
+    aD = [];
+end
+
+utilDispDebug(['end (',num2str(toc),')']); %dbg
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  utilDispDebug(varargin)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Print a debug string if global debug flag is set
+global DB;
+
+if DB
+    loc = [];
+    objectNames = retrieveNames;
+    x = dbstack;
+    funcName = x(2).name;   
+    if length(x)<3 %pad
+        x = cat(1, x, repmat(x(end),3-length(x),1));
+    end
+    callFuncName = x(3).file(1:end-2);
+    if strcmpi( x(3).file, x(2).file)
+        loc = ['(loc)', repmat('|> ',1, sum(strcmp(x(1).file, {x.file})-1))] ;
+    end
+    fprintf([callFuncName,' ',objectNames.toolName, ':', loc , ' %s'], funcName);
+%     if nargin>0
+%         for i = 1:length(varargin)
+%             str = varargin{i};
+%             fprintf(': %s', str);
+%         end
+%     end
+    fprintf('\n');
+    
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
 function h = findHiddenObj(Handle, Property, Value)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -236,154 +416,6 @@ if ~isempty(hToolbar) && isempty(findobj(hToolbar, 'Tag', buttonTag))
 else
     % Toolbar doesn't exist, or button already exists
     hButton = [];  
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function  hMenu = createMenuObject(hFig, menuTag,menuLabel,callback)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
-hToolMenu = findall(hFig, 'Label', '&Tools');
-
-if ~isempty(hToolMenu) && isempty(findobj(hToolMenu,'Tag', menuTag))
-
-    % If the menubar exists and the menu item has not been previously created
-    hExistingMenus = findobj(hToolMenu, '-regexp', 'Tag', 'menu\w*');
-    
-    position = 9;
-    separator = 'On';
-    
-    if ~isempty(hExistingMenus)
-        position = position + length(hExistingMenus);
-        separator = 'Off';
-    end;
-    
-    hMenu = uimenu(hToolMenu,'Position', position);
-    hMenu.Tag       = menuTag;
-    hMenu.Label     = menuLabel;
-    hMenu.Callback  = callback;
-    hMenu.Separator = separator;
-    hMenu.UserData  = hFig;
-else
-    hMenu = [];
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function menuToggle(hMenu, hButton)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
-
-checked   = hMenu.Checked;
-if strcmpi(checked,'on')
-    % turn off button -> Deactivate_PZ
-    hMenu.Checked = 'off';
-    hButton.State = 'off';
-else %hButton
-    hMenu.Checked = 'on';
-    hButton.State = 'on';
-end;
-
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function closeRequestCallback(~,~,hFig)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-utilDispDebug;
-aD = getAD(hFig);
-old_SHH = aD.hRoot.ShowHiddenHandles;
-aD.hRoot.ShowHiddenHandles = 'On';
-
-%calls deactivate
-aD.hButton.State = 'off';
-aD.hRoot.ShowHiddenHandles= old_SHH;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function  storeAD(aD)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
-setappdata(aD.hFig, aD.Name, aD);
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function  aD = getAD(hFig)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Retrieve application data stored within Active Figure (aka image figure)
-%  Appdata name depends on tool. 
-utilDispDebug;
-tic %dbg
-
-aDName=dbstack;
-aDName=aDName(end).file(1:2);
-
-if nargin==0
-    % Search the children of groot
-    hFig = findobj(groot, 'Tag', 'ActiveFigure', '-depth', 1); 
-    if isempty(hFig)
-        % hFig hasn't been found (likely first call) during Activate
-        obj = findobj('-regexp', 'Tag', ['\w*Button', aDName,'\w*']);
-        hFig = obj(1).Parent.Parent;
-    end
-end
-
-if isappdata(hFig, aDName)
-    aD = getappdata(hFig, aDName);
-else
-    utilDispDebug('no aD!'); %dbg
-    aD = [];
-end
-
-utilDispDebug(['end (',num2str(toc),')']); %dbg
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function  utilDispDebug(varargin)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Print a debug string if global debug flag is set
-global DB;
-
-if DB
-    objectNames = retrieveNames;
-    x = dbstack;
-    funcName = x(2).name;    loc = [];
-    callFuncName = x(3).file(1:end-2);
-    if strcmpi( x(3).file, x(2).file)
-        loc = ['(loc)', repmat('|> ',1, sum(strcmp(x(1).file, {x.file})-1))] ;
-    end
-    fprintf([callFuncName,' ',objectNames.toolName, ':', loc , ' %s'], funcName);
-%     if nargin>0
-%         for i = 1:length(varargin)
-%             str = varargin{i};
-%             fprintf(': %s', str);
-%         end
-%     end
-    fprintf('\n');
-    
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
