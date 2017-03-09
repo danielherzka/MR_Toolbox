@@ -169,26 +169,12 @@ if ~isempty(aD.hToolbar)
     aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figSavePrefsTool');
     aD.hSP.Enable = 'On';
     optionalUIControls = { ...
-<<<<<<< HEAD
-<<<<<<< HEAD
-        'Apply_radiobutton',    'Value'; ...
-        'Frame_Rate_edit',      'String'; ...
-        'Make_Avi_checkbox',    'Value'; ...
-        'Make_Mat_checkbox',    'Value'; ...
-        'Show_Frames_checkbox', 'Value'; ...
-=======
-=======
->>>>>>> master
         'Apply_radiobutton',     'Value'; ...
         'Frame_Rate_edit',       'String'; ...
         'Make_Avi_checkbox',     'Value'; ...
         'Make_Mat_checkbox',     'Value'; ...
         'Show_Frames_checkbox',  'Value'; ...
         'Show_Objects_checkbox', 'Value';...
-<<<<<<< HEAD
->>>>>>> master
-=======
->>>>>>> master
         };
     aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
 end
@@ -279,16 +265,7 @@ if ~isempty(aD.hObjects)
     delete(aD.hObjects(isgraphics(aD.hObjects))); % redrawn every call
 end;
 
-%Disable save_prefs tool button
-<<<<<<< HEAD
-<<<<<<< HEAD
-if ishghandle(aD.hSP)
-=======
 if ~isempty(aD.hSP) %?ishghandle?
->>>>>>> master
-=======
-if ~isempty(aD.hSP) %?ishghandle?
->>>>>>> master
     aD.SP.Enable = 'Off';
 end
 %
@@ -307,25 +284,29 @@ if ~GLOBAL_STOP_MOVIE
 	Stop_Movie;
 end
 
-aD = getAD;
+if nargin==4
+    % Button call
+    hFig = varargin{3};
+    direction = varargin{4};
+    aD = getAD(hFig);
+elseif nargin==2 
+    % axis click callback
+    aD = getAD;
+    aD.hCurrentAxes = gca;
+    selectionType = aD.hFig.SelectionType;
+    
+    switch selectionType
+        case 'normal'
+            direction = 1;
+        case 'alt'
+            direction = -1;
+        case 'open'
+            Play_Movie;
+            return;
+    end;
 
-if isempty(varargin)
-	% mouse click, specify axis and function
-	aD.hCurrentAxes = gca;
-	selectionType = aD.hFig.SelectionType;
-	switch selectionType 
-		case 'normal'
-			direction = 1;	
-		case 'alt'
-			direction = -1;
-		case 'open'
-			Play_Movie;
-			return;
-	end;
-else
-	% call from buttons
-	direction = varargin{1};
-end;
+end
+
 
 % Specify single or all axes
 hAxesOfInterest = aD.hCurrentAxes;
@@ -354,14 +335,14 @@ for i = 1:length(hAxesOfInterest)
         Set_Current_Axes(hAxesOfInterest(i));
     end;
 
-    if ~isempty(aD.ObjectHandles)
+    if ~isempty(aD.hObjects)
         % Objects Exist- update the xdata/ydata for each object
         object_data   = getappdata(hAxesOfInterest(i), 'Objects');
-        Update_Object(object_data, aD.ObjectHandles{aD.hAllAxes == hAxesOfInterest(i),1},currentFrame);
+        Update_Object(object_data, aD.hObjects{aD.hAllAxes == hAxesOfInterest(i),1},currentFrame);
     end;
     
 end;
-figure(aD.hFigMV);
+figure(aD.hToolFig);
 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -743,7 +724,7 @@ if make_avi
     f = filename;
     if isempty(strfind(f, '.avi')), f = [filename, '.avi']; end;
 	try
-		movie2avi(M, f, 'FPS', frame_rate, 'Compression', compression, 'Quality', Q);
+%		movie2avi(M, f, 'FPS', frame_rate, 'Compression', compression, 'Quality', Q);
 	catch
 		disp('Error within movie2avi function call');
 		disp('  Movie was not created.');
@@ -809,7 +790,7 @@ aD.handlesMV.Max_Frame_edit.String =  num2str(image_range(2));
  if ~isempty(aD.hObjects)
      hCurrentAxes_idx = aD.hAllAxes==aD.hCurrentAxes;
      aD.handlesMV.Object_List_popupmenu.String = ...
-         aD.hObjects{hCurrentAxes_idx,3});
+         aD.hObjects{hCurrentAxes_idx,3};
  end;
 
 storeAD(aD);
@@ -1042,7 +1023,7 @@ function structNames = retrieveNames
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 structNames.toolName            = 'MV_tool';
-structNames.buttonTag           = 'figViewImages';
+structNames.buttonTag           = 'figButtonMV';
 structNames.buttonToolTipString = 'View Images & Make Movies';
 structNames.menuTag             = 'menuViewImages';
 structNames.menuLabel           = 'Movie Tool';
@@ -1063,38 +1044,42 @@ setappdata(aD.hFig, aD.Name, aD);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% %% %%%%%%%%%%%%%%%%%%%%%%%%
-% %
-% function  aD = getAD
-% %
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% dispDebug;
-% 
-% % fastest way to find figure; doesn't work during Create
-% tic
-% aD = [];
-% 
-% hFig = findobj(groot, 'Tag', 'ActiveFigure'); %flat?
-% 
-% 
-% if isempty(hFig)
-%     % Call from Activate
-%     objNames = retrieveNames;
-%     hUtils = MR_Toolbox_Utilities;
-%     obj = hUtils.findHiddenObj('Tag', objNames.buttonTag);
-%     while ~strcmpi(obj.Type, 'Figure')
-%         obj = obj.Parent;
-%     end
-%     hFig = obj;
-% end
-% 
-% if isappdata(hFig, 'MVData')
-%     aD = getappdata(hFig, 'MVData');
-% end
-% 
-% dispDebug(['end (',num2str(toc),')']);
-% %
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function h = findHiddenObj(Handle, Property, Value)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+h_root = groot;
+old_SHH = h_root.ShowHiddenHandles;
+h_root.ShowHiddenHandles = 'On';
+if nargin <3
+	h = findobj(Handle, Property);
+else
+	h = findobj(Handle, Property, Value);
+end;
+h_root.ShowHiddenHandles = old_SHH;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function h = findHiddenObjRegexp(Handle, Property, Value)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+
+h_root = groot;
+old_SHH = h_root.ShowHiddenHandles;
+h_root.ShowHiddenHandles = 'On';
+if nargin <3
+    h = findobj('-regexp', Handle, Property);
+else
+    h = findobj(Handle, '-regexp', Property, Value);
+end;
+h_root.ShowHiddenHandles = old_SHH;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -1114,7 +1099,7 @@ if nargin==0
     hFig = findobj(groot, 'Tag', 'ActiveFigure', '-depth', 1); 
     if isempty(hFig)
         % hFig hasn't been found (likely first call) during Activate
-        obj = findobj('-regexp', 'Tag', ['\w*Button', aDName,'\w*']);
+        obj = findHiddenObjRegexp('Tag', ['\w*Button', aDName,'\w*']);
         hFig = obj(1).Parent.Parent;
     end
 end
@@ -1262,11 +1247,3 @@ end
 set(h_axes, 'Nextplot', old_nextplot);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
->>>>>>> master
-=======
-
->>>>>>> master

@@ -1,12 +1,4 @@
-<<<<<<< HEAD:MR_utilities.m
-<<<<<<< HEAD:MR_Toolbox_Utilities.m
-function utilFcn = MR_Toolbox_Utilities
-=======
 function utilFcn = MR_utilities
->>>>>>> master:MR_utilities.m
-=======
-function utilFcn = MR_utilities
->>>>>>> master:MR_utilities.m
 
 % Create cell-list of available functions
 fs={...
@@ -298,11 +290,6 @@ else %hButton
     hButton.State = 'on';
 end;
 
-<<<<<<< HEAD:MR_utilities.m
-<<<<<<< HEAD:MR_Toolbox_Utilities.m
-=======
-=======
->>>>>>> master:MR_utilities.m
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -314,17 +301,9 @@ function closeRequestCallback(~,~,hFig)
 
 utilDispDebug;
 aD = getAD(hFig);
-<<<<<<< HEAD:MR_utilities.m
-
 old_SHH = aD.hRoot.ShowHiddenHandles;
 aD.hRoot.ShowHiddenHandles = 'On';
 
-=======
-
-old_SHH = aD.hRoot.ShowHiddenHandles;
-aD.hRoot.ShowHiddenHandles = 'On';
-
->>>>>>> master:MR_utilities.m
 %calls deactivate
 aD.hButton.State = 'off';
 aD.hRoot.ShowHiddenHandles= old_SHH;
@@ -379,10 +358,6 @@ utilDispDebug(['end (',num2str(toc),')']); %dbg
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-<<<<<<< HEAD:MR_utilities.m
->>>>>>> master:MR_utilities.m
-=======
->>>>>>> master:MR_utilities.m
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -397,18 +372,8 @@ if DB
     x = dbstack;
     funcName = x(2).name;    loc = [];
     callFuncName = x(3).file(1:end-2);
-<<<<<<< HEAD:MR_utilities.m
-<<<<<<< HEAD:MR_Toolbox_Utilities.m
-    if length(x) > 5
-        loc = ['(loc)', repmat('|> ',1, length(x)-5)] ;
-=======
     if strcmpi( x(3).file, x(2).file)
         loc = ['(loc)', repmat('|> ',1, sum(strcmp(x(1).file, {x.file})-1))] ;
->>>>>>> master:MR_utilities.m
-=======
-    if strcmpi( x(3).file, x(2).file)
-        loc = ['(loc)', repmat('|> ',1, sum(strcmp(x(1).file, {x.file})-1))] ;
->>>>>>> master:MR_utilities.m
     end
     fprintf([callFuncName,' ',objectNames.toolName, ':', loc , ' %s'], funcName);
 %     if nargin>0

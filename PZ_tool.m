@@ -134,7 +134,7 @@ end;
 % Obtain current axis
 aD.hRoot.CurrentFigure = aD.hFig;
 aD.hCurrentAxes=aD.hFig.CurrentAxes;
-if isempty(aD.hCurrentAxes), 
+if isempty(aD.hCurrentAxes)
     aD.hCurrentAxes = aD.hAllAxes(1); 
     aD.hFig.CurrentAxes = aD.hCurrentAxes;
 end;
@@ -295,7 +295,7 @@ function Adjust_Pan(varargin)
 dispDebug
 
 if nargin == 1, hFig = varargin{1};     % inside call
-else            hFig = varargin{3}; end;% outside call
+else,           hFig = varargin{3}; end;% outside call
 
 aD = getAD(hFig); 
 
@@ -371,8 +371,8 @@ zoom_factor = str2double(aD.hGUI.Zoom_value_edit.String);
 if ~isnan(zoom_factor)
     
     if apply_all, all_axes = aD.hAllAxes;
-    else          all_axes = aD.hCurrentAxes;
-    end;
+    else,         all_axes = aD.hCurrentAxes;
+    end
     
     hIm = findobj(aD.hCurrentAxes, 'Type', 'Image');
     im = hIm.CData;
@@ -420,7 +420,7 @@ hAxes_idx = find(aD.hAllAxes==aD.hCurrentAxes);
 aD.hCurrentAxes.XLim = aD.origXLims(hAxes_idx,:);
 aD.hCurrentAxes.YLim = aD.origYLims(hAxes_idx,:);
 
-if apply_all,
+if apply_all
     for i = 1:length(aD.hAllAxes)
         aD.hAllAxes(i).XLim = aD.origXLims(i,:);
         aD.hAllAxes(i).YLim = aD.origYLims(i,:);
@@ -493,7 +493,7 @@ function Switch_PZ(varargin)
 dispDebug;
 
 if nargin==1, hFig=varargin{1};  % inside call
-else hFig = varargin{3}; end     % outside call
+else, hFig = varargin{3}; end     % outside call
  
 aD = getAD(hFig);
 
@@ -505,12 +505,12 @@ hCurrentRadiobutton = gcbo;
 if strcmp(hCurrentRadiobutton.Tag, 'Pan_radiobutton')
     % pan button was last to be used
     if Pan_On,  Panning = 1;
-    else        Panning = 0;
+    else,       Panning = 0;
     end;
 else
     % zoom button was last to be used (or no button was used)
     if Zoom_On, Panning = 0;
-    else        Panning = 1;
+    else,       Panning = 1;
     end;
 end;
 
@@ -766,7 +766,7 @@ function structNames = retrieveNames
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 structNames.toolName            = 'PZ_tool';
-structNames.buttonTag           = 'figPanZoom';
+structNames.buttonTag           = 'figButtonPZ';
 structNames.buttonToolTipString = 'Pan and Zoom Figure';
 structNames.menuTag             = 'menuPanZoom';
 structNames.menuLabel           = 'Pan and Zoom';
