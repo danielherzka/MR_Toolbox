@@ -301,7 +301,6 @@ function closeRequestCallback(~,~,hFig)
 
 utilDispDebug;
 aD = getAD(hFig);
-
 old_SHH = aD.hRoot.ShowHiddenHandles;
 aD.hRoot.ShowHiddenHandles = 'On';
 
