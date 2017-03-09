@@ -1,6 +1,7 @@
 # MATLAB background files #
 ###################
 *.asv
+*.m~
 
 
 # OS generated files #

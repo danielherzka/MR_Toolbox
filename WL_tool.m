@@ -20,41 +20,30 @@ function WL_tool(varargin)
 % National Heart, Lung and Blood Institute, NIH, DHHS
 % Bethesda, MD 20892
 
-% Test for Github
-
-
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Lobby Function
-
-if isempty(varargin)
-    Action = 'New';
-else
-    Action = varargin{1};
-end;
 
 % Set or clear global debug flag
 global DB; DB = 1;
+dispDebug('Lobby');
+Create_New_Objects;
 
-switch Action
-    case 'New', 	                     Create_New_Objects;
-    case 'Activate_WL',		             Activate_WL(varargin{:});
-    case 'Deactivate_WL',                Deactivate_WL(varargin{2:end});
-    case 'Adjust_On', 		             Adjust_On;         % Entry
-    case 'Adjust_WL', 	 	             Adjust_WL;         % Cycle
-    case 'Adjust_WL_For_All',            Adjust_WL_For_All; % Exit
-    case 'Edit_Adjust',                  Edit_Adjust;
-    case 'Set_Colormap',                 Set_Colormap;
-    case 'Menu_WL',                      Menu_WL;
-    case 'WL_Reset',                     WL_Reset;
-    case 'Auto_WL_Reset',                Auto_WL_Reset;
-    case 'Key_Press_CopyPaste',          Key_Press_CopyPaste(varargin{2:end});
-    case 'Close_Request_Callback',       Close_Request_Callback;
-    case 'Close_Parent_Figure',    	     Close_Parent_Figure;
-    otherwise
-        disp(['Unimplemented Functionality: ', Action]);
-end;
-%
+% List of callback functions acceesed from outside in response to GUI 
+%      Activate_WL,		           Activate_WL
+%      Deactivate_WL,              Deactivate_WL
+%      Adjust_On, 		           Adjust_On;         % Entry
+%      Adjust_WL, 	 	           Adjust_WL;         % Cycle
+%      Adjust_WL_For_All,          Adjust_WL_For_All; % Exit
+%      Edit_Adjust,                Edit_Adjust;
+%      Set_Colormap,               Set_Colormap;
+%      Menu_WL,                    Menu_WL;
+%      WL_Reset,                   WL_Reset;
+%      Auto_WL_Reset,              Auto_WL_Reset;
+%      Key_Press_CopyPaste,        Key_Press_CopyPaste
+%      Close_Request_Callback,     Close_Request_Callback;
+%      Close_Parent_Figure,    	   Close_Parent_Figure;
+
+%  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
@@ -64,7 +53,7 @@ function Create_New_Objects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-hUtils = MR_Toolbox_Utilities;
+hUtils = MR_utilities;
 
 hFig = gcf;
 
@@ -73,8 +62,8 @@ objNames = retrieveNames;
 %Create Button
 [hButton, hToolbar] = hUtils.createButtonObject(hFig, ...
     makeButtonImage, ...
-    'WL_tool(''Activate_WL'');', ...
-    'WL_tool(''Deactivate_WL'');',...
+    {@Activate_WL,hFig}, ...
+    {@Deactivate_WL,hFig},...
     objNames.buttonTag, ...
     objNames.buttonToolTipString);
 
@@ -84,6 +73,7 @@ hMenu  = hUtils.createMenuObject(hFig, ...
     @Menu_WL);
 
 if ~isempty(hButton)
+    aD.Name        = 'WL';
     aD.hUtils      = hUtils;
     aD.hRoot       = groot;
     aD.hFig        = hFig;
@@ -92,7 +82,7 @@ if ~isempty(hButton)
     aD.hToolbar    = hToolbar;
     aD.objectNames = objNames;
     aD.cMapData = [];
-    
+
     % store app data structure
     storeAD(aD);
 end
@@ -101,13 +91,14 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Activate_WL(varargin)
+function Activate_WL(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
 %% PART I - Environment
-aD = getAD;
+aD = getAD(hFig);
+aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
 
 % Check the menu object
 if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
@@ -147,16 +138,15 @@ pause(0.5);
 % Wait until after old fig is closed.
 aD.hButton.Tag = [aD.hButton.Tag,'_On'];
 aD.hMenu.Tag   = [aD.hMenu.Tag, '_On'];
-aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
 
 % Set callbacks
-aD.hFig.WindowButtonDownFcn   = 'WL_tool(''Adjust_On'');';
-aD.hFig.WindowButtonUpFcn     = 'WL_tool(''Adjust_WL_For_All''); ';
+aD.hFig.WindowButtonDownFcn   = {@Adjust_On, aD.hFig};
+aD.hFig.WindowButtonUpFcn     = {@Adjust_WL_For_All, aD.hFig};
 aD.hFig.WindowButtonMotionFcn = '';
 aD.hFig.WindowKeyPressFcn     = @Key_Press_CopyPaste;
+aD.hFig.CloseRequestFcn       = @Close_Parent_Figure;
 
 % Draw faster and without flashes
-aD.hFig.CloseRequestFcn = @Close_Parent_Figure;
 aD.hFig.Renderer = 'zbuffer';
 aD.hRoot.CurrentFigure = aD.hFig;
 [aD.hAllAxes.SortMethod] = deal('Depth');
@@ -176,8 +166,14 @@ end
 aD.hGUI = guihandles(aD.hToolFig);
 
 aD.hToolFig.Name = aD.objectNames.figName;
-aD.hToolFig.CloseRequestFcn = @Close_Request_Callback;
+aD.hToolFig.CloseRequestFcn = {@aD.hUtils.Close_Request_Callback, aD.hFig};
 
+% Set Object callbacks; return hFig for speed
+aD.hGUI.Colormap_popupmenu.Callback = {@Set_Colormap, aD.hFig};
+aD.hGUI.Window_value_edit.Callback  = {@Edit_Adjust, aD.hFig};
+aD.hGUI.Level_value_edit.Callback   = {@Edit_Adjust, aD.hFig};
+aD.hGUI.Auto_pushbutton.Callback    = {@Auto_WL_Reset, aD.hFig};
+aD.hGUI.Reset_pushbutton.Callback   = {@WL_Reset, aD.hFig};
 
 %%  PART III - Finish setup for other objects
 
@@ -189,32 +185,32 @@ aD.copy.CMap       = [];
 
 % Update colormap information
 if isempty(aD.cMapData)
-    
+
     dispDebug;('First Call');
     % If first call,determine current figure's colormap and
     % distribute it to all axes
     cmapNames = aD.hGUI.Colormap_popupmenu.String;
     aD.cMapData.allCmapValues = findColormap(aD.hFig.Colormap,cmapNames(1:end-1));
     aD.cMapData.allCmapValues = repmat(aD.cMapData.allCmapValues, size(aD.hAllAxes));
-    
+
     aD.cMapData.allColormaps = cell(size(aD.hAllAxes));
     [aD.cMapData.allColormaps{:}] = deal(aD.hFig.Colormap);
-    
+
     for i=1:length(aD.hAllAxes)
         colormap(aD.hAllAxes(i), aD.hFig.Colormap);
     end
-      
+
     storeAD(aD);
     updateColormapPopupmenu
-    Set_Colormap; %(aD.hGUI.Colormap_popupmenu);
-    
+    Set_Colormap([], [], aD.hFig); %(aD.hGUI.Colormap_popupmenu);
+
 else
-    dispDebug('Return Call'); 
+    dispDebug('Return Call');
     % If return call, restore old string; since first axes is active, put its
     %  colormap as the value
     storeAD(aD);
     restoreColormap;
-    
+
 end
 aD.hGUI.Reset_pushbutton.Enable   = 'Off';
 aD.hGUI.Window_value_edit.Enable  = 'Off';
@@ -224,16 +220,17 @@ aD.hGUI.Level_value_edit.Enable   = 'Off';
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Deactivate_WL(varargin)
+function Deactivate_WL(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
+
 if ~isempty(aD.hButton)
     aD.hButton.Tag = aD.hButton.Tag(1:end-3);
 end
-    
+
 if ~isempty(aD.hMenu)
     aD.hMenu.Checked = 'off';
     aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
@@ -264,15 +261,15 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Adjust_On
+function Adjust_On(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Execute once at the beggining of a drag cycle
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
-aD.hFig.WindowButtonMotionFcn = 'WL_tool(''Adjust_WL'');';
+aD.hFig.WindowButtonMotionFcn = {@Adjust_WL, aD.hFig};
 aD.hCurrentAxes = gca;
 
 
@@ -283,18 +280,18 @@ aD.refCLim  = aD.hCurrentAxes.CLim;
 %hButton.UserData = [point(1,1) point(1,2), Clim];
 storeAD(aD);
 updateColormapPopupmenu;
-Adjust_WL;
+Adjust_WL([],[],aD.hFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Adjust_WL
+function Adjust_WL(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
 aD.hCurrentAxes = gca;
 point = aD.hCurrentAxes.CurrentPoint;
@@ -320,33 +317,27 @@ new_window =  window + window * (deltas(1) / diff(xlim))^sensitivity_factor;
 % make sure clims stay ascending
 if (new_window < 0), new_window = 0.1; end;
 aD.hCurrentAxes.CLim = [new_level - new_window/2 , new_level + new_window/2];
-% aD.newCLim = aD.hCurrentAxes.CLim;
-% aD.newLev  = new_level;
-% aD.newWin  = new_window;
 
 storeAD(aD); % Need hCurrentAxes to be perm? If not, don't need store
-
-%hApply_to_popupmenu = findHiddenObj(hToolFig, 'Tag', 'Apply_to_popupmenu');
-%aD.hGUI.Apply_to_popupmenu.UserData =  { [new_level, new_window], hCurrentAxes, hFig};
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Adjust_WL_For_All
+function Adjust_WL_For_All(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Execute once after window/level is done
 % Check to see if all images in slice should be rescaled
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
 aD.hFig.WindowButtonMotionFcn = ' ';
 
 apply_all = aD.hGUI.Apply_to_popupmenu.Value;
 hCurrentAxes_index = find(aD.hAllAxes==aD.hFig.CurrentAxes);
-% 
+%
 % new_level = new_level{1};
 % new_window = new_level(2);
 % new_level = new_level(1);
@@ -383,7 +374,7 @@ storeAD(aD);
 % Update editable text boxes
 Update_Window_Level(newWin, newLev);
 
-Set_Colormap;
+Set_Colormap([], [], aD.hFig);
 
 figure(aD.hToolFig);
 figure(aD.hFig);
@@ -404,7 +395,7 @@ aD.hGUI.Level_value_edit.String  = num2str(lev,5) ;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Set_Colormap
+function Set_Colormap(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Change the colormap to the one specified by the popupmenu
@@ -413,7 +404,7 @@ function Set_Colormap
 % Take advantage of colormap-per-axes functionality.
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
 inCmapValue = aD.hGUI.Colormap_popupmenu.Value;
 inCmapNames = aD.hGUI.Colormap_popupmenu.String;
@@ -431,87 +422,74 @@ apply_all    = aD.hGUI.Apply_to_popupmenu.Value;
 aD.hCurrentAxes     = aD.hFig.CurrentAxes;
 hCurrentAxes_index  = find(aD.hAllAxes==aD.hCurrentAxes);
 
-%currCMapName = hColormap_popupmenu.String{allCmapValues(h_axes_index)}
-
 defaultCmapNames = defineColormaps; % base names
 
 % use the previous pmenu value to put the old string back on top...
+newMapFlag = 0;
 switch inCmapName
-    
+
     case 'More...'
         % Increase the number of colormap options to include all
         %  possibilities. Should not require changing anythign in the axes
         %  but have to make sure that the right value is displayed in the
         %  popupmenu.
         dispDebug('More');
-        newMapFlag = 0;
         outCmapNames = [defaultCmapNames; 'Less...'];
         %newCmapName = inCmapName;
         %outCmapValue = find(strncmp(newCmapName, newCmapNames, 3));
-        
-        
+
+
         % Update value for cmaps that have changed position
         %  (1(P)->1, 2(G)->2, Other goes to a new number}
         for i = 1:length(aD.hAllAxes)
             outCmapValues(i) = findColormap(outCmaps{i}, outCmapNames);
         end
-        
+
         %outCmapName = outCmapNames{outCmapValues(h_axes_index)};
-        
+
         outCmapValue = outCmapValues(hCurrentAxes_index);
-        
+
     case 'Less...'
         dispDebug('Less');
-        
+
         % If current cmap is not parula(1) or gray(2), keep name on string.
         % Check and add all Cmaps being used in all the axes
-        newMapFlag = 0;
         
         outCmapNames  = cell(length(aD.hAllAxes),1);
         for i = 1:length(aD.hAllAxes)
             outCmapNames(i) = defaultCmapNames(findColormap(outCmaps{i}, defaultCmapNames));
         end
-        
+
         outCmapNames = [ unique([defaultCmapNames(1:2);outCmapNames], 'stable'); 'More...'];
-        
+
         for i = 1:length(aD.hAllAxes)
             outCmapValues(i) = findColormap(outCmaps{i}, outCmapNames);
         end
-        
-        %outCmapName = outCmapNames{outCmapValues(h_axes_index)};
-        
+
         outCmapValue = outCmapValues(hCurrentAxes_index);
-        
-        %hColormap_popupmenu.Value  = allCmapValues(h_axes_index);
-        %hColormap_popupmenu.String = newCmapNames;
-        
-        %newCmapValue = find(strncmp(currCMapName, newCmapNames,3));
-        
         % When you do this, the 'values' may need to be updated (i.e. if
         % the position of a name changes in the list, then value needs to
         % be updated;
+
+    otherwise
+ 
+        for i=1:length(defaultCmapNames)
+
+            if strcmpi(inCmapName, defaultCmapNames{i})
+                cmapFcn = str2func(lower(inCmapName));
+                cmap= cmapFcn(sizeCmap);
+                newMapFlag = 1;
+            end
+          
+        end
         
-        
-    case 'Parula',    cmap = parula(sizeCmap); newMapFlag = 1;
-    case 'Gray'  ,    cmap = gray  (sizeCmap); newMapFlag = 1;
-    case 'Jet'   ,    cmap = jet   (sizeCmap); newMapFlag = 1;
-    case 'Hsv'   ,    cmap = hsv   (sizeCmap); newMapFlag = 1;
-    case 'Hot'   ,    cmap = hot   (sizeCmap); newMapFlag = 1;
-    case 'Bone'  ,    cmap = bone  (sizeCmap); newMapFlag = 1;
-    case 'Copper',    cmap = copper(sizeCmap); newMapFlag = 1;
-    case 'Pink'  ,    cmap = pink  (sizeCmap); newMapFlag = 1;
-    case 'White' ,    cmap = white (sizeCmap); newMapFlag = 1;
-    case 'Flag'  ,    cmap = flag  (sizeCmap); newMapFlag = 1;
-    case 'Lines' ,    cmap = lines (sizeCmap); newMapFlag = 1;
-    case 'Colorcube', cmap = colorcube(sizeCmap); newMapFlag = 1;
-    case 'Prism' ,    cmap = prism (sizeCmap); newMapFlag = 1;
-    case 'Cool'  ,    cmap = cool  (sizeCmap); newMapFlag = 1;
-    case 'Autumn',    cmap = autumn(sizeCmap); newMapFlag = 1;
-    case 'Spring',    cmap = spring(sizeCmap); newMapFlag = 1;
-    case 'Winter',    cmap = winter(sizeCmap); newMapFlag = 1;
-    case 'Summer',    cmap = summer(sizeCmap); newMapFlag = 1;
-        
-        
+        if ~newMapFlag
+            % didn't find a matching colormap; do nothing;
+            %outCmaps     = aD.cMapData.allColormaps ;
+            %outCmapValues= aD.cMapData.allCmapValues;
+            outCmapValue  = inCmapValue ;
+            outCmapNames  = inCmapNames;
+        end
 end
 
 if newMapFlag
@@ -525,13 +503,13 @@ if newMapFlag
     elseif apply_all == 4,               idxs =  1:hCurrentAxes_index;                   % 1:current
     elseif apply_all == 5,               idxs =  hCurrentAxes_index:length(aD.hAllAxes); % current:end
     end;
-    
+
     for i = idxs
         colormap(aD.hAllAxes(i),cmap);
         outCmaps{i} = cmap;
         outCmapValues(i) = findColormap(cmap,inCmapNames);
     end
-    
+
 else
     % Update Popupmenu
     aD.hGUI.Colormap_popupmenu.String  = outCmapNames;    % update popupmenu string
@@ -550,12 +528,12 @@ figure(aD.hFig);
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function WL_Reset
+function WL_Reset(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
 apply_all = aD.hGUI.Apply_to_popupmenu.Value;
 clims = aD.allClims;
@@ -599,20 +577,20 @@ Update_Window_Level(win, lev);
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Auto_WL_Reset
+function Auto_WL_Reset(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
 apply_all = aD.hGUI.Apply_to_popupmenu.Value;
 clims = aD.allClims;
 hCurrentAxes_index = find(aD.hCurrentAxes==aD.hAllAxes);
 
-if apply_all == 1,                  hAxesInterest = aD.hCurrentAxes; 
+if apply_all == 1,                  hAxesInterest = aD.hCurrentAxes;
 elseif apply_all == 2,              hAxesInterest = aD.hAllAxes;
-elseif apply_all == 3, 
+elseif apply_all == 3,
     if (mod(hCurrentAxes_index,2)), hAxesInterest = aD.hAllAxes(1:2:end);
     else                            hAxesInterest = aD.hAllAxes(2:2:end);
     end;
@@ -641,12 +619,12 @@ Update_Window_Level(win, lev);
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Edit_Adjust
+function Edit_Adjust(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 
 apply_all      = aD.hGUI.Apply_to_popupmenu.Value;
 hCurrentAxes_index = find(aD.hAllAxes==aD.hCurrentAxes);
@@ -654,10 +632,9 @@ hCurrentAxes_index = find(aD.hAllAxes==aD.hCurrentAxes);
 win = str2double(aD.hGUI.Window_value_edit.String);
 lev = str2double(aD.hGUI.Level_value_edit.String);
 
-
 if isnumeric(win) && isnumeric(lev)
     % update the current graph or all the graphs...
-    
+
     if apply_all == 1,                  hAxesInterest = aD.hCurrentAxes;
     elseif apply_all == 2,              hAxesInterest = aD.hAllAxes;
     elseif apply_all == 3
@@ -667,11 +644,11 @@ if isnumeric(win) && isnumeric(lev)
     elseif apply_all == 4,              hAxesInterest = aD.hAllAxes(1:hCurrentAxes_index);
     elseif apply_all == 5,              hAxesInterest = aD.hAllAxes(hCurrentAxes_index:end);
     end
-    
+
     for i = 1:length(hAxesInterest)
         hAxesInterest(i).CLim = [lev-win/2, lev+win/2];
     end;
-    
+
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -682,44 +659,43 @@ function Key_Press_CopyPaste(~, data)
 dispDebug;
 
 aD = getAD;
+hCurrentAxes_idx = find(aD.hCurrentAxes==aD.hAllAxes);
 
 switch data.Key
     case 'c' %copy
         aD.copy.CLim = aD.hCurrentAxes.CLim;
-        hCurrentAxes_idx = find(aD.hCurrentAxes==aD.hAllAxes);
         aD.copy.CMapValue = aD.cMapData.allCmapValues(hCurrentAxes_idx);
         aD.copy.CMap      = aD.cMapData.allColormaps{hCurrentAxes_idx};
         storeAD(aD);
     case {'p','v'} %paste
         apply_all = aD.hGUI.Apply_to_popupmenu.Value;
-        
+
         if     apply_all == 1,                hAxesInterest = aD.hCurrentAxes;
         elseif apply_all == 2,                hAxesInterest = aD.hAllAxes;
-        elseif apply_all == 3,    
-            if (mod(hCurrentAxes_index,2)),   hAxesInterest = aD.hAllAxes(1:2:end);
+        elseif apply_all == 3,
+            if (mod(hCurrentAxes_idx,2)),     hAxesInterest = aD.hAllAxes(1:2:end);
             else                              hAxesInterest = aD.hAllAxes(2:2:end);
             end;
-        elseif apply_all == 4,                hAxesInterest = aD.hAllAxes(1:hCurrentAxes_index);
-        elseif apply_all == 5,                hAxesInterest = aD.hAllAxes(hCurrentAxes_index:end);
+        elseif apply_all == 4,                hAxesInterest = aD.hAllAxes(1:hCurrentAxes_idx);
+        elseif apply_all == 5,                hAxesInterest = aD.hAllAxes(hCurrentAxes_idx:end);
         end
-        
+
         aD.copy
-        
+
         if ~isempty(aD.copy.CLim)
-            % XXX what happens if there is a change in CMap_PUP String and
-            % Value is not longer suitable/correct?
+
             for i = 1:length(hAxesInterest)
                 hAxesInterest(i).CLim = aD.copy.CLim;
                 aD.cMapData.allColormaps{hAxesInterest(i)==aD.hAllAxes} = aD.copy.CMap;
                 aD.cMapData.allCMapValues(hAxesInterest(i)==aD.hAllAxes) = aD.copy.CMapValue;
                 colormap(hAxesInterest(i), aD.copy.CMap);
                 aD.hGUI.Colormap_popupmenu.Value = aD.copy.CMapValue;
-            end; 
+            end;
         end
-        Set_Colormap;
-
+        Set_Colormap([], [], aD.hFig)
 end
-
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -747,34 +723,34 @@ end;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% %% %%%%%%%%%%%%%%%%%%%%%%%%
+% %
+% function Close_Request_Callback(~,~,hFig)
+% %
+% dispDebug;
+% 
+% aD = getAD(hFig);
+% 
+% old_SHH = aD.hRoot.ShowHiddenHandles;
+% aD.hRoot.ShowHiddenHandles = 'On';
+% 
+% %call->WL_tool('Deactivate_WL');
+% aD.hButton.State = 'off';
+% 
+% aD.hRoot.ShowHiddenHandles= old_SHH;
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Close_Request_Callback(varargin)
-%
-dispDebug;
-
-aD = getAD;
-
-old_SHH = aD.hRoot.ShowHiddenHandles;
-aD.hRoot.ShowHiddenHandles = 'On';
-
-%call->WL_tool('Deactivate_WL');
-aD.hButton.State = 'off';
-
-aD.hRoot.ShowHiddenHandles= old_SHH;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function Close_Parent_Figure
+function Close_Parent_Figure(hFig,~)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function to make sure that if parent figure is closed,
 % the ROI info and ROI Tool are closed too.
 dispDebug;
 
-aD = getAD;
+aD = getAD(hFig);
 if ~isempty(aD)
     hToolFig = aD.hToolFig;
 else
@@ -783,7 +759,6 @@ else
     objNames = retrieveNames;
     hToolFig = findobj(groot, 'Tag', objNames.figTag);
 end
-
 delete(hToolFig);
 hFig.CloseRequestFcn = 'closereq';
 close(hFig);
@@ -799,38 +774,21 @@ close(hFig);
 function Cmap_Value = findColormap(Current_Cmap, CmapListCellString)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Determine the current figure's colomrap by comparing it with
+% Determine the current figure's colormap by comparing it with
 % the established colormaps of the same size
 dispDebug;
 
 Cmap_Value = 1; % default
 
-for i = 1:length(CmapListCellString)
-    switch CmapListCellString{i}
-        case 'Parula', test_cmap = parula(size(Current_Cmap,1));
-        case 'Gray',   test_cmap = gray(  size(Current_Cmap,1));
-        case 'Jet',    test_cmap = jet(   size(Current_Cmap,1));
-        case 'Hsv',    test_cmap = hsv(   size(Current_Cmap,1));
-        case 'Hot',    test_cmap = hot(   size(Current_Cmap,1));
-        case 'Bone',   test_cmap = bone(  size(Current_Cmap,1));
-        case 'Copper', test_cmap = copper(size(Current_Cmap,1));
-        case 'Pink',   test_cmap = pink(  size(Current_Cmap,1));
-        case 'White',  test_cmap = white( size(Current_Cmap,1));
-        case 'Flag',   test_cmap = flag(  size(Current_Cmap,1));
-        case 'Lines',  test_cmap = lines( size(Current_Cmap,1));
-        case 'Colorcube', test_cmap = colorcube(size(Current_Cmap,1));
-        case 'Prism',  test_cmap = prism( size(Current_Cmap,1));
-        case 'Cool',   test_cmap = cool(  size(Current_Cmap,1));
-        case 'Autumn', test_cmap = autumn(size(Current_Cmap,1));
-        case 'Spring', test_cmap = spring(size(Current_Cmap,1));
-        case 'Winter', test_cmap = winter(size(Current_Cmap,1));
-        case 'Summer', test_cmap = summer(size(Current_Cmap,1));
-    end;
-    if isempty(find(test_cmap - Current_Cmap, 1))
+for i=1:length(CmapListCellString)
+    cmapFcn = str2func(lower(CmapListCellString{i}));
+    testCmap= cmapFcn(size(Current_Cmap,1));
+    
+    if isempty(find(testCmap - Current_Cmap, 1))
         Cmap_Value = i;
         return;
     end;
-end;
+end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -908,12 +866,14 @@ function cmap_cell = defineColormaps
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 cmap_cell = {...
-    'Parula','Gray'  ,'Jet'    ,...
-    'Hsv'   ,'Hot'   ,'Bone'   ,...
-    'Copper','Pink'  ,'White'  ,...
-    'Flag'  ,'Lines' ,'Colorcube',...
-    'Prism' ,'Cool'  ,'Autumn',...
-    'Spring','Winter','Summer'}';  %add new colormaps at the end of the list;
+    'Parula';'Gray'  ;'Jet'    ;...
+    'Hsv'   ;'Hot'   ;'Bone'   ;...
+    'Copper';'Pink'  ;'White'  ;...
+    'Flag'  ;'Lines' ;'Colorcube';...
+    'Prism' ;'Cool'  ;'Autumn' ;...
+    'Spring';'Winter';'Summer' ;...
+    'ecv_cmap'; 't1_cmap'; 'perf_cmap';...
+    };  %add new colormaps at the end of the list;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -923,7 +883,7 @@ function structNames = retrieveNames
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 structNames.toolName            = 'WL_tool';
-structNames.buttonTag           = 'figWindowLevel';
+structNames.buttonTag           = 'figButtonWL';
 structNames.buttonToolTipString = 'Set Image Window Level';
 structNames.menuTag             = 'menuWindowLevel';
 structNames.menuLabel           = 'Window and Level';
@@ -955,93 +915,45 @@ h_root.ShowHiddenHandles = old_SHH;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-% function [hToolbar_Children, origToolEnables, origToolStates ] = disableToolbarButtons(hToolbar, currentToolName)
-% %
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% dispDebug;
-% hRoot = groot;
-% old_SHH = hRoot.ShowHiddenHandles;
-% hRoot.ShowHiddenHandles = 'on';
-% 
-% hToolbar_Children = hToolbar.Children;
-% 
-% origToolEnables = cell(size(hToolbar_Children));
-% origToolStates  = cell(size(hToolbar_Children));
-% 
-% 
-% for i = 1:length(hToolbar_Children)
-%     if ~strcmpi(hToolbar_Children(i).Tag, currentToolName)
-%         if isprop(hToolbar_Children(i), 'Enable')
-%             origToolEnables{i} =  hToolbar_Children(i).Enable;
-%             hToolbar_Children(i).Enable ='off';
-%         end
-%         if isprop(hToolbar_Children(i), 'State')
-%             origToolStates{i}  =  hToolbar_Children(i).State;
-%             hToolbar_Children(i).Enable ='off';
-%         end
-%     end
-% end
-% 
-% hRoot.ShowHiddenHandles = old_SHH;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% %% %%%%%%%%%%%%%%%%%%%%%%%%
-% %
-% function enableToolbarButtons(hToolbar_Children, origToolEnables, origToolStates)
-% %
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% dispDebug;
-% 
-% for i = 1:length(hToolbar_Children)
-%     if isprop(hToolbar_Children(i), 'Enable') && ~isempty(origToolEnables{i})
-%         hToolbar_Children(i).Enable = origToolEnables{i};
-%     end
-%     if isprop(hToolbar_Children(i), 'State') && ~isempty(origToolStates{i})
-%         hToolbar_Children(i).State = origToolStates{i};
-%     end
-% end
-% %
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
 function  storeAD(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
-setappdata(aD.hFig, 'WLData', aD);
+setappdata(aD.hFig, aD.Name, aD);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  aD = getAD
+function  aD = getAD(hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Retrieve application data stored within Active Figure (aka image figure)
+%  Appdata name depends on tool. 
 dispDebug;
+tic %dbg
 
-% fastest way to find figure; doesn't work during Create
-tic
-aD = [];
-hFig = findobj(groot, 'Tag', 'ActiveFigure'); %flat?
+aDName=dbstack;
+aDName=aDName(end).file(1:2);
 
-
-if isempty(hFig)
-    % Call from Activate
-    objNames = retrieveNames;
-    obj = findHiddenObj('Tag', objNames.buttonTag);
-    while ~strcmpi(obj.Type, 'Figure')
-        obj = obj.Parent;
+if nargin==0
+    % Search the children of groot
+    hFig = findobj(groot, 'Tag', 'ActiveFigure', '-depth', 1); 
+    if isempty(hFig)
+        % hFig hasn't been found (likely first call) during Activate
+        obj = findobj('-regexp', 'Tag', ['\w*Button', aDName,'\w*']);
+        hFig = obj(1).Parent.Parent;
     end
-    hFig = obj;
 end
 
-if isappdata(hFig, 'WLData')
-    aD = getappdata(hFig, 'WLData');
+if isappdata(hFig, aDName)
+    aD = getappdata(hFig, aDName);
+else
+    dispDebug('no aD!'); %dbg
+    aD = [];
 end
 
-dispDebug(['end (',num2str(toc),')']);
+dispDebug(['end (',num2str(toc),')']); %dbg
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1068,7 +980,7 @@ if DB
         end
     end
     fprintf('\n');
-    
+
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1098,20 +1010,3 @@ for i = 1:size(propList,1)
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% %% %%%%%%%%%%%%%%%%%%%%%%%%
-% %
-% function restoreOrigData(hFig, propList)
-% %
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% % Restore previous WBDF etc to restore state after WL is done.
-% dispDebug;
-% for i = 1:size(propList,1)
-%   hFig.(propList{i,1}) = propList{i,2};
-% end
-% %
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-

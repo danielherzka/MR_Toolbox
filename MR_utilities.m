@@ -1,4 +1,8 @@
+<<<<<<< HEAD:MR_Toolbox_Utilities.m
 function utilFcn = MR_Toolbox_Utilities
+=======
+function utilFcn = MR_utilities
+>>>>>>> master:MR_utilities.m
 
 % Create cell-list of available functions
 fs={...
@@ -9,16 +13,19 @@ fs={...
     'retrieveOrigData'; ...
     'restoreOrigData';...
     'findHiddenObj';...
+    'findHiddenObjRegexp';...
     'createButtonObject';...
     'createMenuObject';...
     'menuToggle';...
+    'closeRequestCallback';...
+    'storeAD';...
+    'getAD';...
     };
 
 % Convert each name into a function handle reachable from outside this file 
 for i=1:length(fs),
 	utilFcn.(fs{i}) = str2func(fs{i});
 end;
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%START MULTI-TOOL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%
@@ -174,6 +181,25 @@ h_root.ShowHiddenHandles = old_SHH;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
+function h = findHiddenObjRegexp(Handle, Property, Value)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+utilDispDebug;
+
+h_root = groot;
+old_SHH = h_root.ShowHiddenHandles;
+h_root.ShowHiddenHandles = 'On';
+if nargin <3
+    h = findobj('-regexp', Handle, Property);
+else
+    h = findobj(Handle, '-regexp', Property, Value);
+end;
+h_root.ShowHiddenHandles = old_SHH;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
 function  [hButton, hToolbar] = createButtonObject(...
     hFig, ...
     buttonImage, ...
@@ -183,6 +209,7 @@ function  [hButton, hToolbar] = createButtonObject(...
     buttonToolTipString)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+utilDispDebug;
 hToolbar = findall(hFig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
 
 % If the toolbar exists and the button has not been previously created
@@ -222,6 +249,7 @@ end
 function  hMenu = createMenuObject(hFig, menuTag,menuLabel,callback)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+utilDispDebug;
 hToolMenu = findall(hFig, 'Label', '&Tools');
 
 if ~isempty(hToolMenu) && isempty(findobj(hToolMenu,'Tag', menuTag))
@@ -246,7 +274,6 @@ if ~isempty(hToolMenu) && isempty(findobj(hToolMenu,'Tag', menuTag))
 else
     hMenu = [];
 end
-
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -266,14 +293,79 @@ else %hButton
     hMenu.Checked = 'on';
     hButton.State = 'on';
 end;
-%
+
+<<<<<<< HEAD:MR_Toolbox_Utilities.m
+=======
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function closeRequestCallback(~,~,hFig)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+utilDispDebug;
+aD = getAD(hFig);
+
+old_SHH = aD.hRoot.ShowHiddenHandles;
+aD.hRoot.ShowHiddenHandles = 'On';
+
+%calls deactivate
+aD.hButton.State = 'off';
+aD.hRoot.ShowHiddenHandles= old_SHH;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  storeAD(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+utilDispDebug;
+setappdata(aD.hFig, aD.Name, aD);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = getAD(hFig)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Retrieve application data stored within Active Figure (aka image figure)
+%  Appdata name depends on tool. 
+utilDispDebug;
+tic %dbg
+
+aDName=dbstack;
+aDName=aDName(end).file(1:2);
+
+if nargin==0
+    % Search the children of groot
+    hFig = findobj(groot, 'Tag', 'ActiveFigure', '-depth', 1); 
+    if isempty(hFig)
+        % hFig hasn't been found (likely first call) during Activate
+        obj = findobj('-regexp', 'Tag', ['\w*Button', aDName,'\w*']);
+        hFig = obj(1).Parent.Parent;
+    end
+end
+
+if isappdata(hFig, aDName)
+    aD = getappdata(hFig, aDName);
+else
+    utilDispDebug('no aD!'); %dbg
+    aD = [];
+end
+
+utilDispDebug(['end (',num2str(toc),')']); %dbg
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+>>>>>>> master:MR_utilities.m
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -288,8 +380,13 @@ if DB
     x = dbstack;
     funcName = x(2).name;    loc = [];
     callFuncName = x(3).file(1:end-2);
+<<<<<<< HEAD:MR_Toolbox_Utilities.m
     if length(x) > 5
         loc = ['(loc)', repmat('|> ',1, length(x)-5)] ;
+=======
+    if strcmpi( x(3).file, x(2).file)
+        loc = ['(loc)', repmat('|> ',1, sum(strcmp(x(1).file, {x.file})-1))] ;
+>>>>>>> master:MR_utilities.m
     end
     fprintf([callFuncName,' ',objectNames.toolName, ':', loc , ' %s'], funcName);
 %     if nargin>0
