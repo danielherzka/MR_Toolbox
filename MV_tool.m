@@ -170,18 +170,24 @@ if ~isempty(aD.hToolbar)
     aD.hSP.Enable = 'On';
     optionalUIControls = { ...
 <<<<<<< HEAD
+<<<<<<< HEAD
         'Apply_radiobutton',    'Value'; ...
         'Frame_Rate_edit',      'String'; ...
         'Make_Avi_checkbox',    'Value'; ...
         'Make_Mat_checkbox',    'Value'; ...
         'Show_Frames_checkbox', 'Value'; ...
 =======
+=======
+>>>>>>> master
         'Apply_radiobutton',     'Value'; ...
         'Frame_Rate_edit',       'String'; ...
         'Make_Avi_checkbox',     'Value'; ...
         'Make_Mat_checkbox',     'Value'; ...
         'Show_Frames_checkbox',  'Value'; ...
         'Show_Objects_checkbox', 'Value';...
+<<<<<<< HEAD
+>>>>>>> master
+=======
 >>>>>>> master
         };
     aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
@@ -275,7 +281,11 @@ end;
 
 %Disable save_prefs tool button
 <<<<<<< HEAD
+<<<<<<< HEAD
 if ishghandle(aD.hSP)
+=======
+if ~isempty(aD.hSP) %?ishghandle?
+>>>>>>> master
 =======
 if ~isempty(aD.hSP) %?ishghandle?
 >>>>>>> master
@@ -1253,6 +1263,10 @@ set(h_axes, 'Nextplot', old_nextplot);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
 =======
 
 >>>>>>> master
