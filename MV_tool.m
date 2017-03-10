@@ -113,7 +113,7 @@ dispDebug;
 
 aD = configActiveFigure(hFig);
 aD = setupGUI(aD);
-aD = configEnv(aD);
+aD = configOther(aD);
 
 storeAD(aD);
 Set_Current_Axes(aD.hFig, aD.hCurrentAxes);
@@ -1042,7 +1042,7 @@ aD.hButton.Tag   = [aD.hButton.Tag,'_On'];
 aD.hMenuPZ.Tag   = [aD.hMenu.Tag, '_On'];
 
 % Set figure clsoe callback
-aD.hFig.CloseRequestFcn = @Close_Parent_Figure;
+aD.hFig.CloseRequestFcn = {aD.hUtils.closeParentFigure, aD.objectNames.figTag};
 
 % Draw faster and without flashes
 aD.hFig.Renderer = 'zbuffer';
@@ -1101,7 +1101,7 @@ aD.hGUI.Object_List_popupmenu.Callback   = {@Toggle_Object,     aD.hFig};
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  aD = configEnv(aD)
+function  aD = configOther(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%  PART III - Finish setup for other objects

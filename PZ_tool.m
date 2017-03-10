@@ -21,37 +21,35 @@ function PZ_tool(varargin)
 %% %%%%%%%%%%%%%%%%%%%%%%%% 
 %
 % Lobby Function
-
-
-if isempty(varargin) 
-   Action = 'New';
-else
-   Action = varargin{1};  
-end
-
-% Set or clear global debug flag
 global DB; DB = 1;
+Create_New_Objects;
 
-switch Action
-    case 'New', 	                     Create_New_Objects;
-    case 'Activate_PZ',                  Activate_PZ;
-    case 'Deactivate_PZ',                Deactivate_PZ(varargin{2:end});
-    case 'Adjust_On',                    Adjust_Pan_On;          % Entry
-    case 'Adjust_Pan',                   Adjust_Pan;             % Cycle
-    case 'Adjust_Pan_For_All',           Adjust_Pan_For_All;     % Exit
-    case 'Switch_PZ',                    Switch_PZ;
-    case 'Zoom',                         Apply_Zoom_Factor;
-    case 'Done_Zoom',                    Done_Zoom;
-    case 'PZ_Reset',                     PZ_Reset;
-    case 'Auto_PZ_Reset',                Auto_PZ_Reset;
-    case 'Menu_PZ',                      Menu_PZ;
-    case 'Key_Press_CopyPaste',          Key_Press_CopyPaste(varargin{2:end});       
-    case 'Close_Parent_Figure',          Close_Parent_Figure(varargin{2:end});    
-    case 'Close_Request_Callback',       Close_Request_Callback;
-    otherwise
-        disp(['Unimplemented Functionality: ', Action]);
-       
-end;
+% if isempty(varargin) 
+%    Action = 'New';
+% else
+%    Action = varargin{1};  
+% end
+% Set or clear global debug flag
+% 
+% % switch Action
+% %     case 'New', 	                     Create_New_Objects;
+%     case 'Activate_PZ',                  Activate_PZ;
+%     case 'Deactivate_PZ',                Deactivate_PZ(varargin{2:end});
+%     case 'Adjust_On',                    Adjust_Pan_On;          % Entry
+%     case 'Adjust_Pan',                   Adjust_Pan;             % Cycle
+%     case 'Adjust_Pan_For_All',           Adjust_Pan_For_All;     % Exit
+%     case 'Switch_PZ',                    Switch_PZ;
+%     case 'Zoom',                         Apply_Zoom_Factor;
+%     case 'Done_Zoom',                    Done_Zoom;
+%     case 'PZ_Reset',                     PZ_Reset;
+%     case 'Auto_PZ_Reset',                Auto_PZ_Reset;
+%     case 'Menu_PZ',                      Menu_PZ;
+%     case 'Key_Press_CopyPaste',          Key_Press_CopyPaste(varargin{2:end});       
+%     case 'Close_Parent_Figure',          Close_Parent_Figure(varargin{2:end});    
+%     case 'Close_Request_Callback',       Close_Request_Callback;
+%     otherwise
+%         disp(['Unimplemented Functionality: ', Action]);
+% end;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -105,7 +103,7 @@ dispDebug;
 
 aD = configActiveFigure(hFig);
 aD = setupGUI(aD);
-aD = configEnv(aD);
+aD = configOther(aD);
 
 storeAD(aD);
 Switch_PZ(hFig);
@@ -629,32 +627,6 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-%% %%%%%%%%%%%%%%%%%%%%%%%% 
-%
-function Close_Parent_Figure(hFig,~)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% function to make sure that if parent figure is closed, 
-% the tool figure is also closed
-dispDebug;
-
-aD = getAD(hFig);
-if ~isempty(aD)
-    hToolFig = aD.hToolFig;
-else
-    % Parent Figure is already closed and aD is gone
-    dispDebug('ParFig closed!');
-    objNames = retrieveNames;
-    hToolFig = findobj(groot, 'Tag', objNames.figTag); 
-end
-
-delete(hToolFig);
-hFig.CloseRequestFcn = 'closereq';
-close(hFig);
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -776,11 +748,13 @@ aD.hFig.WindowButtonMotionFcn = '';
 aD.hFig.WindowKeyPressFcn  = @Key_Press_CopyPaste;
 
 % Set figure clsoe callback
-aD.hFig.CloseRequestFcn = @Close_Parent_Figure;
+aD.hFig.CloseRequestFcn = {aD.hUtils.closeParentFigure, aD.objectNames.figTag};
 
 % Draw faster and without flashes
 aD.hFig.Renderer = 'zbuffer';
 [aD.hAllAxes.SortMethod] = deal('Depth');
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -814,7 +788,7 @@ aD.hGUI.Auto_pushbutton.Callback  = {@Auto_PZ_Reset, aD.hFig};
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  aD = configEnv(aD)
+function  aD = configOther(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%  PART III - Finish setup for other objects
@@ -892,8 +866,6 @@ dispDebug;
 setappdata(aD.hFig, 'AD', aD);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -905,28 +877,6 @@ function  aD = getAD(hFig)
 dispDebug;
 tic %dbg
 aD = getappdata(hFig, 'AD');
-
-% aDName=dbstack;
-% aDName=aDName(1).file(1:2);
-% 
-% if nargin==0
-%     % Search the children of groot
-%     hFig = findobj(groot, 'Tag', 'ActiveFigure', '-depth', 1); 
-%     if isempty(hFig)
-%         % hFig hasn't been found (likely first call) during Activate
-%         obj = findobj('-regexp', 'Tag', ['\w*Button', aDName,'\w*']);
-%         hFig = obj(1).Parent.Parent;
-%     end
-% end
-% 
-% if isappdata(hFig, aDName)
-%     aD = getappdata(hFig, aDName);
-% else
-%     dispDebug('no aD!'); %dbg
-%     aD = [];
-% end
-% 
-% dispDebug(['end (',num2str(toc),')']); %dbg
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -992,8 +942,5 @@ end
 %  Could be implemented with get/setappdata functionality. I.e. when you
 %  close the tool with Pan on, it should be on upon restart. Same for apply
 %  scope.
-% The creation of a utility suite (via str2fun) should make code accross
-%  tools more general and more broadly applicable. Could make implementation
-%  of new tools (2D or 3D registration, fitting of relaxation parameters)
-%  easier and more robust.
+
 

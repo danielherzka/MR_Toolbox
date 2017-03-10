@@ -97,7 +97,7 @@ dispDebug;
 
 aD = configActiveFigure(hFig);
 aD = setupGUI(aD);
-aD = configEnv(aD);
+aD = configOther(aD);
 storeAD(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -310,7 +310,7 @@ apply_all    = aD.hGUI.Apply_to_popupmenu.Value;
 aD.hCurrentAxes     = aD.hFig.CurrentAxes;
 hCurrentAxes_index  = find(aD.hAllAxes==aD.hCurrentAxes);
 
-defaultCmapNames = defineColormaps; % base names
+defaultCmapNames = defineColormaps(aD); % base names
 
 % use the previous pmenu value to put the old string back on top...
 newMapFlag = 0;
@@ -611,48 +611,6 @@ end;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% %% %%%%%%%%%%%%%%%%%%%%%%%%
-% %
-% function Close_Request_Callback(~,~,hFig)
-% %
-% dispDebug;
-% 
-% aD = getAD(hFig);
-% 
-% old_SHH = aD.hRoot.ShowHiddenHandles;
-% aD.hRoot.ShowHiddenHandles = 'On';
-% 
-% %call->WL_tool('Deactivate_WL');
-% aD.hButton.State = 'off';
-% 
-% aD.hRoot.ShowHiddenHandles= old_SHH;
-% %
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function Close_Parent_Figure(hFig,~)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% function to make sure that if parent figure is closed,
-% the ROI info and ROI Tool are closed too.
-dispDebug;
-
-aD = getAD(hFig);
-if ~isempty(aD)
-    hToolFig = aD.hToolFig;
-else
-    % Parent Figure is already closed and aD is gone (shouldn't happen!)
-    dispDebug('ParFig closed!');
-    objNames = retrieveNames;
-    hToolFig = findobj(groot, 'Tag', objNames.figTag);
-end
-delete(hToolFig);
-hFig.CloseRequestFcn = 'closereq';
-close(hFig);
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -701,7 +659,7 @@ aD.hFig.WindowButtonDownFcn   = {@Adjust_On, aD.hFig};
 aD.hFig.WindowButtonUpFcn     = {@Adjust_WL_For_All, aD.hFig};
 aD.hFig.WindowButtonMotionFcn = '';
 aD.hFig.WindowKeyPressFcn     = @Key_Press_CopyPaste;
-aD.hFig.CloseRequestFcn       = @Close_Parent_Figure;
+aD.hFig.CloseRequestFcn       = {aD.hUtils.closeParentFigure, aD.objectNames.figTag};
 
 % Draw faster and without flashes
 aD.hFig.Renderer = 'zbuffer';
@@ -742,7 +700,7 @@ aD.hGUI.Reset_pushbutton.Callback   = {@WL_Reset, aD.hFig};
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  aD = configEnv(aD)
+function  aD = configOther(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  PART III - Finish setup for other objects
@@ -776,7 +734,13 @@ if isempty(aD.cMapData)
 
     if ~cMapFound
         % search more comprehensive list
-        aD.hGUI.Colormap_popupmenu.String = [defineColormaps; 'Less...'];
+        aD.hGUI.Colormap_popupmenu.String = [defineColormaps(aD); 'Less...'];
+        cMapFound = updateColormapPopupmenu(aD.hFig);
+    end
+    if ~cMapFound
+        % store unknown cmap in appdata. Add to list of colormaps
+        addOriginalCMap(aD) % should be only one since fig->allaxes upon startup
+        aD.hGUI.Colormap_popupmenu.String = [defineColormaps(aD); 'Less...'];
         updateColormapPopupmenu(aD.hFig);
     end
     Set_Colormap([], [], aD.hFig); 
@@ -897,7 +861,7 @@ storeAD(aD);
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function cmap_cell = defineColormaps
+function cmap_cell = defineColormaps(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 cmap_cell = {...
@@ -907,8 +871,38 @@ cmap_cell = {...
     'Flag'  ;'Lines' ;'Colorcube';...
     'Prism' ;'Cool'  ;'Autumn' ;...
     'Spring';'Winter';'Summer' ;...
-    'ecv_cmap'; 't1_cmap'; 'perf_cmap';...
+    'ECV_cmap'; 'T1_cmap'; 'Perf_cmap';...
     };  %add new colormaps at the end of the list;
+
+if isappdata(aD.hFig, 'OriginalColormap')
+    cmap_cell = [cmap_cell; 'Original'];
+end
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  addOriginalCMap(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Store unknown map as appdata in the figure
+otherCmap = aD.hFig.Colormap;
+setappdata(aD.hFig,'OriginalColormap', otherCmap);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  cmap = original(~) %#ok<DEFNU>
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Return the original colormap that was in use with the figure iff 
+% there was not colormap recognized at the onset. No explicit
+% call to this function as it thourgh str2fun.
+dispDebug;
+aD = MR_utilities('getADBlind');
+cmap = getappdata(aD.hFig, 'OriginalColormap');
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1013,6 +1007,33 @@ dispDebug(['end (',num2str(toc),')']); %dbg
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function propList = retreiveOrigData(hFig)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Retrive previous settings for storage
+dispDebug;
+
+propList = {...
+    'WindowButtonDownFcn'; ...
+    'WindowButtonMotionFcn'; ...
+    'WindowButtonUpFcn'; ...
+    'WindowKeyPressFcn'; ...
+    'UserData'; ...
+    'CloseRequestFcn'; ...
+    'Pointer'; ...
+    'PointerShapeCData'; ...
+    'Tag' ...
+    };
+
+for i = 1:size(propList,1)
+    propList{i,2} = hFig.(propList{i,1});
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function  dispDebug(varargin)
@@ -1037,32 +1058,6 @@ if DB
     end
     fprintf('\n');
 
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function propList = retreiveOrigData(hFig)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Retrive previous settings for storage
-dispDebug;
-
-propList = {...
-    'WindowButtonDownFcn'; ...
-    'WindowButtonMotionFcn'; ...
-    'WindowButtonUpFcn'; ...
-    'WindowKeyPressFcn'; ...
-    'UserData'; ...
-    'CloseRequestFcn'; ...
-    'Pointer'; ...
-    'PointerShapeCData'; ...
-    'Tag' ...
-    };
-
-for i = 1:size(propList,1)
-    propList{i,2} = hFig.(propList{i,1});
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%

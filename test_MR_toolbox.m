@@ -16,7 +16,7 @@ Ims = cat(4, I.A,I.A,I.A);
 
 
 imagescn(Ims(end/4:end*3/4,:,:,:), [], [], 10 , 3);
-cmap = ecv_cmap(200)
+cmap = ecv_cmap(200);
 colormap(cmap(1:end/2,:))
 
 

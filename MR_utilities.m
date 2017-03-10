@@ -1,30 +1,45 @@
-function utilFcn = MR_utilities
+function out = MR_utilities(varargin)
 
 % Create cell-list of available functions
-fs={...
-    'defaultButtonTags';...
-    'retrieveNames';...
-    'enableToolbarButtons';...
-    'disableToolbarButtons';...
-    'retrieveOrigData'; ...
-    'restoreOrigData';...
-    'updateHCurrentFigAxes';...
-    'findHiddenObj';...
-    'findHiddenObjRegexp';...
-    'findAxesChildIm';...
-    'createButtonObject';...
-    'createMenuObject';...
-    'menuToggle';...
-    'closeRequestCallback';...
-    'storeAD';...
-    'limitAD';...
-    'getAD';...
-    };
+if nargin == 0
+    fs={...
+        'defaultButtonTags';...
+        'retrieveNames';...
+        'enableToolbarButtons';...
+        'disableToolbarButtons';...
+        'retrieveOrigData'; ...
+        'restoreOrigData';...
+        'updateHCurrentFigAxes';...
+        'findHiddenObj';...
+        'findHiddenObjRegexp';...
+        'findAxesChildIm';...
+        'createButtonObject';...
+        'createMenuObject';...
+        'menuToggle';...
+        'closeRequestCallback';...
+        'closeParentFigure';...
+        'storeAD';...
+        'limitAD';...
+        'getAD';...
+        'getADBlind';...
+        };
+    
+    % Convert each name into a function handle reachable from outside this file
+    for i=1:length(fs),
+        out.(fs{i}) = str2func(fs{i});
+    end;
 
-% Convert each name into a function handle reachable from outside this file 
-for i=1:length(fs),
-	utilFcn.(fs{i}) = str2func(fs{i});
-end;
+else %nargin>0
+    if isempty(varargin),      Action = 'New';
+    else                       Action = varargin{1};
+    end
+    
+    switch Action
+        case 'getADBlind',    out = getADBlind;    
+    end
+    
+end
+    
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%START MULTI-TOOL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%
@@ -294,9 +309,6 @@ function  aD = getAD(hFig)
 dispDebug;
 tic %dbg
 
-aDName=dbstack;
-aDName=aDName(end).file(1:2);
-
 if nargin==0
     % Search the children of groot
     hFig = findobj(groot, 'Tag', 'ActiveFigure', '-depth', 1); 
@@ -307,14 +319,71 @@ if nargin==0
     end
 end
 
-if isappdata(hFig, aDName)
-    aD = getappdata(hFig, aDName);
+% assume ewe require the Active AD, not the tool-specific ones
+if isappdata(hFig, 'AD')
+    aD = getappdata(hFig, 'AD');
 else
     dispDebug('no aD!'); %dbg
     aD = [];
 end
 
 dispDebug(['end (',num2str(toc),')']); %dbg
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = getADBlind
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Retrieve application data stored within Active Figure (aka image figure)
+%  Appdata name depends on tool. Blind = do not know ActiveFigure handle
+dispDebug;
+
+tic %dbg
+
+if nargin==0
+    % Search the children of groot
+    hFig = findHiddenObj(groot, 'Tag', 'ActiveFigure'); 
+    if isempty(hFig)
+        % hFig hasn't been found (may be first call) during Activate
+        %  find button
+        obj = findHiddenObjRegexp('Tag', ['\w*Button', objNames.Name,'\w*']);
+        hFig = obj(1).Parent.Parent;
+    end
+end
+
+if ishghandle(hFig) && isappdata(hFig, 'AD')
+    aD = getappdata(hFig, 'AD');
+else
+    dispDebug('!No aD found!'); %dbg
+    aD = [];
+end
+
+dispDebug(['end (',num2str(toc),')']); %dbg
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function closeParentFigure(hFig,~,figTag)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% function to make sure that if parent figure is closed,
+% the ROI info and ROI Tool are closed too.
+dispDebug;
+aD = getAD(hFig);
+if ~isempty(aD)
+    hToolFig = aD.hToolFig;
+else
+    % Parent Figure is somehow already gone and there aD is no aD (shouldn't happen!)
+    % Find tool figure directly via Tag
+    dispDebug('ParFig closed!');
+    hToolFig = findobj(groot, 'Tag', figTag);
+end
+delete(hToolFig);
+hFig.CloseRequestFcn = 'closereq';
+close(hFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
