@@ -186,9 +186,8 @@ aD.hGUI.Rewind_pushbutton.Callback       = {@Limit, aD.hFig, -1};
 aD.hGUI.Step_Rewind_pushbutton.Callback  = {@Step, aD.hFig, -1};
 aD.hGUI.Step_Forward_pushbutton.Callback = {@Step, aD.hFig, 1};
 aD.hGUI.Forward_pushbutton.Callback      = {@Limit, aD.hFig 1};
-aD.hGUI.Stop_pushbutton.Callback         = {@Stop_Movie, aD.hFig};
+aD.hGUI.Stop_pushbutton.Callback         = @Stop_Movie;
 aD.hGUI.Play_pushbutton.Callback         = {@Play_Movie, aD.hFig};
-%aD.hGUI.Frame_Rate_edit.Callback         = {@Set_Frame, aD.hFig};
 aD.hGUI.Make_Movie_pushbutton.Callback   = {@Make_Movie, aD.hFig};
 aD.hGUI.Show_Frames_checkbox.Callback    = {@Show_Frames, aD.hFig};
 aD.hGUI.Show_Objects_checkbox.Callback   = {@Show_Objects, aD.hFig};
@@ -286,13 +285,13 @@ end
 
 hFig = varargin{3};
 aD = getAD(hFig);
+aD.hCurrentAxes = gca;
 
 if nargin==4
     % Button call (direction defined by which button was pressed)
     direction = varargin{4};
 elseif nargin==3 
     % axis/image click callback (direction define by type of click)
-    aD.hCurrentAxes = gca;
     selectionType = aD.hFig.SelectionType;
     
     switch selectionType
@@ -303,8 +302,7 @@ elseif nargin==3
         case 'open'
             Play_Movie(hFig);
             return;
-    end;
-
+    end
 end
 
 
@@ -329,7 +327,7 @@ for i = 1:length(hAxesOfInterest)
 	aD.hFrameNumbers(aD.hAllAxes == hAxesOfInterest(i)).String = num2str(currentFrame);
 	aD.hAllImages(aD.hAllAxes == hAxesOfInterest(i)).CData = squeeze(imageData(:,:,currentFrame));
 
-    if (aD.hAllAxes == hAxesOfInterest(i))
+    if (aD.hCurrentAxes == hAxesOfInterest(i))
         % if doing the single current axes, update the
         aD.hGUI.Frame_Value_edit.String =  num2str(currentFrame);
         Set_Current_Axes(aD.hFig, hAxesOfInterest(i));
@@ -342,20 +340,19 @@ for i = 1:length(hAxesOfInterest)
     end;
     
 end;
+
+storeAD(aD);
+
 figure(aD.hToolFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 	
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Limit(varargin)
+function Limit(~,~,hFig, direction)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
-
-% call from buttons
-hFig = varargin{3};
-direction = varargin{4};
 
 aD = getAD(hFig);
 
@@ -376,19 +373,19 @@ for i = 1:length(hAxesOfInterest)
 		currentFrame = imageRange(1);
 	end;
 	
-	setappdata( CurrentAxes(i), 'CurrentImage', currentFrame);
-	aD.hFrameNumbers(handlesMV.Axes == CurrentAxes(i)).String = num2str(currentFrame);
+	setappdata( hAxesOfInterest(i), 'CurrentImage', currentFrame);
+	aD.hFrameNumbers(aD.hAllAxes == hAxesOfInterest(i)).String = num2str(currentFrame);
 	aD.hAllImages(aD.hAllAxes == hAxesOfInterest(i)).CData =  squeeze(imageData(:,:,currentFrame));
    
     % if doing the single current axes, update frame numbers        
-    if (aD.hAllAxes == hAxesOfInterest(i))
+    if (aD.hCurrentAxes == hAxesOfInterest(i))
         aD.hGUI.Frame_Value_edit.String =  num2str(currentFrame);
         Set_Current_Axes(aD.hFig, hAxesOfInterest(i));
     end;
            
-    if ~isempty(aD.ObjectHandles)
+    if ~isempty(aD.hObjects)
         object_data   = getappdata(hAxesOfInterest(i), 'Objects');
-        Update_Object(object_data, aD.ObjectHandles{aD.hAllAxes == hAxesOfInterest(i),1},currentFrame);
+        Update_Object(object_data, aD.hObjects{aD.hAllAxes == hAxesOfInterest(i),1},currentFrame);
     end;
     
     
@@ -425,12 +422,14 @@ for i = 1:length(hAxesOfInterest)
 	if currentFrame < imageRange(1), currentFrame = imageRange(1); end;
 	
 	setappdata( hAxesOfInterest(i), 'CurrentImage', currentFrame);
-	aD.hFrameNumbers( hAxesOfInterest(i) == aD.hCurrentAxes ).String = num2str(currentFrame);
-	aD.hAllImages( hAxesOfInterest(i) == aD.hCurrentAxes ).CData = squeeze(imageData(:,:,currentFrame));
-	if ( hAxesOfInterest(i) == aD.hCurrentAxes)
-		aD.hGUI.Frame_Value_edit.String = num2str(currentFrame);	
-		Set_Current_Axes(aD.hFig, hAxesOfInterest(i));
-	end;
+    
+    aD.hFrameNumbers( hAxesOfInterest(i) == aD.hAllAxes ).String = num2str(currentFrame);
+	aD.hAllImages( hAxesOfInterest(i) == aD.hAllAxes ).CData = squeeze(imageData(:,:,currentFrame));
+    
+    if ( hAxesOfInterest(i) == aD.hCurrentAxes)
+        aD.hGUI.Frame_Value_edit.String = num2str(currentFrame);
+        Set_Current_Axes(aD.hFig, hAxesOfInterest(i));
+    end;
 
     % Objects Exist- update the xdata/ydata for each object
     if ~isempty(aD.ObjectHandles)
@@ -523,21 +522,8 @@ aD = getAD(hFig);
 applyAll = aD.hGUI.Apply_radiobutton.Value;
 frameRate = str2double(aD.hGUI.Frame_Rate_edit.String);
 
-
-%set(aD.hGUI, 'Enable', 'Off')
-
 origEnable = disableGUI(aD.hGUI);
 aD.hGUI.Stop_pushbutton.Enable ='On';
-
-aD.hGUI
-% 
-% set([aD.hGUI.Reset_pushbutton, aD.hGUI.Min_Frame_edit, aD.hGUI.Max_Frame_edit, ...
-% 		aD.hGUI.Frame_Value_edit, aD.hGUI.Rewind_pushbutton, aD.hGUI.Step_Rewind_pushbutton, ....
-% 		aD.hGUI.Step_Forward_pushbutton, aD.hGUI.Forward_pushbutton, aD.hGUI.Play_pushbutton, ...
-% 		aD.hGUI.Frame_Rate_edit, aD.hGUI.Make_Movie_pushbutton, ...
-% 		aD.hGUI.Make_Mat_checkbox, aD.hGUI.Make_Avi_checkbox, aD.hGUI.Show_Frames_checkbox,...
-%         aD.hGUI.Show_Objects_checkbox, aD.hGUI.Object_List_popupmenu], 'Enable', 'off');
-    %%%CHUS%%%Added objects to disable
 		
 % specify single or all axes
 hAxesOfInterest = aD.hCurrentAxes;
@@ -590,42 +576,32 @@ while ~GLOBAL_STOP_MOVIE
         
 	end;
 	drawnow;
-    
 	pause(t);
-	if 1/toc > frameRate, t = t+0.01; end;	
+    estFrameRate = 1/toc;
+	if estFrameRate > frameRate, t = t+0.01; end;	
 end;
 
 % Exit - update values for each of the axes in movie to correspond to last
 % frame played
 
 if (GLOBAL_STOP_MOVIE ~= 2)
-	for i = 1:length(hAxesOfInterest)
-		setappdata( hAxesOfInterest(i), 'CurrentImage', currentFrame{i});
+    for i = 1:length(hAxesOfInterest)
+        setappdata( hAxesOfInterest(i), 'CurrentImage', currentFrame{i});
         aD.hFrameNumbers(hAxesOfInterest(i)==aD.hAllAxes).String =  num2str(currentFrame{i});
         aD.hAllIms(hAxesOfInterest(i)==aD.hAllAxes).CData = imageData{i}(:,:,currentFrame{i});
-		%set(findobj(hAxesOfInterest(i), 'Type', 'image'), 'CData', imageData{i}(:,:,currentFrame{i}));
-		drawnow;
-
+        %set(findobj(hAxesOfInterest(i), 'Type', 'image'), 'CData', imageData{i}(:,:,currentFrame{i}));
+        drawnow;
+        
         if (aD.hCurrentAxes==hAxesOfInterest(i))
-			% if doing the single current axes 
-			aD.hGUI.Frame_Value_edit.String = num2str(currentFrame{i});	
-			Set_Current_Axes(aD.hFig, hAxesOfInterest(i));
-		end;
-	end;
+            % if doing the single current axes
+            aD.hGUI.Frame_Value_edit.String = num2str(currentFrame{i});
+            Set_Current_Axes(aD.hFig, hAxesOfInterest(i));
+        end;
+    end;
 	
     % Turn objects back on
     enableGUI(aD.hGUI, origEnable);
     
-%     set([handlesMV.Reset_pushbutton, handlesMV.Min_Frame_edit, handlesMV.Max_Frame_edit, ...
-%         handlesMV.Frame_Value_edit, handlesMV.Rewind_pushbutton, handlesMV.Step_Rewind_pushbutton, ....
-%         handlesMV.Step_Forward_pushbutton, handlesMV.Forward_pushbutton, handlesMV.Play_pushbutton, ...
-%         handlesMV.Frame_Rate_edit, handlesMV.Make_Movie_pushbutton, ...
-%         handlesMV.Make_Mat_checkbox, handlesMV.Make_Avi_checkbox, handlesMV.Show_Frames_checkbox], 'Enable', 'On');
-
-    if ~isempty(aD.hObjects)
-        set([aD.hGUI.Show_Objects_checkbox, aD.hGUI.Object_List_popupmenu], 'Enable', 'On');
-    end;
-
     figure(aD.hToolFig);
     figure(aD.hFig);
 end;
@@ -780,7 +756,7 @@ end; %%%CHUS%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Stop_Movie
+function Stop_Movie(varargin)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
@@ -814,15 +790,18 @@ dispDebug;
 
 if length(varargin)==2     % internal call
     hFig = varargin{1};
-    currentaxes = varargin{2};
+    currentAxes = varargin{2};
 elseif length(varargin)==3 % allback on axes btdwnfcn
-    currentaxes = varargin{1}
+    currentAxes = varargin{1};
     hFig = varargin{3};
 end
-        
+
+get(currentAxes)
+
 aD = getAD(hFig);
-if isempty(currentaxes), currentaxes=gca; end;
-aD.hCurrentAxes = currentaxes;
+if isempty(currentAxes), currentAxes=gca; end;
+aD.hCurrentAxes = currentAxes;
+
 image_range = getappdata(aD.hCurrentAxes, 'ImageRange');
 aD.handlesMV.Min_Frame_edit.String =  num2str(image_range(1));
 aD.handlesMV.Max_Frame_edit.String =  num2str(image_range(2));
