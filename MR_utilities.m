@@ -8,9 +8,10 @@ fs={...
     'disableToolbarButtons';...
     'retrieveOrigData'; ...
     'restoreOrigData';...
-    'getHCurrentFigAxes';...
+    'updateHCurrentFigAxes';...
     'findHiddenObj';...
     'findHiddenObjRegexp';...
+    'findAxesChildIm';...
     'createButtonObject';...
     'createMenuObject';...
     'menuToggle';...
@@ -34,7 +35,7 @@ end;
 function tags = defaultButtonTags %#ok<*DEFNU>>
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 
 tags = { ...
     'figWindowLevel',...
@@ -58,51 +59,56 @@ structNames.toolName            = '<Utils>';
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function [hToolbar_Children, origToolEnables, origToolStates ] = disableToolbarButtons(hToolbar, currentToolName) 
+function  aD = disableToolbarButtons(aD, currentToolName) 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
-hRoot = groot;
-old_SHH = hRoot.ShowHiddenHandles;
-hRoot.ShowHiddenHandles = 'on';
+% Deactivate other toolbar buttons to avoid callback conflicts
+dispDebug;
 
-hToolbar_Children = hToolbar.Children;
+aD.hToolbar = findall(aD.hFig, 'type', 'uitoolbar');
+aD.hToolbar = findobj(aD.hToolbar, 'Tag', 'FigureToolBar');
 
-origToolEnables = cell(size(hToolbar_Children));
-origToolStates  = cell(size(hToolbar_Children));
-
-
-for i = 1:length(hToolbar_Children)
-    if ~strcmpi(hToolbar_Children(i).Tag, currentToolName)
-        if isprop(hToolbar_Children(i), 'Enable')
-            origToolEnables{i} =  hToolbar_Children(i).Enable;
-            hToolbar_Children(i).Enable ='off';
-        end
-        if isprop(hToolbar_Children(i), 'State')
-            origToolStates{i}  =  hToolbar_Children(i).State;
-            hToolbar_Children(i).Enable ='off';
+if ~isempty(aD.hToolbar)
+    old_SHH = aD.hRoot.ShowHiddenHandles;
+    aD.hRoot.ShowHiddenHandles = 'on';
+    
+    aD.hToolbarChildren = aD.hToolbar.Children;
+    
+    aD.origToolEnables = cell(size(aD.hToolbarChildren));
+    aD.origToolStates  = cell(size(aD.hToolbarChildren));
+    
+    for i = 1:length(aD.hToolbarChildren)
+        if ~strcmpi(aD.hToolbarChildren(i).Tag, currentToolName)
+            if isprop(aD.hToolbarChildren(i), 'Enable')
+                aD.origToolEnables{i} =  aD.hToolbarChildren(i).Enable;
+                aD.hToolbar_Children(i).Enable ='off';
+            end
+            if isprop(aD.hToolbarChildren(i), 'State')
+                aD.origToolStates{i}  =  aD.hToolbarChildren(i).State;
+                aD.hToolbarChildren(i).Enable ='off';
+            end
         end
     end
-end
-
-hRoot.ShowHiddenHandles = old_SHH;
+    
+    aD.hRoot.ShowHiddenHandles = old_SHH;
+end;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 %
-function enableToolbarButtons(hToolbar_Children, origToolEnables, origToolStates)
+function enableToolbarButtons(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 
-for i = 1:length(hToolbar_Children)
-    if isprop(hToolbar_Children(i), 'Enable') && ~isempty(origToolEnables{i})
-        hToolbar_Children(i).Enable = origToolEnables{i};
+for i = 1:length(aD.hToolbarChildren)
+    if isprop(aD.hToolbarChildren(i), 'Enable') && ~isempty(aD.origToolEnables{i})
+        aD.hToolbarChildren(i).Enable = aD.origToolEnables{i};
     end
-    if isprop(hToolbar_Children(i), 'State') && ~isempty(origToolStates{i})
-        hToolbar_Children(i).State = origToolStates{i};
+    if isprop(aD.hToolbarChildren(i), 'State') && ~isempty(aD.origToolStates{i})
+        aD.hToolbarChildren(i).State = aD.origToolStates{i};
     end
 end
 %
@@ -114,7 +120,7 @@ function propList = retrieveOrigData(hObjs,propList)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Retrive previous settings for storage
-utilDispDebug;
+dispDebug;
 
 if nargin==1
     % basic list - typically modified figure properties
@@ -149,7 +155,7 @@ function restoreOrigData(hFig, propList)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Restore previous WBDF etc to restore state after WL is done.
-utilDispDebug;
+dispDebug;
 for j = 1:length(hFig)
     for i = 1:size(propList,1)
         hFig(j).(propList{i,1,j}) = propList{i,2,j};
@@ -160,7 +166,7 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function aD = getHCurrentFigAxes(aD)
+function aD = updateHCurrentFigAxes(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 aD.hRoot.CurrentFigure = aD.hFig;
@@ -174,10 +180,24 @@ end;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
+function hIm = findAxesChildIm(hAllAxes)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+
+hIm = gobjects(size(hAllAxes));
+for i = 1:length(hAllAxes)
+    hIm(i) = findobj(hAllAxes(i), 'Type', 'Image');
+end    
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
 function  hMenu = createMenuObject(hFig, menuTag,menuLabel,callback)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 hToolMenu = findall(hFig, 'Label', '&Tools');
 
 if ~isempty(hToolMenu) && isempty(findobj(hToolMenu,'Tag', menuTag))
@@ -210,7 +230,7 @@ end
 function menuToggle(hMenu, hButton)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 
 checked   = hMenu.Checked;
 if strcmpi(checked,'on')
@@ -221,7 +241,6 @@ else %hButton
     hMenu.Checked = 'on';
     hButton.State = 'on';
 end;
-
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -230,7 +249,7 @@ end;
 function closeRequestCallback(~,~,uaD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 old_SHH = uaD.hRoot.ShowHiddenHandles;
 uaD.hRoot.ShowHiddenHandles = 'On';
 
@@ -245,7 +264,7 @@ uaD.hRoot.ShowHiddenHandles= old_SHH;
 function  storeAD(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 setappdata(aD.hFig, aD.Name, aD);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -256,7 +275,7 @@ function  uaD = limitAD(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Return micro aD
-utilDispDebug;
+dispDebug;
 uaD = struct;
 uaD.hRoot    = aD.hRoot;
 uaD.hFig     = aD.hFig;
@@ -272,7 +291,7 @@ function  aD = getAD(hFig)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Retrieve application data stored within Active Figure (aka image figure)
 %  Appdata name depends on tool. 
-utilDispDebug;
+dispDebug;
 tic %dbg
 
 aDName=dbstack;
@@ -291,11 +310,11 @@ end
 if isappdata(hFig, aDName)
     aD = getappdata(hFig, aDName);
 else
-    utilDispDebug('no aD!'); %dbg
+    dispDebug('no aD!'); %dbg
     aD = [];
 end
 
-utilDispDebug(['end (',num2str(toc),')']); %dbg
+dispDebug(['end (',num2str(toc),')']); %dbg
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -305,7 +324,7 @@ utilDispDebug(['end (',num2str(toc),')']); %dbg
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  utilDispDebug(varargin)
+function  dispDebug(varargin)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Print a debug string if global debug flag is set
@@ -341,7 +360,7 @@ end
 function h = findHiddenObj(Handle, Property, Value)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 
 h_root = groot;
 old_SHH = h_root.ShowHiddenHandles;
@@ -360,7 +379,7 @@ h_root.ShowHiddenHandles = old_SHH;
 function h = findHiddenObjRegexp(Handle, Property, Value)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 
 h_root = groot;
 old_SHH = h_root.ShowHiddenHandles;
@@ -385,7 +404,7 @@ function  [hButton, hToolbar] = createButtonObject(...
     buttonToolTipString)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 hToolbar = findall(hFig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
 
 % If the toolbar exists and the button has not been previously created

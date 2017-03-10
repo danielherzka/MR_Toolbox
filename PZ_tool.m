@@ -103,109 +103,111 @@ function Activate_PZ(~,~,hFig)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
+aD = configActiveFigure(hFig);
+aD = setupGUI(aD);
+aD = configEnv(aD);
+
+storeAD(aD);
+Switch_PZ(hFig);
+
 %% PART I - Environment
-objNames = retrieveNames;
-aD = getappdata(hFig, objNames.Name); 
-aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
+% objNames = retrieveNames;
+% aD = getappdata(hFig, objNames.Name); 
+% aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
+% 
+% % Check the menu object
+% if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
+% 
+% % Find toolbar and deactivate other buttons
+% aD = aD.hUtils.disableToolbarButtons(aD, aD.objectNames.buttonTag);
+% 
+% % Store initial state of all axes in current figure for reset
+% aD.hAllAxes = flipud(findobj(aD.hFig,'Type','Axes'));
+% allXlims = zeros(length(aD.hAllAxes),2);
+% allYlims = zeros(length(aD.hAllAxes),2);
+% for i = 1:length(aD.hAllAxes)
+%     allXlims(i,:) = aD.hAllAxes(i).XLim;
+%     allYlims(i,:) = aD.hAllAxes(i).YLim;
+% end;
+% 
+% % Set current figure and axis
+% aD = aD.hUtils.updateHCurrentFigAxes(aD);
+% 
+% % Store the figure's old infor within the fig's own userdata
+% aD.origProperties = retreiveOrigData(aD.hFig);
+% 
+% % Find and close the old PZ figure to avoid conflicts
+% hToolFigOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
+% if ~isempty(hToolFigOld), close(hToolFigOld); end;
+% pause(0.5);
+% 
+% % Make it easy to find this button (tack on 'On') after old fig is closed
+% aD.hButton.Tag = [aD.hButton.Tag,'_On'];
+% aD.hMenu.Tag   = [aD.hMenu.Tag, '_On'];
+% 
+% aD.hFig.WindowButtonDownFcn   = {@Adjust_Pan_On, aD.hFig};      %entry
+% aD.hFig.WindowButtonUpFcn     = {@Adjust_Pan_For_All, aD.hFig}; %exit
+% aD.hFig.WindowButtonMotionFcn = '';  
+% aD.hFig.WindowKeyPressFcn  = @Key_Press_CopyPaste;
+% 
+% % Set figure clsoe callback
+% aD.hFig.CloseRequestFcn = @Close_Parent_Figure;
+% 
+% % Draw faster and without flashes
+% aD.hFig.Renderer = 'zbuffer';
+% [aD.hAllAxes.SortMethod] = deal('Depth');
 
-% Check the menu object
-if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
-
-% Find toolbar and deactivate other buttons
-aD.hToolbar = findall(aD.hFig, 'type', 'uitoolbar');
-aD.hToolbar = findobj(aD.hToolbar, 'Tag', 'FigureToolBar');
-
-if ~isempty(aD.hToolbar)
-    [aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates ] = ...
-        aD.hUtils.disableToolbarButtons(aD.hToolbar, aD.objectNames.buttonTag);
-end;
-
-% Store initial state of all axes in current figure for reset
-aD.hAllAxes = flipud(findobj(aD.hFig,'Type','Axes'));
-allXlims = zeros(length(aD.hAllAxes),2);
-allYlims = zeros(length(aD.hAllAxes),2);
-for i = 1:length(aD.hAllAxes)
-    allXlims(i,:) = aD.hAllAxes(i).XLim;
-    allYlims(i,:) = aD.hAllAxes(i).YLim;
-end;
-
-% Set current figure and axis
-aD = aD.hUtils.getHCurrentFigAxes(aD);
-
-% Store the figure's old infor within the fig's own userdata
-aD.origProperties = retreiveOrigData(aD.hFig);
-
-% Find and close the old PZ figure to avoid conflicts
-hToolFigOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
-if ~isempty(hToolFigOld), close(hToolFigOld); end;
-pause(0.5);
-
-% Make it easy to find this button (tack on 'On') after old fig is closed
-aD.hButton.Tag = [aD.hButton.Tag,'_On'];
-aD.hMenu.Tag   = [aD.hMenu.Tag, '_On'];
-
-aD.hFig.WindowButtonDownFcn   = {@Adjust_Pan_On, aD.hFig};      %entry
-aD.hFig.WindowButtonUpFcn     = {@Adjust_Pan_For_All, aD.hFig}; %exit
-aD.hFig.WindowButtonMotionFcn = '';  
-aD.hFig.WindowKeyPressFcn  = @Key_Press_CopyPaste;
-
-% Set figure clsoe callback
-aD.hFig.CloseRequestFcn = @Close_Parent_Figure;
-
-% Draw faster and without flashes
-aD.hFig.Renderer = 'zbuffer';
-[aD.hAllAxes.SortMethod] = deal('Depth');
-
-%% PART II Create GUI Figure
-aD.hToolFig = openfig(aD.objectNames.figFilename,'reuse');
-
-% Enable save_prefs tool button
-if ~isempty(aD.hToolbar)
-    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figButtonSP');
-    aD.hSP.Enable = 'On';
-    optionalUIControls = {'Apply_radiobutton', 'Value'};
-    aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
-end
-
-% Generate a structure of handles to pass to callbacks, and store it. 
-aD.hGUI = guihandles(aD.hToolFig);
-
-aD.hToolFig.Name = aD.objectNames.figName;
-aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};
-% Set Object callbacks; return hFig for speed
-aD.hGUI.Zoom_value_edit.Callback  = {@Apply_Zoom_Factor, aD.hFig};
-aD.hGUI.Pan_radiobutton.Callback  = {@Switch_PZ, aD.hFig};
-aD.hGUI.Zoom_radiobutton.Callback = {@Switch_PZ, aD.hFig};
-aD.hGUI.Reset_pushbutton.Callback = {@PZ_Reset, aD.hFig};
-aD.hGUI.Auto_pushbutton.Callback  = {@Auto_PZ_Reset, aD.hFig};
+% %% PART II Create GUI Figure
+% aD.hToolFig = openfig(aD.objectNames.figFilename,'reuse');
+% 
+% % Enable save_prefs tool button
+% if ~isempty(aD.hToolbar)
+%     aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figButtonSP');
+%     aD.hSP.Enable = 'On';
+%     optionalUIControls = {'Apply_radiobutton', 'Value'};
+%     aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
+% end
+% 
+% % Generate a structure of handles to pass to callbacks, and store it. 
+% aD.hGUI = guihandles(aD.hToolFig);
+% 
+% aD.hToolFig.Name = aD.objectNames.figName;
+% aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};
+% % Set Object callbacks; return hFig for speed
+% aD.hGUI.Zoom_value_edit.Callback  = {@Apply_Zoom_Factor, aD.hFig};
+% aD.hGUI.Pan_radiobutton.Callback  = {@Switch_PZ, aD.hFig};
+% aD.hGUI.Zoom_radiobutton.Callback = {@Switch_PZ, aD.hFig};
+% aD.hGUI.Reset_pushbutton.Callback = {@PZ_Reset, aD.hFig};
+% aD.hGUI.Auto_pushbutton.Callback  = {@Auto_PZ_Reset, aD.hFig};
 
 
 %%  PART III - Finish setup for other objects
 % Change the pointer and store the old pointer data
-[openHandPointerImage, closedHandPointerImage ] =  definePointers;
-aD.hFig.Pointer = 'Custom';
-aD.hFig.PointerShapeCData = openHandPointerImage;
+% [openHandPointerImage, closedHandPointerImage ] =  definePointers;
+% aD.hFig.Pointer = 'Custom';
+% aD.hFig.PointerShapeCData = openHandPointerImage;
+% 
+% hIm = findobj(aD.hCurrentAxes, 'Type', 'Image');
+% imCData = hIm.CData;
+% zoom_factor = max([size(imCData,2)/diff(allXlims(aD.hCurrentAxes==aD.hAllAxes,:)),...
+%                    size(imCData,1)/diff(allYlims(aD.hCurrentAxes==aD.hAllAxes,:))]);
+% 
+% % Store all relevant info for faster use during calls
+% aD.hGUI.Reset_pushbutton.Enable = 'Off';
+% aD.hGUI.Zoom_value_edit.String  = num2str(zoom_factor,3);
+% 
+% % Store application data within the button
+% aD.closedHandPointerImage = closedHandPointerImage;
+% aD.openHandPointerImage = openHandPointerImage;
+% aD.origXLims = allXlims;
+% aD.origYLims = allYlims;
+% aD.copy.XLim  = [];
+% aD.copy.YLim  = [];
 
-hIm = findobj(aD.hCurrentAxes, 'Type', 'Image');
-imCData = hIm.CData;
-zoom_factor = max([size(imCData,2)/diff(allXlims(aD.hCurrentAxes==aD.hAllAxes,:)),...
-                   size(imCData,1)/diff(allYlims(aD.hCurrentAxes==aD.hAllAxes,:))]);
+% storeAD(aD);
+% 
+% Switch_PZ(hFig);
 
-% Store all relevant info for faster use during calls
-aD.hGUI.Reset_pushbutton.Enable = 'Off';
-aD.hGUI.Zoom_value_edit.String  = num2str(zoom_factor,3);
-
-% Store application data within the button
-aD.closedHandPointerImage = closedHandPointerImage;
-aD.openHandPointerImage = openHandPointerImage;
-aD.origXLims = allXlims;
-aD.origYLims = allYlims;
-aD.copy.XLim  = [];
-aD.copy.YLim  = [];
-
-storeAD(aD);
-
-Switch_PZ(hFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -236,7 +238,7 @@ dispDebug('Zoom off');
 aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
 
 % Reactivate other buttons
-aD.hUtils.enableToolbarButtons(aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates )
+aD.hUtils.enableToolbarButtons(aD);
 
 % Store aD in tool-specific apdata for next Activate call
 setappdata(aD.hFig, aD.Name, aD);
@@ -729,6 +731,117 @@ closed_pointer_image = cat(1,closed_pointer_image,closed_pointer_image(15,:));
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
+function  aD = configActiveFigure(hFig)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+dispDebug
+objNames = retrieveNames;
+aD = getappdata(hFig, objNames.Name); 
+aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
+
+% Check the menu object
+if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
+
+% Find toolbar and deactivate other buttons
+aD = aD.hUtils.disableToolbarButtons(aD, aD.objectNames.buttonTag);
+
+% Store initial state of all axes in current figure for reset
+aD.hAllAxes = flipud(findobj(aD.hFig,'Type','Axes'));
+aD.origXLims = zeros(length(aD.hAllAxes),2);
+aD.origYLims = zeros(length(aD.hAllAxes),2);
+for i = 1:length(aD.hAllAxes)
+    aD.origXLims(i,:) = aD.hAllAxes(i).XLim;
+    aD.origYLims(i,:) = aD.hAllAxes(i).YLim;
+end;
+
+% Set current figure and axis
+aD = aD.hUtils.updateHCurrentFigAxes(aD);
+
+% Store the figure's old infor within the fig's own userdata
+aD.origProperties = retreiveOrigData(aD.hFig);
+
+% Find and close the old PZ figure to avoid conflicts
+hToolFigOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
+if ~isempty(hToolFigOld), close(hToolFigOld); end;
+pause(0.5);
+
+% Make it easy to find this button (tack on 'On') after old fig is closed
+aD.hButton.Tag = [aD.hButton.Tag,'_On'];
+aD.hMenu.Tag   = [aD.hMenu.Tag, '_On'];
+
+aD.hFig.WindowButtonDownFcn   = {@Adjust_Pan_On, aD.hFig};      %entry
+aD.hFig.WindowButtonUpFcn     = {@Adjust_Pan_For_All, aD.hFig}; %exit
+aD.hFig.WindowButtonMotionFcn = '';  
+aD.hFig.WindowKeyPressFcn  = @Key_Press_CopyPaste;
+
+% Set figure clsoe callback
+aD.hFig.CloseRequestFcn = @Close_Parent_Figure;
+
+% Draw faster and without flashes
+aD.hFig.Renderer = 'zbuffer';
+[aD.hAllAxes.SortMethod] = deal('Depth');
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = setupGUI(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% PART II Create GUI Figure
+aD.hToolFig = openfig(aD.objectNames.figFilename,'reuse');
+
+% Enable save_prefs tool button
+if ~isempty(aD.hToolbar)
+    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figButtonSP');
+    aD.hSP.Enable = 'On';
+    optionalUIControls = {'Apply_radiobutton', 'Value'};
+    aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
+end
+
+% Generate a structure of handles to pass to callbacks, and store it. 
+aD.hGUI = guihandles(aD.hToolFig);
+
+aD.hToolFig.Name = aD.objectNames.figName;
+aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};
+% Set Object callbacks; return hFig for speed
+aD.hGUI.Zoom_value_edit.Callback  = {@Apply_Zoom_Factor, aD.hFig};
+aD.hGUI.Pan_radiobutton.Callback  = {@Switch_PZ, aD.hFig};
+aD.hGUI.Zoom_radiobutton.Callback = {@Switch_PZ, aD.hFig};
+aD.hGUI.Reset_pushbutton.Callback = {@PZ_Reset, aD.hFig};
+aD.hGUI.Auto_pushbutton.Callback  = {@Auto_PZ_Reset, aD.hFig};
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = configEnv(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  PART III - Finish setup for other objects
+% Change the pointer and store the old pointer data
+[openHandPointerImage, closedHandPointerImage ] =  definePointers;
+aD.hFig.Pointer = 'Custom';
+aD.hFig.PointerShapeCData = openHandPointerImage;
+
+hIm = findobj(aD.hCurrentAxes, 'Type', 'Image');
+imCData = hIm.CData;
+zoom_factor = max([size(imCData,2)/diff(aD.origXLims(aD.hCurrentAxes==aD.hAllAxes,:)),...
+                   size(imCData,1)/diff(aD.origYLims(aD.hCurrentAxes==aD.hAllAxes,:))]);
+
+% Store all relevant info for faster use during calls
+aD.hGUI.Reset_pushbutton.Enable = 'Off';
+aD.hGUI.Zoom_value_edit.String  = num2str(zoom_factor,3);
+
+% Store application data within the button
+aD.closedHandPointerImage = closedHandPointerImage;
+aD.openHandPointerImage = openHandPointerImage;
+aD.copy.XLim  = [];
+aD.copy.YLim  = [];
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
 function button_image = makeButtonImage
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -751,7 +864,6 @@ button_image(f) = 0;
 button_image = repmat(button_image, [1,1,3]);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %

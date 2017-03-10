@@ -95,121 +95,10 @@ function Activate_WL(~,~,hFig)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-%% PART I - Environment
-objNames = retrieveNames;
-aD = getappdata(hFig, objNames.Name); 
-aD.hFig.Tag  = aD.objectNames.activeFigureName; % ActiveFigure
-
-% Check the menu object
-if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
-
-% Deactivate other toolbar buttons to avoid callback conflicts
-aD.hToolbar = findall(aD.hFig, 'type', 'uitoolbar');
-aD.hToolbar = findobj(aD.hToolbar, 'Tag', 'FigureToolBar');
-
-if ~isempty(aD.hToolbar)
-    [aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates ] = ...
-        aD.hUtils.disableToolbarButtons(aD.hToolbar,  aD.objectNames.buttonTag);
-end;
-
-% Store initial state of all axes in current figure for reset
-aD.hAllAxes = flipud(findobj(aD.hFig,'Type','Axes'));
-aD.allClims = zeros(length(aD.hAllAxes),2);
-for i = 1:length(aD.hAllAxes)
-    aD.allClims(i,:) = aD.hAllAxes(i).CLim;
-end;
-
-% Set current figure and axis
-aD = aD.hUtils.getHCurrentFigAxes(aD);
-
-% Store the figure's old infor within the fig's own userdata
-aD.origProperties = retreiveOrigData(aD.hFig);
-
-% Find and close the old WL figure to avoid conflicts
-hToolFigOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
-if ~isempty(hToolFigOld), close(hToolFigOld);end;
-pause(0.5);
-
-% Make it easy to find this button (tack on 'On')
-% Wait until after old fig is closed.
-aD.hButton.Tag = [aD.hButton.Tag,'_On'];
-aD.hMenu.Tag   = [aD.hMenu.Tag, '_On'];
-
-% Set callbacks
-aD.hFig.WindowButtonDownFcn   = {@Adjust_On, aD.hFig};
-aD.hFig.WindowButtonUpFcn     = {@Adjust_WL_For_All, aD.hFig};
-aD.hFig.WindowButtonMotionFcn = '';
-aD.hFig.WindowKeyPressFcn     = @Key_Press_CopyPaste;
-aD.hFig.CloseRequestFcn       = @Close_Parent_Figure;
-
-% Draw faster and without flashes
-aD.hFig.Renderer = 'zbuffer';
-[aD.hAllAxes.SortMethod] = deal('Depth');
-
-%% PART II Create GUI Figure
-aD.hToolFig = openfig(aD.objectNames.figFilename,'reuse');
-
-% Enable save_prefs tool button
-if ~isempty(aD.hToolbar)
-    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figButtonSP');
-    aD.hSP.Enable = 'On';
-    optionalUIControls = {'Apply_to_popupmenu', 'Value'};
-    aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
-end
-
-% Generate a structure of handles to pass to callbacks and store it.
-aD.hGUI = guihandles(aD.hToolFig);
-
-aD.hToolFig.Name = aD.objectNames.figName;
-aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};
-
-% Set Object callbacks; return hFig for speed
-aD.hGUI.Colormap_popupmenu.Callback = {@Set_Colormap, aD.hFig};
-aD.hGUI.Window_value_edit.Callback  = {@Edit_Adjust, aD.hFig};
-aD.hGUI.Level_value_edit.Callback   = {@Edit_Adjust, aD.hFig};
-aD.hGUI.Auto_pushbutton.Callback    = {@Auto_WL_Reset, aD.hFig};
-aD.hGUI.Reset_pushbutton.Callback   = {@WL_Reset, aD.hFig};
-
-%%  PART III - Finish setup for other objects
-
-% Store the figure's old info
-aD.origData = retreiveOrigData(aD.hFig);
-aD.copy.CLim       = [];
-aD.copy.CMapValue  = [];
-aD.copy.CMap       = [];
-
-% Update colormap information
-if isempty(aD.cMapData)
-
-    dispDebug;('First Call');
-    % If first call,determine current figure's colormap and
-    % distribute it to all axes
-    cmapNames = aD.hGUI.Colormap_popupmenu.String;
-    aD.cMapData.allCmapValues = findColormap(aD.hFig.Colormap,cmapNames(1:end-1));
-    aD.cMapData.allCmapValues = repmat(aD.cMapData.allCmapValues, size(aD.hAllAxes));
-
-    aD.cMapData.allColormaps = cell(size(aD.hAllAxes));
-    [aD.cMapData.allColormaps{:}] = deal(aD.hFig.Colormap);
-
-    for i=1:length(aD.hAllAxes)
-        colormap(aD.hAllAxes(i), aD.hFig.Colormap);
-    end
-
-    storeAD(aD);
-    updateColormapPopupmenu(aD.hFig)
-    Set_Colormap([], [], aD.hFig); 
-
-else
-    dispDebug('->Return Call');
-    % If return call, restore old string; since first axes is active, put its
-    %  colormap as the value
-    storeAD(aD);
-    restoreColormap(aD.hFig);
-
-end
-aD.hGUI.Reset_pushbutton.Enable   = 'Off';
-aD.hGUI.Window_value_edit.Enable  = 'Off';
-aD.hGUI.Level_value_edit.Enable   = 'Off';
+aD = configActiveFigure(hFig);
+aD = setupGUI(aD);
+aD = configEnv(aD);
+storeAD(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -235,7 +124,7 @@ end
 aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
 
 % Reactivate other buttons
-aD.hUtils.enableToolbarButtons(aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates )
+aD.hUtils.enableToolbarButtons(aD)
 
 % Store tool state for recovery on next button press in the appdata
 setappdata(aD.hButton, 'cMapData',...
@@ -657,7 +546,7 @@ end
 function Key_Press_CopyPaste(~, data)
 dispDebug;
 
-aD = getAD;
+aD = getAD(data.Source);
 hCurrentAxes_idx = find(aD.hCurrentAxes==aD.hAllAxes);
 
 switch data.Key
@@ -770,24 +659,167 @@ close(hFig);
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
+function  aD = configActiveFigure(hFig)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PART I - Environment
+objNames = retrieveNames;
+aD = getappdata(hFig, objNames.Name); 
+aD.hFig.Tag  = aD.objectNames.activeFigureName; % ActiveFigure
+
+% Check the menu object
+if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
+
+% Find toolbar and deactivate other buttons
+aD = aD.hUtils.disableToolbarButtons(aD,  aD.objectNames.buttonTag);
+
+% Store initial state of all axes in current figure for reset
+aD.hAllAxes = flipud(findobj(aD.hFig,'Type','Axes'));
+aD.allClims = zeros(length(aD.hAllAxes),2);
+for i = 1:length(aD.hAllAxes)
+    aD.allClims(i,:) = aD.hAllAxes(i).CLim;
+end;
+
+% Set current figure and axis
+aD = aD.hUtils.updateHCurrentFigAxes(aD);
+
+% Store the figure's old infor within the fig's own userdata
+aD.origProperties = retreiveOrigData(aD.hFig);
+
+% Find and close the old WL figure to avoid conflicts
+hToolFigOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
+if ~isempty(hToolFigOld), close(hToolFigOld);end;
+pause(0.5);
+
+% Make it easy to find this button (tack on 'On')
+% Wait until after old fig is closed.
+aD.hButton.Tag = [aD.hButton.Tag,'_On'];
+aD.hMenu.Tag   = [aD.hMenu.Tag, '_On'];
+
+% Set callbacks
+aD.hFig.WindowButtonDownFcn   = {@Adjust_On, aD.hFig};
+aD.hFig.WindowButtonUpFcn     = {@Adjust_WL_For_All, aD.hFig};
+aD.hFig.WindowButtonMotionFcn = '';
+aD.hFig.WindowKeyPressFcn     = @Key_Press_CopyPaste;
+aD.hFig.CloseRequestFcn       = @Close_Parent_Figure;
+
+% Draw faster and without flashes
+aD.hFig.Renderer = 'zbuffer';
+[aD.hAllAxes.SortMethod] = deal('Depth');
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = setupGUI(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PART II Create GUI Figure
+aD.hToolFig = openfig(aD.objectNames.figFilename,'reuse');
+
+% Enable save_prefs tool button
+if ~isempty(aD.hToolbar)
+    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figButtonSP');
+    aD.hSP.Enable = 'On';
+    optionalUIControls = {'Apply_to_popupmenu', 'Value'};
+    aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
+end
+
+% Generate a structure of handles to pass to callbacks and store it.
+aD.hGUI = guihandles(aD.hToolFig);
+
+aD.hToolFig.Name = aD.objectNames.figName;
+aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};
+
+% Set Object callbacks; return hFig for speed
+aD.hGUI.Colormap_popupmenu.Callback = {@Set_Colormap, aD.hFig};
+aD.hGUI.Window_value_edit.Callback  = {@Edit_Adjust, aD.hFig};
+aD.hGUI.Level_value_edit.Callback   = {@Edit_Adjust, aD.hFig};
+aD.hGUI.Auto_pushbutton.Callback    = {@Auto_WL_Reset, aD.hFig};
+aD.hGUI.Reset_pushbutton.Callback   = {@WL_Reset, aD.hFig};
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = configEnv(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  PART III - Finish setup for other objects
+
+% Store the figure's old info
+aD.origData = retreiveOrigData(aD.hFig);
+aD.copy.CLim       = [];
+aD.copy.CMapValue  = [];
+aD.copy.CMap       = [];
+
+% Update colormap information
+if isempty(aD.cMapData)
+
+    dispDebug;('First Call');
+    % If first call,determine current figure's colormap and
+    % distribute it to all axes
+    cmapNames = aD.hGUI.Colormap_popupmenu.String;
+    aD.cMapData.allCmapValues = findColormap(aD.hFig.Colormap,cmapNames(1:end-1));
+    aD.cMapData.allCmapValues = repmat(aD.cMapData.allCmapValues, size(aD.hAllAxes));
+
+    aD.cMapData.allColormaps = cell(size(aD.hAllAxes));
+    [aD.cMapData.allColormaps{:}] = deal(aD.hFig.Colormap);
+
+    for i=1:length(aD.hAllAxes)
+        colormap(aD.hAllAxes(i), aD.hFig.Colormap);
+    end
+
+    storeAD(aD);
+    % Try to find cmap is lists.
+    cMapFound = updateColormapPopupmenu(aD.hFig);
+
+    if ~cMapFound
+        % search more comprehensive list
+        aD.hGUI.Colormap_popupmenu.String = [defineColormaps; 'Less...'];
+        updateColormapPopupmenu(aD.hFig);
+    end
+    Set_Colormap([], [], aD.hFig); 
+
+else
+    dispDebug('->Return Call');
+    % If return call, restore old string; since first axes is active, put its
+    %  colormap as the value
+    storeAD(aD);
+    restoreColormap(aD.hFig);
+
+end
+aD.hGUI.Reset_pushbutton.Enable   = 'Off';
+aD.hGUI.Window_value_edit.Enable  = 'Off';
+aD.hGUI.Level_value_edit.Enable   = 'Off';
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
 function Cmap_Value = findColormap(Current_Cmap, CmapListCellString)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Determine the current figure's colormap by comparing it with
-% the established colormaps of the same size
+% the known colormaps of the same size
 dispDebug;
 
-Cmap_Value = 1; % default
+Cmap_Value = 0; % default
 
 for i=1:length(CmapListCellString)
-    cmapFcn = str2func(lower(CmapListCellString{i}));
-    testCmap= cmapFcn(size(Current_Cmap,1));
-    
-    if isempty(find(testCmap - Current_Cmap, 1))
-        Cmap_Value = i;
-        return;
-    end;
+    if ~strcmpi(CmapListCellString{i},'Less...') && ...s
+            ~strcmpi(CmapListCellString{i},'More...')
+        
+        cmapFcn = str2func(lower(CmapListCellString{i}));
+        testCmap= cmapFcn(size(Current_Cmap,1));
+        
+        if isempty(find(testCmap - Current_Cmap, 1))
+            Cmap_Value = i;
+            return;
+        end;
+    end
 end
+
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -805,7 +837,7 @@ buttonImage = repmat(linspace(0,1,buttonSize_x), [ 15 1 3]);
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function updateColormapPopupmenu(hFig)
+function cMapFoundFlag = updateColormapPopupmenu(hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Change the colormap to the one specified by the popupmenu
@@ -821,8 +853,12 @@ hCurrentAxes_index = (aD.hAllAxes==aD.hFig.CurrentAxes);
 currCmapNames   = aD.hGUI.Colormap_popupmenu.String;
 currCmapValue   = findColormap(aD.cMapData.allColormaps{hCurrentAxes_index}, currCmapNames);
 
-aD.hGUI.Colormap_popupmenu.Value = currCmapValue;
-
+if currCmapValue == 0
+    cMapFoundFlag=0;
+else 
+    cMapFoundFlag=1;
+    aD.hGUI.Colormap_popupmenu.Value = currCmapValue;
+end
 storeAD(aD);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
