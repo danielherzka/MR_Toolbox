@@ -102,7 +102,7 @@ function Activate_PZ(~,~,hFig)
 dispDebug;
 
 aD = configActiveFigure(hFig);
-aD = setupGUI(aD);
+aD = configGUI(aD);
 aD = configOther(aD);
 
 storeAD(aD);
@@ -731,7 +731,7 @@ end;
 aD = aD.hUtils.updateHCurrentFigAxes(aD);
 
 % Store the figure's old infor within the fig's own userdata
-aD.origProperties = retreiveOrigData(aD.hFig);
+aD.origProperties = aD.hUtils.retrieveOrigData(aD.hFig);
 
 % Find and close the old PZ figure to avoid conflicts
 hToolFigOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
@@ -758,7 +758,7 @@ aD.hFig.Renderer = 'zbuffer';
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  aD = setupGUI(aD)
+function  aD = configGUI(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% PART II Create GUI Figure
@@ -875,7 +875,6 @@ function  aD = getAD(hFig)
 % Retrieve application data stored within Active Figure (aka image figure)
 %  Appdata name depends on tool. 
 dispDebug;
-tic %dbg
 aD = getappdata(hFig, 'AD');
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -43,6 +43,13 @@ Create_New_Objects;
 %      Close_Request_Callback,     Close_Request_Callback;
 %      Close_Parent_Figure,    	   Close_Parent_Figure;
 
+% Set Object callbacks; return hFig for speed
+% aD.hGUI.Colormap_popupmenu.Callback = {@Set_Colormap, aD.hFig};
+% aD.hGUI.Window_value_edit.Callback  = {@Edit_Adjust, aD.hFig};
+% aD.hGUI.Level_value_edit.Callback   = {@Edit_Adjust, aD.hFig};
+% aD.hGUI.Auto_pushbutton.Callback    = {@Auto_WL_Reset, aD.hFig};
+% aD.hGUI.Reset_pushbutton.Callback   = {@WL_Reset, aD.hFig};
+
 %  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -84,7 +91,6 @@ aD.cMapData = [];
 
 % store app data structure in tool-specific field
 setappdata(aD.hFig, aD.Name, aD);
-
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -96,7 +102,7 @@ function Activate_WL(~,~,hFig)
 dispDebug;
 
 aD = configActiveFigure(hFig);
-aD = setupGUI(aD);
+aD = configGUI(aD);
 aD = configOther(aD);
 storeAD(aD)
 %
@@ -642,7 +648,7 @@ end;
 aD = aD.hUtils.updateHCurrentFigAxes(aD);
 
 % Store the figure's old infor within the fig's own userdata
-aD.origProperties = retreiveOrigData(aD.hFig);
+aD.origProperties = aD.hUtils.retrieveOrigData(aD.hFig);
 
 % Find and close the old WL figure to avoid conflicts
 hToolFigOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
@@ -669,7 +675,7 @@ aD.hFig.Renderer = 'zbuffer';
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  aD = setupGUI(aD)
+function  aD = configGUI(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % PART II Create GUI Figure
@@ -706,7 +712,6 @@ function  aD = configOther(aD)
 %  PART III - Finish setup for other objects
 
 % Store the figure's old info
-aD.origData = retreiveOrigData(aD.hFig);
 aD.copy.CLim       = [];
 aD.copy.CMapValue  = [];
 aD.copy.CMap       = [];
@@ -783,7 +788,6 @@ for i=1:length(CmapListCellString)
         end;
     end
 end
-
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -877,7 +881,6 @@ cmap_cell = {...
 if isappdata(aD.hFig, 'OriginalColormap')
     cmap_cell = [cmap_cell; 'Original'];
 end
-
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -901,7 +904,8 @@ function  cmap = original(~) %#ok<DEFNU>
 % there was not colormap recognized at the onset. No explicit
 % call to this function as it thourgh str2fun.
 dispDebug;
-aD = MR_utilities('getADBlind');
+hUtils = MR_utilities;
+aD = hUtils.getADBlind();
 cmap = getappdata(aD.hFig, 'OriginalColormap');
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -961,76 +965,7 @@ function  aD = getAD(hFig)
 % Retrieve application data stored within Active Figure (aka image figure)
 %  Appdata name depends on tool. 
 dispDebug;
-tic %dbg
 aD = getappdata(hFig, 'AD');
-
-% 
-% aDName=dbstack;
-% aDName=aDName(end).file(1:2);
-% 
-% if ishghandle(hFig) && isappdata(hFig, aDName)
-%     aD = getappdata(hFig, aDName);
-% else
-%     % fix hFig
-%     if ~ishghandle(hFig)
-%         hFig = findobj(groot, 'Tag', 'ActiveFigure', '-depth', 1);
-%         if isempty(hFig)
-%             % hFig hasn't been found (likely first call) during Activate
-%             obj = findobj('-regexp', 'Tag', ['\w*Button', aDName,'\w*']);
-%             hFig = obj(1).Parent.Parent;
-%         end
-%     end
-%     
-%     % fix aDName
-%     
-%     
-%     
-%     
-% if nargin==0
-%     % Search the children of groot
-%     hFig = findobj(groot, 'Tag', 'ActiveFigure', '-depth', 1); 
-%     if isempty(hFig)
-%         % hFig hasn't been found (likely first call) during Activate
-%         obj = findobj('-regexp', 'Tag', ['\w*Button', aDName,'\w*']);
-%         hFig = obj(1).Parent.Parent;
-%     end
-% end
-% 
-% if isappdata(hFig, aDName)
-%     aD = getappdata(hFig, aDName);
-% else
-%     dispDebug('no aD!'); %dbg
-%     aD = [];
-% end
-
-dispDebug(['end (',num2str(toc),')']); %dbg
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function propList = retreiveOrigData(hFig)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Retrive previous settings for storage
-dispDebug;
-
-propList = {...
-    'WindowButtonDownFcn'; ...
-    'WindowButtonMotionFcn'; ...
-    'WindowButtonUpFcn'; ...
-    'WindowKeyPressFcn'; ...
-    'UserData'; ...
-    'CloseRequestFcn'; ...
-    'Pointer'; ...
-    'PointerShapeCData'; ...
-    'Tag' ...
-    };
-
-for i = 1:size(propList,1)
-    propList{i,2} = hFig.(propList{i,1});
-end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 

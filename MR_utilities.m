@@ -1,49 +1,37 @@
-function out = MR_utilities(varargin)
-
+function hFcn = MR_utilities(varargin)
 % Create cell-list of available functions
-if nargin == 0
-    fs={...
-        'defaultButtonTags';...
-        'retrieveNames';...
-        'enableToolbarButtons';...
-        'disableToolbarButtons';...
-        'retrieveOrigData'; ...
-        'restoreOrigData';...
-        'updateHCurrentFigAxes';...
-        'findHiddenObj';...
-        'findHiddenObjRegexp';...
-        'findAxesChildIm';...
-        'createButtonObject';...
-        'createMenuObject';...
-        'menuToggle';...
-        'closeRequestCallback';...
-        'closeParentFigure';...
-        'storeAD';...
-        'limitAD';...
-        'getAD';...
-        'getADBlind';...
-        };
-    
-    % Convert each name into a function handle reachable from outside this file
-    for i=1:length(fs),
-        out.(fs{i}) = str2func(fs{i});
-    end;
 
-else %nargin>0
-    if isempty(varargin),      Action = 'New';
-    else                       Action = varargin{1};
-    end
-    
-    switch Action
-        case 'getADBlind',    out = getADBlind;    
-    end
-    
-end
-    
+fs={...
+    'defaultButtonTags';...
+    'retrieveNames';...
+    'enableToolbarButtons';...
+    'disableToolbarButtons';...
+    'retrieveOrigData'; ...
+    'restoreOrigData';...
+    'updateHCurrentFigAxes';...
+    'findHiddenObj';...
+    'findHiddenObjRegexp';...
+    'findAxesChildIm';...
+    'createButtonObject';...
+    'createMenuObject';...
+    'menuToggle';...
+    'closeRequestCallback';...
+    'closeParentFigure';...
+    'storeAD';...
+    'limitAD';...
+    'getAD';...
+    'getADBlind';...
+    };
+
+% Convert each name into a function handle reachable from outside this file
+for i=1:length(fs),
+    hFcn.(fs{i}) = str2func(fs{i});
+end;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%START MULTI-TOOL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -111,7 +99,6 @@ end;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
-%
 %
 function enableToolbarButtons(aD)
 %
@@ -204,6 +191,52 @@ hIm = gobjects(size(hAllAxes));
 for i = 1:length(hAllAxes)
     hIm(i) = findobj(hAllAxes(i), 'Type', 'Image');
 end    
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  [hButton, hToolbar] = createButtonObject(...
+    hFig, ...
+    buttonImage, ...
+    callbackOn, ...
+    callbackOff,...
+    buttonTag, ...
+    buttonToolTipString)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+hToolbar = findall(hFig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
+
+% If the toolbar exists and the button has not been previously created
+if ~isempty(hToolbar) && isempty(findobj(hToolbar, 'Tag', buttonTag))
+    
+    hToolbar_Children = hToolbar.Children;
+    buttonTags = defaultButtonTags();
+    hButtons = cell(1,size(buttonTags,2));
+    
+    for i = 1:length(buttonTags)
+        hButtons{i} = findobj(hToolbar_Children, 'Tag', buttonTags{i});
+    end;
+    
+    separator = 'off';
+    if isempty(hButtons)
+        separator = 'on';
+    end;
+    
+    hButton = uitoggletool(hToolbar);
+    hButton.CData         = buttonImage;
+    hButton.OnCallback    = callbackOn;
+    hButton.OffCallback   = callbackOff;
+    hButton.Tag           = buttonTag;
+    hButton.TooltipString = buttonToolTipString;
+    hButton.Separator     = separator;
+    hButton.UserData      = hFig;
+    hButton.Enable         = 'on';
+else
+    % Toolbar doesn't exist, or button already exists
+    hButton = [];  
+end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -462,48 +495,4 @@ h_root.ShowHiddenHandles = old_SHH;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function  [hButton, hToolbar] = createButtonObject(...
-    hFig, ...
-    buttonImage, ...
-    callbackOn, ...
-    callbackOff,...
-    buttonTag, ...
-    buttonToolTipString)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-hToolbar = findall(hFig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
 
-% If the toolbar exists and the button has not been previously created
-if ~isempty(hToolbar) && isempty(findobj(hToolbar, 'Tag', buttonTag))
-    
-    hToolbar_Children = hToolbar.Children;
-    buttonTags = defaultButtonTags();
-    hButtons = cell(1,size(buttonTags,2));
-    
-    for i = 1:length(buttonTags)
-        hButtons{i} = findobj(hToolbar_Children, 'Tag', buttonTags{i});
-    end;
-    
-    separator = 'off';
-    if isempty(hButtons)
-        separator = 'on';
-    end;
-    
-    hButton = uitoggletool(hToolbar);
-    hButton.CData         = buttonImage;
-    hButton.OnCallback    = callbackOn;
-    hButton.OffCallback   = callbackOff;
-    hButton.Tag           = buttonTag;
-    hButton.TooltipString = buttonToolTipString;
-    hButton.Separator     = separator;
-    hButton.UserData      = hFig;
-    hButton.Enable         = 'on';
-else
-    % Toolbar doesn't exist, or button already exists
-    hButton = [];  
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
