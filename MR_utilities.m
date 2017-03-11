@@ -1,6 +1,6 @@
-function utilFcn = MR_utilities
-
+function hFcn = MR_utilities(varargin)
 % Create cell-list of available functions
+
 fs={...
     'defaultButtonTags';...
     'retrieveNames';...
@@ -8,31 +8,37 @@ fs={...
     'disableToolbarButtons';...
     'retrieveOrigData'; ...
     'restoreOrigData';...
+    'updateHCurrentFigAxes';...
     'findHiddenObj';...
     'findHiddenObjRegexp';...
+    'findAxesChildIm';...
     'createButtonObject';...
     'createMenuObject';...
     'menuToggle';...
     'closeRequestCallback';...
+    'closeParentFigure';...
     'storeAD';...
+    'limitAD';...
     'getAD';...
+    'getADBlind';...
     };
 
-% Convert each name into a function handle reachable from outside this file 
+% Convert each name into a function handle reachable from outside this file
 for i=1:length(fs),
-	utilFcn.(fs{i}) = str2func(fs{i});
+    hFcn.(fs{i}) = str2func(fs{i});
 end;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%START MULTI-TOOL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function tags = defaultButtonTags %#ok<*DEFNU>>
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 
 tags = { ...
     'figWindowLevel',...
@@ -56,51 +62,55 @@ structNames.toolName            = '<Utils>';
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function [hToolbar_Children, origToolEnables, origToolStates ] = disableToolbarButtons(hToolbar, currentToolName) 
+function  aD = disableToolbarButtons(aD, currentToolName) 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
-hRoot = groot;
-old_SHH = hRoot.ShowHiddenHandles;
-hRoot.ShowHiddenHandles = 'on';
+% Deactivate other toolbar buttons to avoid callback conflicts
+dispDebug;
 
-hToolbar_Children = hToolbar.Children;
+aD.hToolbar = findall(aD.hFig, 'type', 'uitoolbar');
+aD.hToolbar = findobj(aD.hToolbar, 'Tag', 'FigureToolBar');
 
-origToolEnables = cell(size(hToolbar_Children));
-origToolStates  = cell(size(hToolbar_Children));
-
-
-for i = 1:length(hToolbar_Children)
-    if ~strcmpi(hToolbar_Children(i).Tag, currentToolName)
-        if isprop(hToolbar_Children(i), 'Enable')
-            origToolEnables{i} =  hToolbar_Children(i).Enable;
-            hToolbar_Children(i).Enable ='off';
-        end
-        if isprop(hToolbar_Children(i), 'State')
-            origToolStates{i}  =  hToolbar_Children(i).State;
-            hToolbar_Children(i).Enable ='off';
+if ~isempty(aD.hToolbar)
+    old_SHH = aD.hRoot.ShowHiddenHandles;
+    aD.hRoot.ShowHiddenHandles = 'on';
+    
+    aD.hToolbarChildren = aD.hToolbar.Children;
+    
+    aD.origToolEnables = cell(size(aD.hToolbarChildren));
+    aD.origToolStates  = cell(size(aD.hToolbarChildren));
+    
+    for i = 1:length(aD.hToolbarChildren)
+        if ~strcmpi(aD.hToolbarChildren(i).Tag, currentToolName)
+            if isprop(aD.hToolbarChildren(i), 'Enable')
+                aD.origToolEnables{i} =  aD.hToolbarChildren(i).Enable;
+                aD.hToolbar_Children(i).Enable ='off';
+            end
+            if isprop(aD.hToolbarChildren(i), 'State')
+                aD.origToolStates{i}  =  aD.hToolbarChildren(i).State;
+                aD.hToolbarChildren(i).Enable ='off';
+            end
         end
     end
-end
-
-hRoot.ShowHiddenHandles = old_SHH;
+    
+    aD.hRoot.ShowHiddenHandles = old_SHH;
+end;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%
-function enableToolbarButtons(hToolbar_Children, origToolEnables, origToolStates)
+function enableToolbarButtons(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 
-for i = 1:length(hToolbar_Children)
-    if isprop(hToolbar_Children(i), 'Enable') && ~isempty(origToolEnables{i})
-        hToolbar_Children(i).Enable = origToolEnables{i};
+for i = 1:length(aD.hToolbarChildren)
+    if isprop(aD.hToolbarChildren(i), 'Enable') && ~isempty(aD.origToolEnables{i})
+        aD.hToolbarChildren(i).Enable = aD.origToolEnables{i};
     end
-    if isprop(hToolbar_Children(i), 'State') && ~isempty(origToolStates{i})
-        hToolbar_Children(i).State = origToolStates{i};
+    if isprop(aD.hToolbarChildren(i), 'State') && ~isempty(aD.origToolStates{i})
+        aD.hToolbarChildren(i).State = aD.origToolStates{i};
     end
 end
 %
@@ -112,7 +122,7 @@ function propList = retrieveOrigData(hObjs,propList)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Retrive previous settings for storage
-utilDispDebug;
+dispDebug;
 
 if nargin==1
     % basic list - typically modified figure properties
@@ -147,7 +157,7 @@ function restoreOrigData(hFig, propList)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Restore previous WBDF etc to restore state after WL is done.
-utilDispDebug;
+dispDebug;
 for j = 1:length(hFig)
     for i = 1:size(propList,1)
         hFig(j).(propList{i,1,j}) = propList{i,2,j};
@@ -158,39 +168,29 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function h = findHiddenObj(Handle, Property, Value)
+function aD = updateHCurrentFigAxes(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
-
-h_root = groot;
-old_SHH = h_root.ShowHiddenHandles;
-h_root.ShowHiddenHandles = 'On';
-if nargin <3
-    h = findobj(Handle, Property);
-else
-    h = findobj(Handle, Property, Value);
+aD.hRoot.CurrentFigure = aD.hFig;
+aD.hCurrentAxes=aD.hFig.CurrentAxes;
+if isempty(aD.hCurrentAxes)
+    aD.hCurrentAxes = aD.hAllAxes(1); 
+    aD.hFig.CurrentAxes = aD.hCurrentAxes;
 end;
-h_root.ShowHiddenHandles = old_SHH;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function h = findHiddenObjRegexp(Handle, Property, Value)
+function hIm = findAxesChildIm(hAllAxes)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 
-h_root = groot;
-old_SHH = h_root.ShowHiddenHandles;
-h_root.ShowHiddenHandles = 'On';
-if nargin <3
-    h = findobj('-regexp', Handle, Property);
-else
-    h = findobj(Handle, '-regexp', Property, Value);
-end;
-h_root.ShowHiddenHandles = old_SHH;
+hIm = gobjects(size(hAllAxes));
+for i = 1:length(hAllAxes)
+    hIm(i) = findobj(hAllAxes(i), 'Type', 'Image');
+end    
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -205,7 +205,7 @@ function  [hButton, hToolbar] = createButtonObject(...
     buttonToolTipString)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 hToolbar = findall(hFig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
 
 % If the toolbar exists and the button has not been previously created
@@ -245,7 +245,7 @@ end
 function  hMenu = createMenuObject(hFig, menuTag,menuLabel,callback)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 hToolMenu = findall(hFig, 'Label', '&Tools');
 
 if ~isempty(hToolMenu) && isempty(findobj(hToolMenu,'Tag', menuTag))
@@ -278,7 +278,7 @@ end
 function menuToggle(hMenu, hButton)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 
 checked   = hMenu.Checked;
 if strcmpi(checked,'on')
@@ -289,24 +289,29 @@ else %hButton
     hMenu.Checked = 'on';
     hButton.State = 'on';
 end;
-
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function closeRequestCallback(~,~,hFig)
+function closeRequestCallback(~,~,uaD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+<<<<<<< HEAD
 
 utilDispDebug;
 aD = getAD(hFig);
 old_SHH = aD.hRoot.ShowHiddenHandles;
 aD.hRoot.ShowHiddenHandles = 'On';
+=======
+dispDebug;
+old_SHH = uaD.hRoot.ShowHiddenHandles;
+uaD.hRoot.ShowHiddenHandles = 'On';
+>>>>>>> master
 
 %calls deactivate
-aD.hButton.State = 'off';
-aD.hRoot.ShowHiddenHandles= old_SHH;
+uaD.hButton.State = 'off';
+uaD.hRoot.ShowHiddenHandles= old_SHH;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -315,8 +320,23 @@ aD.hRoot.ShowHiddenHandles= old_SHH;
 function  storeAD(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-utilDispDebug;
+dispDebug;
 setappdata(aD.hFig, aD.Name, aD);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  uaD = limitAD(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Return micro aD
+dispDebug;
+uaD = struct;
+uaD.hRoot    = aD.hRoot;
+uaD.hFig     = aD.hFig;
+uaD.hToolFig = aD.hToolFig;
+uaD.hButton  = aD.hButton;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -327,11 +347,8 @@ function  aD = getAD(hFig)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Retrieve application data stored within Active Figure (aka image figure)
 %  Appdata name depends on tool. 
-utilDispDebug;
+dispDebug;
 tic %dbg
-
-aDName=dbstack;
-aDName=aDName(end).file(1:2);
 
 if nargin==0
     % Search the children of groot
@@ -343,17 +360,73 @@ if nargin==0
     end
 end
 
-if isappdata(hFig, aDName)
-    aD = getappdata(hFig, aDName);
+% assume ewe require the Active AD, not the tool-specific ones
+if isappdata(hFig, 'AD')
+    aD = getappdata(hFig, 'AD');
 else
-    utilDispDebug('no aD!'); %dbg
+    dispDebug('no aD!'); %dbg
     aD = [];
 end
 
-utilDispDebug(['end (',num2str(toc),')']); %dbg
+dispDebug(['end (',num2str(toc),')']); %dbg
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = getADBlind
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Retrieve application data stored within Active Figure (aka image figure)
+%  Appdata name depends on tool. Blind = do not know ActiveFigure handle
+dispDebug;
+
+tic %dbg
+
+if nargin==0
+    % Search the children of groot
+    hFig = findHiddenObj(groot, 'Tag', 'ActiveFigure'); 
+    if isempty(hFig)
+        % hFig hasn't been found (may be first call) during Activate
+        %  find button
+        obj = findHiddenObjRegexp('Tag', ['\w*Button', objNames.Name,'\w*']);
+        hFig = obj(1).Parent.Parent;
+    end
+end
+
+if ishghandle(hFig) && isappdata(hFig, 'AD')
+    aD = getappdata(hFig, 'AD');
+else
+    dispDebug('!No aD found!'); %dbg
+    aD = [];
+end
+
+dispDebug(['end (',num2str(toc),')']); %dbg
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function closeParentFigure(hFig,~,figTag)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% function to make sure that if parent figure is closed,
+% the ROI info and ROI Tool are closed too.
+dispDebug;
+aD = getAD(hFig);
+if ~isempty(aD)
+    hToolFig = aD.hToolFig;
+else
+    % Parent Figure is somehow already gone and there aD is no aD (shouldn't happen!)
+    % Find tool figure directly via Tag
+    dispDebug('ParFig closed!');
+    hToolFig = findobj(groot, 'Tag', figTag);
+end
+delete(hToolFig);
+hFig.CloseRequestFcn = 'closereq';
+close(hFig);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -361,16 +434,20 @@ utilDispDebug(['end (',num2str(toc),')']); %dbg
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  utilDispDebug(varargin)
+function  dispDebug(varargin)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Print a debug string if global debug flag is set
 global DB;
 
 if DB
+    loc = [];
     objectNames = retrieveNames;
     x = dbstack;
-    funcName = x(2).name;    loc = [];
+    funcName = x(2).name;   
+    if length(x)<3 %pad
+        x = cat(1, x, repmat(x(end),3-length(x),1));
+    end
     callFuncName = x(3).file(1:end-2);
     if strcmpi( x(3).file, x(2).file)
         loc = ['(loc)', repmat('|> ',1, sum(strcmp(x(1).file, {x.file})-1))] ;
@@ -387,3 +464,43 @@ if DB
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function h = findHiddenObj(Handle, Property, Value)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+
+h_root = groot;
+old_SHH = h_root.ShowHiddenHandles;
+h_root.ShowHiddenHandles = 'On';
+if nargin <3
+    h = findobj(Handle, Property);
+else
+    h = findobj(Handle, Property, Value);
+end;
+h_root.ShowHiddenHandles = old_SHH;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function h = findHiddenObjRegexp(Handle, Property, Value)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+
+h_root = groot;
+old_SHH = h_root.ShowHiddenHandles;
+h_root.ShowHiddenHandles = 'On';
+if nargin <3
+    h = findobj('-regexp', Handle, Property);
+else
+    h = findobj(Handle, '-regexp', Property, Value);
+end;
+h_root.ShowHiddenHandles = old_SHH;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+

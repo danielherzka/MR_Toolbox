@@ -110,7 +110,7 @@ function structNames = retrieveNames
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 structNames.toolName            = 'PZ_tool';
-structNames.buttonTag           = 'figSavePrefsTool';
+structNames.buttonTag           = 'figButtonSP';
 structNames.buttonToolTipString = 'Save Preferences Tool';
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
