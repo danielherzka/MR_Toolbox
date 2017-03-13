@@ -290,7 +290,6 @@ aD = getAD(hFig);
 currentFrame = str2double(aD.hGUI.Frame_Value_edit.String);
 
 % specify single or all axes
-% Specify single or all axes
 hAxesOfInterest = getApplyToAxes(aD,aD.hGUI.Apply_radiobutton);
 
 
@@ -356,7 +355,7 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Reset_Frame_Limit
+function Reset_Frame_Limit(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
@@ -368,9 +367,11 @@ hCurrentAxes = getApplyToAxes(aD,aD.hGUI.Apply_radiobutton);
 for i = 1:length(hCurrentAxes)
 	ImageRangeAll = getappdata(hCurrentAxes(i), 'ImageRangeAll');
 	setappdata(hCurrentAxes(i), 'ImageRange',ImageRangeAll );
-	aD.hGUI.Min_Frame_edit.String =  num2str(ImageRangeAll(1)) ;
-	aD.hGUI.Max_Frame_edit.String =  num2str(ImageRangeAll(2)) ;
-end;
+    if hCurrentAxes(i)==aD.hCurrentAxes
+        aD.hGUI.Min_Frame_edit.String =  num2str(ImageRangeAll(1)) ;
+        aD.hGUI.Max_Frame_edit.String =  num2str(ImageRangeAll(2)) ;
+    end
+end
 
 Set_Current_Axes(aD.hFig, aD.hCurrentAxes);
 %
@@ -723,11 +724,11 @@ if ~isempty(aD.hObjects)
     end    
     
     for i = 1:size(aD.hObjects,1)
-        h_obj = aD.hObjects{i,1};
+        hObj = aD.hObjects{i,1};
         if show
-            [h_obj(h_obj~=0).Visible] = deal('On');
+            [hObj(isgraphics(hObj)).Visible] = deal('On');
         else
-            [h_obj(h_obj~=0).Visible] = deal('Off');
+            [hObj(isgraphics(hObj)).Visible] = deal('Off');
         end
     end    
 else
@@ -744,29 +745,23 @@ function  Update_Object(ObjStruct, hObjects, frame)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Function to update the relevant properties for each type of object
+% XXX FIX: The popupmenu string should be updated per step. May need to be
+% done only at the stop movie point (withe final frame number)
 dispDebug;
+
 
 for j = 1:size(hObjects,1)
     switch ObjStruct(j).Type
-        case 'Line'
-            set(hObjects(j), ...
-                'xdata', ObjStruct(j,frame).xdata(:), ...
-                'ydata', ObjStruct(j,frame).ydata(:),...
-                'Color', ObjStruct(j,frame).color);
-
-        case 'Points'
-            set(hObjects(j), ...
-                'xdata', ObjStruct(j,frame).xdata(:), ...
-                'ydata', ObjStruct(j,frame).ydata(:),...
-                'Color', ObjStruct(j,frame).color);
-
+        case { 'Line', 'Points' }
+            hObjects(j).XData =  ObjStruct(j,frame).Xdata(:);
+            hObjects(j).YData =  ObjStruct(j,frame).Ydata(:);
+            hObjects(j).Color =  ObjStruct(j,frame).Color(:);
         case 'Patch'
-            set(hObjects(j), ...
-                'xdata', ObjStruct(j,frame).xdata, ...
-                'ydata', ObjStruct(j,frame).ydata,...
-                'Facecolor', ObjStruct(j,frame).color, ...
-                'FaceAlpha', ObjStruct(j,frame).facealpha ...
-            );
+            hObjects(j).XData =  ObjStruct(j,frame).Xdata(:);
+            hObjects(j).YData =  ObjStruct(j,frame).Ydata(:);
+            hObjects(j).FaceColor =  ObjStruct(j,frame).Color(:);
+            hObjects(j).FaceAlpha =  ObjStruct(j,frame).FaceAlpha(:);
+            
     end
 end;
 %
@@ -778,6 +773,9 @@ function  Toggle_Object(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function to toggle display of an object(s)
+% XXX FIX: object structure is missing an object for a given time point 
+%  Tool should put a [] in each empty slot of the objStruct.
+
 dispDebug;
 aD =getAD(hFig);
 
@@ -789,7 +787,7 @@ popupmenuString = aD.hGUI.Object_List_popupmenu.String;
 hAxesOfInterest = getApplyToAxes(aD,aD.hGUI.Apply_radiobutton);
 
 %Hide = strmatch('Hide', toggleString);
-Hide = strncmp('Hide', toggleString, length('Hide'))
+Hide = strncmp('Hide', toggleString, length('Hide'));
 
 if ~Hide , newString = 'Hide'; oldString = 'Show'; visibility = 'on';
 else      newString = 'Show'; oldString = 'Hide'; visibility = 'off';
@@ -1171,7 +1169,7 @@ function [hObject, objectNames] = drawObjectsPerAxes(objDataStruct, hAxes)
 dispDebug;
 
 CurrImage = getappdata(hAxes,'CurrentImage'); 
-orignextplot = get(hAxes, 'NextPlot');
+origNextPlot = get(hAxes, 'NextPlot');
 %origCurrentAxes = aD.hFig.CurrentAxes;
 
 set(hAxes, 'NextPlot', 'add');
@@ -1201,11 +1199,12 @@ for i = 1:size(objDataStruct,1)
             linestyle = 'none';
             marker = objDataStruct(i,CurrImage).Marker;
             
-        elseif strcmpi(objType.type, 'Patch')
+        elseif strcmpi(objType, 'Patch')
             hObject(i,1) = patch(hAxes, ...
-                objDataStruct(i,CurrImage).xdata(:), ...
-                objDataStruct(i,CurrImage).ydata(:),...
-                objDataStruct(i,CurrImage).color);
+                objDataStruct(i,CurrImage).XData(:), ...
+                objDataStruct(i,CurrImage).YData(:),...
+                objDataStruct(i,CurrImage).Color);
+            hObject(i,1).FaceAlpha = objDataStruct(i,CurrImage).FaceAlpha;
             linestyle = 'none';
             marker = 'none';
         else
@@ -1227,7 +1226,9 @@ for i = 1:size(objDataStruct,1)
 
 end
 
-hAxes.NextPlot =  orignextplot;
+hObject
+
+hAxes.NextPlot =  origNextPlot;
 %aD.hFig.CurrentAxes = origCurrentAxes;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
