@@ -297,17 +297,9 @@ end;
 function closeRequestCallback(~,~,uaD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-<<<<<<< HEAD
-
-utilDispDebug;
-aD = getAD(hFig);
-old_SHH = aD.hRoot.ShowHiddenHandles;
-aD.hRoot.ShowHiddenHandles = 'On';
-=======
 dispDebug;
 old_SHH = uaD.hRoot.ShowHiddenHandles;
 uaD.hRoot.ShowHiddenHandles = 'On';
->>>>>>> master
 
 %calls deactivate
 uaD.hButton.State = 'off';

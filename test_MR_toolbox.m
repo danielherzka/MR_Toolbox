@@ -1,7 +1,6 @@
 
 %load('C:\Users\herzkad\Dropbox\Herzka - MATLAB\Test DAta\VTA_Pig_G083_8_Weeks_post_MI_WIP_Hi-INAV-PSIR_SENSE_37_1.mat')
-
-load('/Users/danielherzka/Dropbox/Herzka - MATLAB/Test Data/VTA_Pig_G083_8_Weeks_post_MI_WIP_Hi-INAV-PSIR_SENSE_37_1.mat')
+load('/Users/danielherzka/Dropbox/Herzka - MATLAB/New Tools/20170310 In Progress EodD stop Wl PZ MV SP/VTA_Pig_G083_8_Weeks_post_MI_WIP_Hi-INAV-PSIR_SENSE_37_1.mat')
 
 try
     close all
@@ -36,36 +35,64 @@ nframes = size(I.A,3);
 rad = linspace (30,60, nframes);
 dx = linspace(0,10, nframes);
 
-colororder = 'rgb';
-markerorder = '+^o';
+colororder = 'rgbyc';
+markerorder = '+^ox';
 theta = linspace(0,2*pi,50);
+patchcolor = linspace(0,1,nframes)';
+patchcolor = repmat(patchcolor,  1, 3) ;
 
 objStruct = struct([]);
 
 for r = 1:nframes
-
-    i=1;
+i=0;
+    i=i+1;
     objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)/2;
     objStruct(i,r).YData = rad(r)*sin(theta) + size(Ims,2)/2;
     objStruct(i,r).Type = 'line';  % line  point patch
-    objStruct(i,r).Color = colororder(i);
+    objStruct(i,r).Color = 'r';
     objStruct(i,r).Marker = markerorder(i);
-    objStruct(i,r).Name = 'CircleLine';
-    hold on;
-    %plot(hAllAxes(i) = objStruct{r,i}.x, objStruct{r,i}.y, 'Color', objStruct{r,i}.color, 'Marker', objStruct{r,i}.marker) ;
+    objStruct(i,r).Name = 'RedLine';
     hold on;
 
-    i=2
+    i=i+1;
     objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)/4;
-    objStruct(i,r).YData = rad(r)*sin(theta) + size(Ims,2)/4;
+    objStruct(i,r).YData = rad(r)*sin(theta) + size(Ims,2)/8;
     objStruct(i,r).Type = 'points';  % line  point patch
-    objStruct(i,r).Color = colororder(i);
+    objStruct(i,r).Color = 'g';
     objStruct(i,r).Marker = markerorder(i);
-    objStruct(i,r).Name = 'CirclePoints';
-    hold on;
-    %plot(hAllAxes(i) = objStruct{r,i}.x, objStruct{r,i}.y, 'Color', objStruct{r,i}.color, 'Marker', objStruct{r,i}.marker) ;
-    hold on;
+    objStruct(i,r).Name = 'CaratGreenOs';
 
+    i=i+1;
+    %if mod(r,2)
+    objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)*3/4;
+    objStruct(i,r).YData = rad(r)*sin(theta) + size(Ims,2)*3/4;
+    objStruct(i,r).Type = 'points';  % line  point patch
+    objStruct(i,r).Color = 'b';
+    objStruct(i,r).Marker = markerorder(i);
+    objStruct(i,r).Name = 'BlueEven';
+    %end
+%     
+%     
+     i=i+1;
+    %if mod(r+1,2)
+    objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)*1/4;
+    objStruct(i,r).YData = rad(r)*sin(theta) + size(Ims,2)*1/4;
+    objStruct(i,r).Type = 'points';  % line  point patch
+    objStruct(i,r).Color = 'c';
+    objStruct(i,r).Marker = markerorder(i);
+    objStruct(i,r).Name = 'LineCyanOdd';
+    %end
+%     
+     i=i+1;
+    objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)*1/4;
+    objStruct(i,r).YData = rad(r)*sin(theta) + size(Ims,2)*1/4;
+    objStruct(i,r).Color = patchcolor(r,:);
+    objStruct(i,r).Type = 'patch';  % line  point patch
+    objStruct(i,r).Name = 'BlackPatchOdd';
+    objStruct(i,r).FaceAlpha = 0.25;
+    
+    
+    
     
     
 end

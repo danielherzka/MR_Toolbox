@@ -101,64 +101,9 @@ function Activate_PZ(~,~,hFig)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-<<<<<<< HEAD
-%% PART I - Environment
-
-aD = getAD(hFig);
-aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
-
-% Check the menu object
-if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
-
-% Find toolbar and deactivate other buttons
-aD.hToolbar = findall(aD.hFig, 'type', 'uitoolbar');
-aD.hToolbar = findobj(aD.hToolbar, 'Tag', 'FigureToolBar');
-
-if ~isempty(aD.hToolbar)
-    [aD.hToolbarChildren, aD.origToolEnables, aD.origToolStates ] = ...
-        aD.hUtils.disableToolbarButtons(aD.hToolbar, aD.objectNames.buttonTag);
-end;
-
-% Store initial state of all axes in current figure for reset
-aD.hAllAxes = flipud(findobj(aD.hFig,'Type','Axes'));
-allXlims = zeros(length(aD.hAllAxes),2);
-allYlims = zeros(length(aD.hAllAxes),2);
-for i = 1:length(aD.hAllAxes)
-    allXlims(i,:) = aD.hAllAxes(i).XLim;
-    allYlims(i,:) = aD.hAllAxes(i).YLim;
-end;
-
-% Obtain current axis
-aD.hRoot.CurrentFigure = aD.hFig;
-aD.hCurrentAxes=aD.hFig.CurrentAxes;
-if isempty(aD.hCurrentAxes)
-    aD.hCurrentAxes = aD.hAllAxes(1); 
-    aD.hFig.CurrentAxes = aD.hCurrentAxes;
-end;
-
-% Store the figure's old infor within the fig's own userdata
-aD.origProperties = retreiveOrigData(aD.hFig);
-
-% Find and close the old PZ figure to avoid conflicts
-hToolFigOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
-if ~isempty(hToolFigOld), close(hToolFigOld); end;
-pause(0.5);
-
-% Make it easy to find this button (tack on 'On') 
-% Wait until after old fig is closed.
-aD.hButton.Tag = [aD.hButton.Tag,'_On'];
-aD.hMenu.Tag   = [aD.hMenu.Tag, '_On'];
-aD.hFig.Tag      = aD.objectNames.activeFigureName; % ActiveFigure
-
-aD.hFig.WindowButtonDownFcn   = {@Adjust_Pan_On, aD.hFig};          %entry
-aD.hFig.WindowButtonUpFcn     = {@Adjust_Pan_For_All, aD.hFig}; %exit
-aD.hFig.WindowButtonMotionFcn = '';  
-aD.hFig.WindowKeyPressFcn  = @Key_Press_CopyPaste;
-=======
 aD = configActiveFigure(hFig);
 aD = configGUI(aD);
 aD = configOther(aD);
->>>>>>> master
 
 storeAD(aD);
 Switch_PZ(hFig);
@@ -344,7 +289,7 @@ function Adjust_Pan(varargin)
 dispDebug
 
 if nargin == 1, hFig = varargin{1};     % inside call
-else,           hFig = varargin{3}; end;% outside call
+else            hFig = varargin{3}; end;% outside call
 
 aD = getAD(hFig); 
 
@@ -420,11 +365,7 @@ zoom_factor = str2double(aD.hGUI.Zoom_value_edit.String);
 if ~isnan(zoom_factor)
     
     if apply_all, all_axes = aD.hAllAxes;
-<<<<<<< HEAD
-    else,         all_axes = aD.hCurrentAxes;
-=======
     else          all_axes = aD.hCurrentAxes;
->>>>>>> master
     end
     
     hIm = findobj(aD.hCurrentAxes, 'Type', 'Image');
@@ -546,11 +487,7 @@ function Switch_PZ(varargin)
 dispDebug;
 
 if nargin==1, hFig=varargin{1};  % inside call
-<<<<<<< HEAD
-else, hFig = varargin{3}; end     % outside call
-=======
 else  hFig = varargin{3}; end     % outside call
->>>>>>> master
  
 aD = getAD(hFig);
 
@@ -562,12 +499,12 @@ hCurrentRadiobutton = gcbo;
 if strcmp(hCurrentRadiobutton.Tag, 'Pan_radiobutton')
     % pan button was last to be used
     if Pan_On,  Panning = 1;
-    else,       Panning = 0;
+    else        Panning = 0;
     end;
 else
     % zoom button was last to be used (or no button was used)
     if Zoom_On, Panning = 0;
-    else,       Panning = 1;
+    else        Panning = 1;
     end;
 end;
 
