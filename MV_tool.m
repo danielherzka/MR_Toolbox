@@ -1,5 +1,4 @@
 function MV_tool(varargin)
-% CHANGED 20170312 PM
 % function MV_tool(varargin)
 % Movie viewing tool for displaying 3D or 4D sets of data. Use with
 % imagescn. Can export to avi.
@@ -36,11 +35,11 @@ Create_New_Objects;
 % aD.hGUI.Step_Rewind_pushbutton.Callback  = {@Step, aD.hFig, -1};
 % aD.hGUI.Step_Forward_pushbutton.Callback = {@Step, aD.hFig, 1};
 % aD.hGUI.Forward_pushbutton.Callback      = {@Limit, aD.hFig 1};
-% aD.hGUI.Stop_pushbutton.Callback         = @Stop_Movie;
+% aD.hGUI.Stop_pushbutton.Callback         =  @Stop_Movie;
 % aD.hGUI.Play_pushbutton.Callback         = {@Play_Movie, aD.hFig};
 % aD.hGUI.Make_Movie_pushbutton.Callback   = {@Make_Movie, aD.hFig};
 % aD.hGUI.Show_Frames_checkbox.Callback    = {@Show_Frame_Numbers, aD.hFig};
-% aD.hGUI.Show_Objects_checkbox.Callback   = {@Show_Objects, aD.hFig};
+% aD.hGUI.Show_Objects_checkbox.Callback   = {@Toggle_All_Objects, aD.hFig};
 % aD.hGUI.Object_List_popupmenu.Callback   = {@Toggle_Object, aD.hFig};
         
       
@@ -225,7 +224,7 @@ for i = 1:length(hAxesOfInterest)
     if ~isempty(aD.hObjects)
         % Objects Exist- update the xdata/ydata for each object
         objectData   = getappdata(hAxesOfInterest(i), 'Objects');
-        Update_Object(objectData, aD.hObjects{aD.hAllAxes == hAxesOfInterest(i),1},currentFrame);
+        Update_Objects(objectData, aD.hObjects{aD.hAllAxes == hAxesOfInterest(i),1},currentFrame);
     end;
     
 end;
@@ -270,7 +269,7 @@ for i = 1:length(hAxesOfInterest)
            
     if ~isempty(aD.hObjects)
         object_data   = getappdata(hAxesOfInterest(i), 'Objects');
-        Update_Object(object_data, aD.hObjects{aD.hAllAxes == hAxesOfInterest(i),1},currentFrame);
+        Update_Objects(object_data, aD.hObjects{aD.hAllAxes == hAxesOfInterest(i),1},currentFrame);
     end;
     
     
@@ -316,7 +315,7 @@ for i = 1:length(hAxesOfInterest)
     % Objects Exist- update the xdata/ydata for each object
     if ~isempty(aD.hObjects)
         object_data   = getappdata(CurrentAxes(i), 'Objects');
-        Update_Object(object_data, aD.hObjects{ hAxesOfInterest(i) == aD.hCurrentAxes,1},currentFrame);
+        Update_Objects(object_data, aD.hObjects{ hAxesOfInterest(i) == aD.hCurrentAxes,1},currentFrame);
     end;
 
 end;
@@ -444,7 +443,7 @@ while ~GLOBAL_STOP_MOVIE
         if ~isempty(aD.hObjects)
             % Objects Exist- update the xdata/ydata for each object for each axis
             for j = 1:size(aD.hObjects{i},1)
-                Update_Object(objectData{i}, aD.hObjects{ hAxesOfInterest(i)==aD.hAllAxes }, currentFrame{i});
+                Update_Objects(objectData{i}, aD.hObjects{ hAxesOfInterest(i)==aD.hAllAxes }, currentFrame{i});
             end;                            
         end;
         
@@ -567,7 +566,7 @@ dispDebug;
 %         %%%CHUS%%%
 %         if ~isempty(handlesMV.ObjectHandles)
 %             for j = 1:size(handlesMV.ObjectHandles{i},1)
-%                 Update_Object(object_data{i}, handlesMV.ObjectHandles{find(handlesMV.Axes==CurrentAxes(i))},current_frame{i});
+%                 Update_Objects(object_data{i}, handlesMV.ObjectHandles{find(handlesMV.Axes==CurrentAxes(i))},current_frame{i});
 %             end;
 %         end;
 %         %%%CHUS%%%
@@ -702,7 +701,7 @@ aD.hUtils.menuToggle(aD.hMenu,aD.hButton);
     
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  Show_Objects(varargin)
+function  Toggle_All_Objects(varargin)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Function toggle the display of the objects
@@ -741,35 +740,33 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  Update_Object(ObjStruct, hObjects, frame)
+function  Update_Objects(objStruct, hObjects, frame)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Function to update the relevant properties for each type of object
 dispDebug;
 
 for j = 1:size(hObjects,1)
-    switch ObjStruct(j).Type
-        case 'Line'
-            set(hObjects(j), ...
-                'xdata', ObjStruct(j,frame).xdata(:), ...
-                'ydata', ObjStruct(j,frame).ydata(:),...
-                'Color', ObjStruct(j,frame).color);
-
-        case 'Points'
-            set(hObjects(j), ...
-                'xdata', ObjStruct(j,frame).xdata(:), ...
-                'ydata', ObjStruct(j,frame).ydata(:),...
-                'Color', ObjStruct(j,frame).color);
-
-        case 'Patch'
-            set(hObjects(j), ...
-                'xdata', ObjStruct(j,frame).xdata, ...
-                'ydata', ObjStruct(j,frame).ydata,...
-                'Facecolor', ObjStruct(j,frame).color, ...
-                'FaceAlpha', ObjStruct(j,frame).facealpha ...
-            );
+    if strcmpi(hObjects(j).Type, 'Line') ||  strcmpi( hObjects(j).Type, 'Points')
+        hObjects(j).XData = objStruct(j,frame).XData(:);
+        hObjects(j).YData = objStruct(j,frame).YData(:);
+        hObjects(j).Color = objStruct(j,frame).Color;
+        
+    elseif strcmpi(hObjects(j).Type, 'Patch')
+        hObjects(j).XData = objStruct(j,frame).XData(:);
+        hObjects(j).YData = objStruct(j,frame).YData(:);
+        hObjects(j).FaceColor = objStruct(j,frame).Color;
+        
+        if isfield(objStruct(j,frame), 'Other') && ~isempty(objStruct(j,frame).Other)
+            props = fieldnames(objStruct(j,frame).Other);
+            for idx = 1:length(props)
+                hObjects(j).(props{idx}) = objStruct(j,frame).Other.(props{idx});
+            end
+        end
+        
     end
-end;
+end
+% make sure axis go bac to correct?
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -790,10 +787,10 @@ popupmenuString = aD.hGUI.Object_List_popupmenu.String;
 hAxesOfInterest = getApplyToAxes(aD,aD.hGUI.Apply_radiobutton);
 
 %Hide = strmatch('Hide', toggleString);
-Hide = strncmp('Hide', toggleString, length('Hide'))
+Hide = strncmp('Hide', toggleString, length('Hide'));
 
 if ~Hide , newString = 'Hide'; oldString = 'Show'; visibility = 'on';
-else      newString = 'Show'; oldString = 'Hide'; visibility = 'off';
+else       newString = 'Show'; oldString = 'Hide'; visibility = 'off';
 end;
 
 for i = 1:length(hAxesOfInterest)
@@ -804,7 +801,7 @@ for i = 1:length(hAxesOfInterest)
     
     for j = 1:size(hCurrObjects,1)        
         if strncmp(deblank(get(hCurrObjects(j),'Userdata')), deblank(toggleString(6:end)), length(deblank(toggleString(6:end))))
-            set(hCurrObjects(j), 'Visible', visibility);
+            hCurrObjects(j).Visible =  visibility;
             aD.hGUI.Object_List_popupmenu.String =  popupmenuString;
         end;
     end;
@@ -938,7 +935,7 @@ aD.hGUI.Stop_pushbutton.Callback         =  @Stop_Movie;
 aD.hGUI.Play_pushbutton.Callback         = {@Play_Movie,         aD.hFig};
 aD.hGUI.Make_Movie_pushbutton.Callback   = {@Make_Movie,         aD.hFig};
 aD.hGUI.Show_Frames_checkbox.Callback    = {@Show_Frame_Numbers, aD.hFig};
-aD.hGUI.Show_Objects_checkbox.Callback   = {@Show_Objects,       aD.hFig};
+aD.hGUI.Show_Objects_checkbox.Callback   = {@Toggle_All_Objects, aD.hFig};
 aD.hGUI.Object_List_popupmenu.Callback   = {@Toggle_Object,      aD.hFig};
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -970,7 +967,7 @@ aD.hGUI.Min_Frame_edit.String = num2str(imageRangeAll(1));
 % Display pre-loaded Objects (additional graphics overlaid on image)
 aD.hObjects = []; 
 aD = drawAllObjects(aD);
-Show_Objects(aD.hFig);
+Toggle_All_Objects(aD.hFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1202,11 +1199,20 @@ for i = 1:size(objDataStruct,1)
             linestyle = 'none';
             marker = objDataStruct(i,CurrImage).Marker;
             
-        elseif strcmpi(objType.type, 'Patch')
+        elseif strcmpi(objType, 'Patch')
             hObject(i,1) = patch(hAxes, ...
-                objDataStruct(i,CurrImage).xdata(:), ...
-                objDataStruct(i,CurrImage).ydata(:),...
-                objDataStruct(i,CurrImage).color);
+                objDataStruct(i,CurrImage).XData(:), ...
+                objDataStruct(i,CurrImage).YData(:),...
+                objDataStruct(i,CurrImage).Color);
+            %hObject(i,1).FaceAlpha =  objDataStruct(i,CurrImage).FaceAlpha;
+            
+            if isfield(objDataStruct(i,CurrImage), 'Other') && ~isempty(objDataStruct(i,CurrImage).Other)
+                props = fieldnames(objDataStruct(i,CurrImage).Other);
+                for idx = 1:length(props)
+                        hObject(i,1).(props{idx}) = objDataStruct(i,CurrImage).Other.(props{idx});
+                end
+            end
+            
             linestyle = 'none';
             marker = 'none';
         else
