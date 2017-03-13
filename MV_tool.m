@@ -1,4 +1,5 @@
 function MV_tool(varargin)
+% CHANGED 20170312 PM
 % function MV_tool(varargin)
 % Movie viewing tool for displaying 3D or 4D sets of data. Use with
 % imagescn. Can export to avi.
