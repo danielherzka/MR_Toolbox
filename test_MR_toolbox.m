@@ -37,88 +37,84 @@ colororder = 'rgb';
 markerorder = '+^o';
 theta = linspace(0,2*pi,50);
 patchcolor = repmat(linspace(0,1, nframes)', 1,3);
-
+patchalpha = linspace(1,0, nframes);
 
 
 objStruct = struct([]);
 
-for r = 1:nframes
-    i=0;
-    i=i+1;
-    objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)/2;
-    objStruct(i,r).YData = rad(r)*sin(theta) + size(Ims,2)/2;
-    objStruct(i,r).Type = 'Line';  % line  point patch
-    objStruct(i,r).Color = 'w';
-    objStruct(i,r).Marker ='^';
-    objStruct(i,r).Name = 'WhiteLine';
-    hold on;
-    %plot(hAllAxes(i) = objStruct{r,i}.x, objStruct{r,i}.y, 'Color', objStruct{r,i}.color, 'Marker', objStruct{r,i}.marker) ;
-    hold on;
+for f = 1:length(hAllAxes)
     
-    i=i+1;
-    objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)*5/8;
-    objStruct(i,r).YData = rad(r)*sin(theta) + size(Ims,2)/4;
-    objStruct(i,r).Type = 'Points';  % line  point patch
-    objStruct(i,r).Color = [0 0 1];
-    objStruct(i,r).Marker = 'x';
-    objStruct(i,r).Name = 'BluePointsX';
-    hold on;
-    %plot(hAllAxes(i) = objStruct{r,i}.x, objStruct{r,i}.y, 'Color', objStruct{r,i}.color, 'Marker', objStruct{r,i}.marker) ;
-    hold on;
-   
-    i=i+1;
-    objStruct(i,r).XData = rad(r)*cos(theta)- dx(r) + size(Ims,1)/4;
-    objStruct(i,r).YData = rad(r)*sin(theta)+ dx(r) + size(Ims,2)/4;
-    objStruct(i,r).Type = 'Points';  % line  point patch
-    objStruct(i,r).Color = 'r';
-    objStruct(i,r).Marker = 'o';
-    objStruct(i,r).Name = 'RedPointsO';
-    hold on;
-    %plot(hAllAxes(i) = objStruct{r,i}.x, objStruct{r,i}.y, 'Color', objStruct{r,i}.color, 'Marker', objStruct{r,i}.marker) ;
-    hold on;
+    for r = 1:nframes
+        i=0;
+        
+        i=i+1;
+        objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)/2;
+        objStruct(i,r).YData = rad(r)*sin(theta) + size(Ims,2)/2;
+        objStruct(i,r).Type = 'Line';  % line  point patch
+        objStruct(i,r).Color = 'w';
+        objStruct(i,r).Marker ='^';
+        objStruct(i,r).Name = 'WhiteLine';
+        objStruct(i,r).Other.LineWidth = mod(r,4)+1;
+        hold on;
+        
+        i=i+1;
+        objStruct(i,r).XData = (f*0.2)*rad(r)*cos(theta)+ dx(r) + size(Ims,1)*5/8;
+        objStruct(i,r).YData = rad(r)*sin(theta) + size(Ims,2)/4;
+        objStruct(i,r).Type = 'Points';  % line  point patch
+        objStruct(i,r).Color = [0 0 1];
+        objStruct(i,r).Marker = 'x';
+        objStruct(i,r).Name = 'BluePointsX';
+        
+        i=i+1;
+        objStruct(i,r).XData = (f*0.2)*rad(r)*cos(theta)- dx(r) + size(Ims,1)/4;
+        objStruct(i,r).YData = (f*0.2)*rad(r)*sin(theta)+ dx(r) + size(Ims,2)/4;
+        objStruct(i,r).Type = 'Points';  % line  point patch
+        objStruct(i,r).Color = 'r';
+        objStruct(i,r).Marker = 'o';
+        objStruct(i,r).Name = 'RedPointsO';
+        objStruct(i,r).Other.MarkerSize = mod(r,10)+1;
+        
+        i=i+1;
+        if mod(r,2)
+            objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)*1/8;
+            objStruct(i,r).YData = (f*0.2)*rad(r)*sin(theta) + size(Ims,2)*3/8;
+            objStruct(i,r).Type = 'Points';  % line  point patch
+            objStruct(i,r).Color = 'g';
+            objStruct(i,r).Marker = '+';
+            objStruct(i,r).Name = 'GreenPoints+';
+            hold on;
+        end
+        
+        i=i+1;
+        objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)*3/4;
+        objStruct(i,r).YData = rad(r)*sin(theta) + size(Ims,2)*3/4;
+        objStruct(i,r).Type = 'Patch';  % line  point patch
+        objStruct(i,r).Color = patchcolor(r,:);
+        objStruct(i,r).Name = 'BlackPatch';
+        objStruct(i,r).Other.FaceAlpha = patchalpha(r);
+        objStruct(i,r).Other.EdgeColor = [0 1 1];
+        objStruct(i,r).Other.EdgeAlpha = patchalpha(r);
+        
+        i=i+1;
+        objStruct(i,r).XData = 0.5*rad(r)*cos(theta)+ dx(r) + size(Ims,1)*3/4;
+        objStruct(i,r).YData = 0.5*rad(r)*sin(theta) + size(Ims,2)*3/4;
+        objStruct(i,r).Type = 'Patch';  % line  point patch
+        objStruct(i,r).Color = patchcolor(r,:);
+        objStruct(i,r).Name = 'BlackPatchHole';
+        objStruct(i,r).Other.FaceAlpha = patchalpha(nframes-r+1);
+        objStruct(i,r).Other.EdgeColor = 'none';
+        
+        
+        
+        
+    end
     
-    i=i+1;
-    objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)*1/8;
-    objStruct(i,r).YData = rad(r)*sin(theta) + size(Ims,2)*3/8;
-    objStruct(i,r).Type = 'Points';  % line  point patch
-    objStruct(i,r).Color = 'g';
-    objStruct(i,r).Marker = '+';
-    objStruct(i,r).Name = 'GreenPoints+';
-    hold on;
-    %plot(hAllAxes(i) = objStruct{r,i}.x, objStruct{r,i}.y, 'Color', objStruct{r,i}.color, 'Marker', objStruct{r,i}.marker) ;
-    hold on;
     
-    
-    i=i+1;
-    objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)*3/4;
-    objStruct(i,r).YData = rad(r)*sin(theta) + size(Ims,2)*3/4;
-    objStruct(i,r).Type = 'Patch';  % line  point patch
-    objStruct(i,r).Color = patchcolor(r,:);
-    objStruct(i,r).Name = 'BlackPatch';
-    objStruct(i,r).Other.FaceAlpha = 0.5;
-    objStruct(i,r).Other.EdgeColor = [0 0 0];
-    objStruct(i,r).Other.EdgeAlpha = 1;
-
-    hold on;
-    %plot(hAllAxes(i) = objStruct{r,i}.x, objStruct{r,i}.y, 'Color', objStruct{r,i}.color, 'Marker', objStruct{r,i}.marker) ;
-    hold on;
-    
-    
-    
-    
-    
-end
-
-%xlim([0 size(Ims,1)])
-%ylim([ 0, size(Ims,2)])
-
-
-for i = 1:length(hAllAxes)
-    setappdata(hAllAxes(i), 'Objects', objStruct)
+    setappdata(hAllAxes(f), 'Objects', objStruct)
 end
 
 
- 
+
 
 
 % Test single image array without time

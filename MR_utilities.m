@@ -416,8 +416,8 @@ else
     hToolFig = findobj(groot, 'Tag', figTag);
 end
 delete(hToolFig);
-hFig.CloseRequestFcn = 'closereq';
-close(hFig);
+%hFig.CloseRequestFcn = 'closereq';
+delete(hFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -446,14 +446,7 @@ if DB
         loc = ['(loc)', repmat('|> ',1, sum(strcmp(x(1).file, {x.file})-1))] ;
     end
     fprintf([callFuncName,' ',objectNames.toolName, ':', loc , ' %s'], funcName);
-%     if nargin>0
-%         for i = 1:length(varargin)
-%             str = varargin{i};
-%             fprintf(': %s', str);
-%         end
-%     end
-    fprintf('\n');
-    
+    fprintf('\n');    
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%

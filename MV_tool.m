@@ -101,7 +101,9 @@ function Activate_MV(~,~,hFig)
 dispDebug;
 
 aD = configActiveFigure(hFig);
+
 aD = configGUI(aD);
+
 aD = configOther(aD);
 
 storeAD(aD);
@@ -116,8 +118,7 @@ function Deactivate_MV(~,~,hFig)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 
-global GLOBAL_STOP_MOVIE
-GLOBAL_STOP_MOVIE = 2;
+Abort_Movie;
 
 aD = getAD(hFig);
 
@@ -437,8 +438,6 @@ while ~GLOBAL_STOP_MOVIE
         if (aD.hCurrentAxes == hAxesOfInterest(i))
             aD.hGUI.Frame_Value_edit.String = num2str(currentFrame{i});
         end
-%       %set(findobj(hAxesOfInterest(i), 'Type', 'image'), 'CData', imageData{i}(:,:,currentFrame{i}));
-% 		set(handlesMV.hFrameNumbers(find(handlesMV.Axes == hAxesOfInterest(i))), 'String', num2str(currentFrame{i}));
         
         if ~isempty(aD.hObjects)
             % Objects Exist- update the xdata/ydata for each object for each axis
@@ -455,7 +454,8 @@ while ~GLOBAL_STOP_MOVIE
 end;
 
 % Exit - update values for each of the axes in movie to correspond to last
-% frame played
+% frame played; Do this if Deactivate nor CloseParentFigure has been
+% called.
 
 if (GLOBAL_STOP_MOVIE ~= 2)
     for i = 1:length(hAxesOfInterest)
@@ -642,6 +642,18 @@ GLOBAL_STOP_MOVIE = 1;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
+function Abort_Movie(varargin)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+
+global GLOBAL_STOP_MOVIE
+GLOBAL_STOP_MOVIE = 2;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
 function Show_Frame_Numbers(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -679,8 +691,9 @@ aD.handlesMV.Min_Frame_edit.String =  num2str(image_range(1));
 aD.handlesMV.Max_Frame_edit.String =  num2str(image_range(2));
 
  if ~isempty(aD.hObjects)
+     % Update popupmenu string to reflect current axes
      hCurrentAxes_idx = aD.hAllAxes==aD.hCurrentAxes;
-     aD.handlesMV.Object_List_popupmenu.String = ...
+     aD.hGUI.Object_List_popupmenu.String = ...
          aD.hObjects{hCurrentAxes_idx,3};
  end;
 
@@ -750,20 +763,19 @@ for j = 1:size(hObjects,1)
     if strcmpi(hObjects(j).Type, 'Line') ||  strcmpi( hObjects(j).Type, 'Points')
         hObjects(j).XData = objStruct(j,frame).XData(:);
         hObjects(j).YData = objStruct(j,frame).YData(:);
-        hObjects(j).Color = objStruct(j,frame).Color;
         
+        if ~isempty(objStruct(j,frame).XData(:))  
+            % empty object; do not update other properties
+            hObjects(j).Color = objStruct(j,frame).Color;
+            updateOtherObjectProps(hObjects(j), objStruct(j,frame) )
+        end
     elseif strcmpi(hObjects(j).Type, 'Patch')
         hObjects(j).XData = objStruct(j,frame).XData(:);
         hObjects(j).YData = objStruct(j,frame).YData(:);
-        hObjects(j).FaceColor = objStruct(j,frame).Color;
-        
-        if isfield(objStruct(j,frame), 'Other') && ~isempty(objStruct(j,frame).Other)
-            props = fieldnames(objStruct(j,frame).Other);
-            for idx = 1:length(props)
-                hObjects(j).(props{idx}) = objStruct(j,frame).Other.(props{idx});
-            end
+        if ~isempty(objStruct(j,frame).XData(:))  % empty object
+            % empty object; do not update other properties
+            updateOtherObjectProps(hObjects(j), objStruct(j,frame) )
         end
-        
     end
 end
 % make sure axis go bac to correct?
@@ -786,7 +798,6 @@ popupmenuString = aD.hGUI.Object_List_popupmenu.String;
 % Specify single or all axes
 hAxesOfInterest = getApplyToAxes(aD,aD.hGUI.Apply_radiobutton);
 
-%Hide = strmatch('Hide', toggleString);
 Hide = strncmp('Hide', toggleString, length('Hide'));
 
 if ~Hide , newString = 'Hide'; oldString = 'Show'; visibility = 'on';
@@ -871,7 +882,7 @@ aD = aD.hUtils.updateHCurrentFigAxes(aD);
 
 % Store the figure's old infor within the fig's own userdata
 aD.origProperties      = aD.hUtils.retrieveOrigData(aD.hFig);
-aD.origAxesProperties  = aD.hUtils.retrieveOrigData(aD.hAllAxes , {'ButtonDownFcn'});
+aD.origAxesProperties  = aD.hUtils.retrieveOrigData(aD.hAllAxes , {'ButtonDownFcn', 'XLimMode', 'YLimMode'});
 aD.origImageProperties = aD.hUtils.retrieveOrigData(aD.hAllImages , {'ButtonDownFcn'});
 
 % Find and close the old WL figure to avoid conflicts
@@ -884,11 +895,13 @@ aD.hButton.Tag   = [aD.hButton.Tag,'_On'];
 aD.hMenuPZ.Tag   = [aD.hMenu.Tag, '_On'];
 
 % Set figure clsoe callback
-aD.hFig.CloseRequestFcn = {aD.hUtils.closeParentFigure, aD.objectNames.figTag};
+aD.hFig.CloseRequestFcn = {@localCloseParentFigure, aD.objectNames.figTag};
 
 % Draw faster and without flashes
 aD.hFig.Renderer = 'zbuffer';
 [aD.hAllAxes.SortMethod] = deal('Depth');
+[aD.hAllAxes.XLimMode] = deal('manual');
+[aD.hAllAxes.YLimMode] = deal('manual');
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1115,6 +1128,17 @@ end;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
+function localCloseParentFigure(hFig, ~, figTag)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Abort_Movie;
+aD = getAD(hFig);
+aD.hUtils.closeParentFigure(hFig,[], figTag);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
 function aD = drawAllObjects(aD)
 % 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1129,7 +1153,7 @@ for i = 1:length(aD.hAllAxes)
     if isappdata(aD.hAllAxes(i), 'Objects')
         % Objects exist, Draw them
         objectData =  getappdata(aD.hAllAxes(i),'Objects');
-        [hObjects{i,1}, hObjects{i,2}] = drawObjectsPerAxes(objectData , aD.hAllAxes(i)) ;
+        [hObjects{i,1}, hObjects{i,2}] = drawAllObjectsPerAxes(objectData , aD.hAllAxes(i)) ;
         
         % load the current axes objets onto popupmenu
         %if(aD.hAllAxes(i)==aD.hCurrentAxes)
@@ -1140,6 +1164,11 @@ for i = 1:length(aD.hAllAxes)
         %    hObjects{i,3} = [];
         %end;
         drewObjectsFlag = 1;
+
+        % load the current axes object list into popupmenu
+        if(aD.hAllAxes(i)==aD.hCurrentAxes)
+            aD.hGUI.Object_List_popupmenu.String = popupstring;
+        end
     end;
 
 end;
@@ -1159,7 +1188,7 @@ storeAD(aD);
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function [hObject, objectNames] = drawObjectsPerAxes(objDataStruct, hAxes)
+function [hObject, objectNames] = drawAllObjectsPerAxes(objDataStruct, hAxes)
 % 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Function to cycle through drawing objects; 
@@ -1169,13 +1198,10 @@ function [hObject, objectNames] = drawObjectsPerAxes(objDataStruct, hAxes)
 dispDebug;
 
 CurrImage = getappdata(hAxes,'CurrentImage'); 
-orignextplot = get(hAxes, 'NextPlot');
-%origCurrentAxes = aD.hFig.CurrentAxes;
-
-set(hAxes, 'NextPlot', 'add');
+origNextPlot = get(hAxes, 'NextPlot');
+hAxes.NextPlot = 'Add'; % overlay
 
 objectNames = [];
-
 hObject = gobjects(size(objDataStruct,1),1);
 
 % Draw each object in the list of objects for this axes
@@ -1183,58 +1209,74 @@ for i = 1:size(objDataStruct,1)
     objType = objDataStruct(i,CurrImage).Type;
     
     if ~isempty(objType)
-        if strcmpi(objType, 'Line')
+        if strcmpi(objType, 'Line') % min props: xdata,ydata, color, name
             hObject(i,1) = plot(hAxes, ...
                 objDataStruct(i,CurrImage).XData(:), ...
                 objDataStruct(i,CurrImage).YData(:),...
                 'color', objDataStruct(i,CurrImage).Color );
-            linestyle = '-';
-            marker = 'none';
+            hObject(i,1).LineStyle = '-';
+            hObject(i,1).Marker    = 'none';
             
-        elseif strcmpi(objType, 'Points')
+            updateOtherObjectProps( hObject(i,1), objDataStruct(i,CurrImage) ) ;
+            
+        elseif strcmpi(objType, 'Points') % min props: xdata,ydata, color, marker, name
             hObject(i,1) = plot(hAxes, ...
                 objDataStruct(i,CurrImage).XData(:), ....
                 objDataStruct(i,CurrImage).YData(:),...
                 'color', objDataStruct(i,CurrImage).Color );
-            linestyle = 'none';
-            marker = objDataStruct(i,CurrImage).Marker;
+            hObject(i,1).LineStyle = 'none';
+            hObject(i,1).Marker    =  objDataStruct(i,CurrImage).Marker;
+
+            updateOtherObjectProps( hObject(i,1), objDataStruct(i,CurrImage) ) ;
             
-        elseif strcmpi(objType, 'Patch')
+        elseif strcmpi(objType, 'Patch') % min props: xdata,ydata, color, name
             hObject(i,1) = patch(hAxes, ...
                 objDataStruct(i,CurrImage).XData(:), ...
                 objDataStruct(i,CurrImage).YData(:),...
-                objDataStruct(i,CurrImage).Color);
-            %hObject(i,1).FaceAlpha =  objDataStruct(i,CurrImage).FaceAlpha;
+                objDataStruct(i,CurrImage).Color ) ;
+
+            updateOtherObjectProps( hObject(i,1), objDataStruct(i,CurrImage) ) ;
             
-            if isfield(objDataStruct(i,CurrImage), 'Other') && ~isempty(objDataStruct(i,CurrImage).Other)
-                props = fieldnames(objDataStruct(i,CurrImage).Other);
-                for idx = 1:length(props)
-                        hObject(i,1).(props{idx}) = objDataStruct(i,CurrImage).Other.(props{idx});
-                end
-            end
-            
-            linestyle = 'none';
-            marker = 'none';
         else
             disp('Unknown object type!');
         end;
         
-        if isempty(objectNames)
-            objectNames = objDataStruct(i,CurrImage).Name;
-        else
-            objectNames = char(objectNames, objDataStruct(i,CurrImage).Name);
+        hObject(i,1).UserData      = objDataStruct(i,CurrImage).Name;
+        
+        outName = objDataStruct(i,CurrImage).Name;
+        if isempty(outName)
+            outName = '<>';
         end
-            
-        % These apply to all objects (lines/points/patches)
-        set(hObject(i,1),...
-            'Marker',    marker,...
-            'linestyle', linestyle,...
-            'Userdata',  objDataStruct(i,CurrImage).Name);
+        
+        % Add name to list
+        if isempty( objectNames)
+            objectNames = outName;
+        else
+            objectNames = char(objectNames, outName);
+        end
     end
 
 end
-
-hAxes.NextPlot =  orignextplot;
-%aD.hFig.CurrentAxes = origCurrentAxes;
+hAxes.NextPlot =  origNextPlot;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function updateOtherObjectProps( hObject, objDataStruct ) 
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+if isfield(objDataStruct, 'Other') && ~isempty(objDataStruct.Other)
+    props = fieldnames(objDataStruct.Other);
+    for idx = 1:length(props)
+        if isprop(hObject, props{idx})
+            hObject.(props{idx}) = objDataStruct.Other.(props{idx});
+        end
+    end
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
