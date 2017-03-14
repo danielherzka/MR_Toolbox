@@ -738,9 +738,9 @@ if ~isempty(aD.hObjects)
     for i = 1:size(aD.hObjects,1)
         h_obj = aD.hObjects{i,1};
         if show
-            [h_obj(h_obj~=0).Visible] = deal('On');
+            [h_obj(isgraphics(h_obj)).Visible] = deal('On');
         else
-            [h_obj(h_obj~=0).Visible] = deal('Off');
+            [h_obj(isgraphics(h_obj)).Visible] = deal('Off');
         end
     end    
 else
@@ -760,21 +760,23 @@ function  Update_Objects(objStruct, hObjects, frame)
 dispDebug;
 
 for j = 1:size(hObjects,1)
-    if strcmpi(hObjects(j).Type, 'Line') ||  strcmpi( hObjects(j).Type, 'Points')
-        hObjects(j).XData = objStruct(j,frame).XData(:);
-        hObjects(j).YData = objStruct(j,frame).YData(:);
-        
-        if ~isempty(objStruct(j,frame).XData(:))  
-            % empty object; do not update other properties
-            hObjects(j).Color = objStruct(j,frame).Color;
-            updateOtherObjectProps(hObjects(j), objStruct(j,frame) )
-        end
-    elseif strcmpi(hObjects(j).Type, 'Patch')
-        hObjects(j).XData = objStruct(j,frame).XData(:);
-        hObjects(j).YData = objStruct(j,frame).YData(:);
-        if ~isempty(objStruct(j,frame).XData(:))  % empty object
-            % empty object; do not update other properties
-            updateOtherObjectProps(hObjects(j), objStruct(j,frame) )
+    if isgraphics(hObjects(j))
+        if strcmpi(hObjects(j).Type, 'Line') ||  strcmpi( hObjects(j).Type, 'Points')
+            hObjects(j).XData = objStruct(j,frame).XData(:);
+            hObjects(j).YData = objStruct(j,frame).YData(:);
+            
+            if ~isempty(objStruct(j,frame).XData(:))
+                % empty object; do not update other properties
+                hObjects(j).Color = objStruct(j,frame).Color;
+                updateOtherObjectProps(hObjects(j), objStruct(j,frame) )
+            end
+        elseif strcmpi(hObjects(j).Type, 'Patch')
+            hObjects(j).XData = objStruct(j,frame).XData(:);
+            hObjects(j).YData = objStruct(j,frame).YData(:);
+            if ~isempty(objStruct(j,frame).XData(:))  % empty object
+                % empty object; do not update other properties
+                updateOtherObjectProps(hObjects(j), objStruct(j,frame) )
+            end
         end
     end
 end
@@ -1160,9 +1162,6 @@ for i = 1:length(aD.hAllAxes)
         popupstring = [repmat('Hide ', size(hObjects{i,2},1),1), hObjects{i,2}];
         aD.hGUI.Object_List_popupmenu.String = popupstring;
         hObjects{i,3} = popupstring;
-        %else
-        %    hObjects{i,3} = [];
-        %end;
         drewObjectsFlag = 1;
 
         % load the current axes object list into popupmenu
