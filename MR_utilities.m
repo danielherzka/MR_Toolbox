@@ -1,6 +1,5 @@
 function hFcn = MR_utilities(varargin)
 % Create cell-list of available functions
-
 fs={...
     'defaultButtonTags';...
     'retrieveNames';...
@@ -209,7 +208,7 @@ dispDebug;
 hToolbar = findall(hFig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
 
 % If the toolbar exists and the button has not been previously created
-if ~isempty(hToolbar) && isempty(findobj(hToolbar, 'Tag', buttonTag))
+if ~isempty(hToolbar) && isempty(findHiddenObj(hToolbar, 'Tag', buttonTag))
     
     hToolbar_Children = hToolbar.Children;
     buttonTags = defaultButtonTags();
@@ -235,20 +234,22 @@ if ~isempty(hToolbar) && isempty(findobj(hToolbar, 'Tag', buttonTag))
     hButton.Enable         = 'on';
 else
     % Toolbar doesn't exist, or button already exists
-    hButton = [];  
+    hButton = [];
 end
+
+
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  hMenu = createMenuObject(hFig, menuTag,menuLabel,callback)
+function  hMenu = createMenuObject(hFig, menuTag, menuLabel,callback)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
 hToolMenu = findall(hFig, 'Label', '&Tools');
 
-if ~isempty(hToolMenu) && isempty(findobj(hToolMenu,'Tag', menuTag))
+if ~isempty(hToolMenu) && isempty(findHiddenObj(hToolMenu,'Tag', menuTag))
 
     % If the menubar exists and the menu item has not been previously created
     hExistingMenus = findobj(hToolMenu, '-regexp', 'Tag', 'menu\w*');
@@ -282,7 +283,7 @@ dispDebug;
 
 checked   = hMenu.Checked;
 if strcmpi(checked,'on')
-    % turn off button -> Deactivate_PZ
+    % turn off button -> Deactivate
     hMenu.Checked = 'off';
     hButton.State = 'off';
 else %hButton
@@ -415,8 +416,8 @@ else
     hToolFig = findobj(groot, 'Tag', figTag);
 end
 delete(hToolFig);
-hFig.CloseRequestFcn = 'closereq';
-close(hFig);
+%hFig.CloseRequestFcn = 'closereq';
+delete(hFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -445,14 +446,7 @@ if DB
         loc = ['(loc)', repmat('|> ',1, sum(strcmp(x(1).file, {x.file})-1))] ;
     end
     fprintf([callFuncName,' ',objectNames.toolName, ':', loc , ' %s'], funcName);
-%     if nargin>0
-%         for i = 1:length(varargin)
-%             str = varargin{i};
-%             fprintf(': %s', str);
-%         end
-%     end
-    fprintf('\n');
-    
+    fprintf('\n');    
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
