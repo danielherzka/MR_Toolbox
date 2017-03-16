@@ -19,504 +19,576 @@ function RT_tool(varargin)
 % National Heart, Lung and Blood Institute, NIH, DHHS
 % Bethesda, MD 20892
 
+global DB; DB = 1;
+dispDebug('Lobby');
+Create_New_Objects;
 
-if isempty(varargin) 
-   Action = 'New';
-else
-   Action = varargin{1};  
-end
-
-%(['RT Tool: Current Action: ', Action]);
-
-switch Action
-case 'New'
-    Create_New_Button;
-
-case 'Activate_Rotate_Tool'
-    Activate_Rotate_Tool;
-    
-case 'Deactivate_Rotate_Tool'
-    Deactivate_Rotate_Tool(varargin{2:end});
-        
-case 'Set_Current_Axes'
-	Set_Current_Axes(varargin{2:end});
-	
-case 'Rotate_CW'
-	Rotate_Images(0);
-
-case 'Rotate_CCW'
-	Rotate_Images(1);
-	
-case 'Flip_Horizontal'
-	Flip_Images(0);
-
-case 'Flip_Vertical' 
-	Flip_Images(1);
-
-case 'Menu_Rotate_Tool'
-    Menu_Rotate_Tool;
-    
-case 'Close_Parent_Figure'
-    Close_Parent_Figure;
-    
-otherwise
-    disp(['Unimplemented Functionality: ', Action]);
-   
-end;
-      
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-function Create_New_Button
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%disp('RT_tool: Create_New_Button');
-fig = gcf;
-
-% Find handle for current image toolbar and menubar
-hToolbar = findall(fig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
-hToolMenu = findall(fig, 'Label', '&Tools');
-
-if ~isempty(hToolbar) & isempty(findobj(hToolbar, 'Tag', 'figRotateTool'))
-	hToolbar_Children = get(hToolbar, 'Children');
-	
-	% The default button size is 15 x 16 x 3. Create Button Image
-   button_size_x= 16;
-   button_image = NaN* zeros(15,button_size_x);
-    
-   f = [...
-		   24    38    39    52    53    54    65    68    69    71    79    84    87   108   118   123   133,...
-		   138   148   169   172   177   185   187   188   191   202   203   204   217   218   232 ...
-	   ];
-   
-   button_image(f) = 0;
-   button_image = repmat(button_image, [1,1,3]);
-
-   buttontags = {'figWindowLevel', 'figPanZoom', 'figROITool', 'figViewImages', 'figPointTool', 'figRotateTool', 'figProfileTool'};
-   separator = 'off';
-   
-   hbuttons = [];
-   for i = 1:length(buttontags)
-       hbuttons = [hbuttons, findobj(hToolbar_Children, 'Tag', buttontags{i})];
-   end;
-   if isempty(hbuttons)
-       separator = 'on';
-   end;
-   
-   hNewButton = uitoggletool(hToolbar);
-   set(hNewButton, 'Cdata', button_image, ...
-      'OnCallback', 'RT_tool(''Activate_Rotate_Tool'')',...
-      'OffCallback', 'RT_tool(''Deactivate_Rotate_Tool'')',...
-      'Tag', 'figRotateTool', ...
-      'TooltipString', 'Image Rotation Tool',...
-	  'Separator', separator, ...
-      'UserData', [], ...
-      'Enable', 'on');   
-
-end;
-
-% If the menubar exists, create menu item
-if ~isempty(hToolMenu) & isempty(findobj(hToolMenu, 'Tag', 'menuRotateTool'))
-	
-  hWindowLevelMenu = findobj(hToolMenu, 'Tag', 'menuWindowLevel');
-  hPanZoomMenu     = findobj(hToolMenu, 'Tag', 'menuPanZoom');
-  hROIToolMenu     = findobj(hToolMenu, 'Tag', 'menuROITool');
-  hViewImageMenu   = findobj(hToolMenu, 'Tag', 'menuViewImages');
-  hPointToolMenu   = findobj(hToolMenu, 'Tag', 'menuPointTool');
-  hRotateToolMenu  = findobj(hToolMenu, 'Tag', 'menuRotateTool');
-  hProfileToolMenu = findobj(hToolMenu, 'Tag', 'menuProfileTool');
-	
-  position = 9;
-  separator = 'On';
-  hMenus = [ hWindowLevelMenu, hPanZoomMenu, hROIToolMenu, hViewImageMenu, hPointToolMenu, hProfileToolMenu];
-
-  if length(hMenus>0) 
-	  position = position + length(hMenus);
-	  separator = 'Off';
-  end;
-  RT = findobj('Tag', 'figRotateTool');
+% 
+% if isempty(varargin) 
+%    Action = 'New';
+% else
+%    Action = varargin{1};  
+% end
+% 
+% %(['RT Tool: Current Action: ', Action]);
+% 
+% switch Action
+% case 'New'
+%     Create_New_Button;
+% 
+% case 'Activate_Rotate_Tool'
+%     Activate_Rotate_Tool;
+%     
+% case 'Deactivate_Rotate_Tool's
+%     Deactivate_Rotate_Tool(varargin{2:end});
+%         
+% case 'Set_Current_Axes'
+% 	Set_Current_Axes(varargin{2:end});
+% 	
+% case 'Rotate_CW'
+% 	Rotate_Images(0);
+% 
+% case 'Rotate_CCW'
+% 	Rotate_Images(1);
+% 	
+% case 'Flip_Horizontal'
+% 	Flip_Images(0);
+% 
+% case 'Flip_Vertical' 
+% 	Flip_Images(1);
+% 
+% case 'Menu_Rotate_Tool'
+%     Menu_Rotate_Tool;
+%     
+% case 'Close_Parent_Figure'
+%     Close_Parent_Figure;
+%     
+% otherwise
+%     disp(['Unimplemented Functionality: ', Action]);
+%    
+% end;
      
-  hNewMenu = uimenu(hToolMenu,'Position', position);
-  set(hNewMenu, 'Tag', 'menuRotateTool','Label',...
-      'Rotate Flip Tool',...
-      'CallBack', 'RT_tool(''Menu_Rotate_Tool'')',...
-      'Separator', separator,...
-      'UserData', hNewButton...
-  ); 
-  
-end;
 
+% aD.hGUI.Rotate_CW_pushbutton.Callback  = {@Rotate_Images, aD.hFig, 0};
+% aD.hGUI.Rotate_CCW_pushbutton.Callback = {@Rotate_Images, aD.hFig, 1};
+% aD.hGUI.Flip_Hor_pushbutton.Callback   = {@Flip_Images, aD.hFig, 0};
+% aD.hGUI.Flip_Ver_pushbutton.Callback   = {@Flip_Images, aD.hFig, 1};
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%% 
 %
-function Activate_Rotate_Tool(varargin);
+function Create_New_Objects
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-%disp('RT_tool:Activate_Point_Tool');
+dispDebug;
 
-if nargin ==0
-    set(0, 'ShowHiddenHandles', 'On');
-    hNewButton = gcbo;
-    set(findobj('Tag', 'menuRotateTool'),'checked', 'on');
-else
-    hNewButton = varargin{1};
-end;
+hUtils = MR_utilities;
 
-% allows for calls from buttons other than those in toolbar
-fig = get(hNewButton, 'Parent');
-if ~strcmp(get(fig, 'Type'), 'figure'),
-    fig = get(fig, 'Parent');
-end
+hFig = gcf;
 
-% Deactivate zoom and rotate buttons
-% will work even if there are no toolbars found
-% Deactivate zoom and rotate buttons
-hToolbar = findall(fig, 'type', 'uitoolbar');
-hToolbar = findobj(hToolbar, 'Tag', 'FigureToolBar');
+objNames = retrieveNames;
 
-if ~isempty(hToolbar)
-	hToolbar_Children = get(hToolbar, 'Children');
-	
-	% disable MATLAB's own tools
-	Rot3D = findobj(hToolbar_Children,'Tag', 'figToolRotate3D');
-	ZoomO = findobj(hToolbar_Children,'Tag', 'figToolZoomOut');
-	ZoomI = findobj(hToolbar_Children,'Tag', 'figToolZoomIn');
 
-	% try to disable other tools buttons - if they exist
-	WL = findobj(hToolbar_Children, 'Tag', 'figWindowLevel');
-	PZ = findobj(hToolbar_Children, 'Tag', 'figPanZoom');
-	RT = findobj(hToolbar_Children, 'Tag', 'figROITool');
-	MV = findobj(hToolbar_Children, 'Tag', 'figViewImages');
-	PM = findobj(hToolbar_Children,'Tag', 'figPointTool');
-	RotT = findobj(hToolbar_Children, 'Tag', 'figRotateTool');
-	Prof = findobj(hToolbar_Children, 'Tag', 'figProfileTool');
-	
-	old_ToolHandles  =     cat(1,Rot3D, ZoomO, ZoomI,WL,PZ,RT,MV,PM,Prof);
-	old_ToolEnables  = get(cat(1,Rot3D, ZoomO, ZoomI,WL,PZ,RT,MV,PM,Prof), 'Enable');
-	old_ToolStates   = get(cat(1,Rot3D, ZoomO, ZoomI,WL,PZ,RT,MV,PM,Prof), 'State');
-	
-	for i = 1:length(old_ToolHandles)
-		if strcmp(old_ToolStates(i) , 'on')			
-			set(old_ToolHandles(i), 'State', 'Off');
-		end;
-		set(old_ToolHandles(i), 'Enable', 'Off');
-	end;
-        %LFG
-        %enable save_prefs tool button
-        SP = findobj(hToolbar_Children, 'Tag', 'figSavePrefsTool');
-        set(SP,'Enable','On');
-end;
-% Start GUI
-fig2_old = findobj('Tag', 'RT_figure');
-% close the old WL figure to avoid conflicts
-if ~isempty(fig2_old) close(fig2_old);end;
+[hButton, hToolbar] = hUtils.createButtonObject(hFig, ...
+    makeButtonImage, ...
+    {@Activate_RT,hFig}, ...
+    {@Deactivate_RT,hFig},...
+    objNames.buttonTag, ...
+    objNames.buttonToolTipString);
 
-% open new figure
-fig2_file = 'RT_tool_figure.fig';
-fig2 = openfig(fig2_file,'reuse');
-optional_uicontrols = {'Apply_checkbox', 'Value'};
-set(SP,'Userdata',{fig2, fig2_file, optional_uicontrols});
 
-% Generate a structure of handles to pass to callbacks, and store it. 
-handlesRT = guihandles(fig2);
+hMenu  = hUtils.createMenuObject(hFig, ...
+    objNames.menuTag, ...
+    objNames.menuLabel, ...
+    @Menu_RT);
 
-close_str = [ 'hNewButton = findobj(''Tag'', ''figRotateTool'');' ...
-        ' if strcmp(get(hNewButton, ''Type''), ''uitoggletool''),'....
-        ' set(hNewButton, ''State'', ''off'' );' ...
-        ' else,  ' ...
-        ' RT_tool(''Deactivate_Rotate_Tool'',hNewButton);'...
-        ' set(hNewButton, ''Value'', 0);',...
-        ' end;',...
-		' clear hNewsButton;'];
+aD.Name        = objNames.Name;
+aD.hUtils      = hUtils;
+aD.hRoot       = groot;
+aD.hFig        = hFig;
+aD.hButton     = hButton;
+aD.hMenu       = hMenu;
+aD.hToolbar    = hToolbar;
+aD.objectNames = objNames;
+aD.cMapData = [];
 
-set(fig2, 'Name', 'RT Tool',...
-    'closerequestfcn', close_str);
-
-old_pointer      = get(fig, 'Pointer');
-old_pointer_data = get(fig, 'PointerShapeCData');
-%set(fig,'Pointer', 'fullcross'); %'cross'
-
-% Record and store previous WBDF etc to restore state after PZ is done. 
-old_WBDF = get(fig, 'WindowButtonDownFcn');
-old_WBMF = get(fig, 'WindowButtonMotionFcn');
-old_WBUF = get(fig, 'WindowButtonUpFcn');
-old_UserData = get(fig, 'UserData');
-old_CRF = get(fig, 'Closerequestfcn');
-
-% Store initial state of all axes in current figure for reset
-h_all_axes = flipud(findobj(fig,'Type','Axes'));
-h_axes = h_all_axes(1);
-
-%set(h_all_axes, 'ButtonDownFcn', 'RT_tool(''Set_Current_Axes'', gca)');
-%for i = 1:length(h_all_axes)
-%	set(findobj(h_all_axes(i), 'Type', 'image'), 'ButtonDownFcn', 'RT_tool(''Measure'', gca)'); 	
-%end;
-
-handlesRT.Axes = h_all_axes;
-handlesRT.CurrentAxes = h_axes;
-handlesRT.ParentFigure = fig;
-
-% check for square images:
-% if not square, then turn of image rotation (for now)
-Im = get(findobj(handlesRT.CurrentAxes, 'Type', 'Image'), 'CData');
-if(size(Im,1) ~= size(Im,2)), 
-	set([handlesRT.Rotate_CCW_pushbutton, handlesRT.Rotate_CW_pushbutton], 'Enable', 'off');
-end;
-
-guidata(fig2,handlesRT);
-Set_Current_Axes(h_axes);
-
-%h_axes = h_all_axes(end);
-set(fig, 'CurrentAxes', h_axes);
-set(fig, 'WindowButtonDownFcn',  ['RT_tool(''Set_Current_Axes'')']);
-
-% Draw faster and without flashes
-set(fig, 'Closerequestfcn', [ old_CRF , ',RT_tool(''Close_Parent_Figure'')']);
-set(fig, 'Renderer', 'zbuffer');
-set(0, 'ShowHiddenHandles', 'On', 'CurrentFigure', fig);
-set(gca,'Drawmode', 'Fast');
-
-% store the figure's old infor within the fig's own userdata
-set(fig, 'UserData', {fig2, old_WBDF, old_WBMF, old_WBUF, old_UserData,...
-        old_pointer, old_pointer_data, old_CRF, ...
-		old_ToolEnables,old_ToolHandles, old_ToolStates});
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% store app data structure in tool-specific field
+setappdata(aD.hFig, aD.Name, aD);
 %
-function Deactivate_Rotate_Tool(varargin);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%% 
+%
+function Activate_RT(~,~,hFig)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+
+aD = configActiveFigure(hFig);
+aD = configGUI(aD);
+aD = configOther(aD);
+
+storeAD(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% 
+% % Deactivate zoom and rotate buttons
+% % will work even if there are no toolbars found
+% % Deactivate zoom and rotate buttons
+% hToolbar = findall(fig, 'type', 'uitoolbar');
+% hToolbar = findobj(hToolbar, 'Tag', 'FigureToolBar');
+% 
+% if ~isempty(hToolbar)
+% 	hToolbar_Children = get(hToolbar, 'Children');
+% 	
+% 	% disable MATLAB's own tools
+% 	Rot3D = findobj(hToolbar_Children,'Tag', 'figToolRotate3D');
+% 	ZoomO = findobj(hToolbar_Children,'Tag', 'figToolZoomOut');
+% 	ZoomI = findobj(hToolbar_Children,'Tag', 'figToolZoomIn');
+% 
+% 	% try to disable other tools buttons - if they exist
+% 	WL = findobj(hToolbar_Children, 'Tag', 'figWindowLevel');
+% 	PZ = findobj(hToolbar_Children, 'Tag', 'figPanZoom');
+% 	RT = findobj(hToolbar_Children, 'Tag', 'figROITool');
+% 	MV = findobj(hToolbar_Children, 'Tag', 'figViewImages');
+% 	PM = findobj(hToolbar_Children,'Tag', 'figPointTool');
+% 	RotT = findobj(hToolbar_Children, 'Tag', 'figRotateTool');
+% 	Prof = findobj(hToolbar_Children, 'Tag', 'figProfileTool');
+% 	
+% 	old_ToolHandles  =     cat(1,Rot3D, ZoomO, ZoomI,WL,PZ,RT,MV,PM,Prof);
+% 	old_ToolEnables  = get(cat(1,Rot3D, ZoomO, ZoomI,WL,PZ,RT,MV,PM,Prof), 'Enable');
+% 	old_ToolStates   = get(cat(1,Rot3D, ZoomO, ZoomI,WL,PZ,RT,MV,PM,Prof), 'State');
+% 	
+% 	for i = 1:length(old_ToolHandles)
+% 		if strcmp(old_ToolStates(i) , 'on')			
+% 			set(old_ToolHandles(i), 'State', 'Off');
+% 		end;
+% 		set(old_ToolHandles(i), 'Enable', 'Off');
+% 	end;
+%         %LFG
+%         %enable save_prefs tool button
+%         SP = findobj(hToolbar_Children, 'Tag', 'figSavePrefsTool');
+%         set(SP,'Enable','On');
+% end;
+% 
+% 
+% 
+% 
+% % check for square images:
+% % if not square, then turn of image rotation (for now)
+% Im = get(findobj(handlesRT.CurrentAxes, 'Type', 'Image'), 'CData');
+% if(size(Im,1) ~= size(Im,2)), 
+% 	set([handlesRT.Rotate_CCW_pushbutton, handlesRT.Rotate_CW_pushbutton], 'Enable', 'off');
+% end;
+% 
+% guidata(fig2,handlesRT);
+% Set_Current_Axes(h_axes);
+% 
+% %h_axes = h_all_axes(end);
+% set(fig, 'CurrentAxes', h_axes);
+% set(fig, 'WindowButtonDownFcn',  ['RT_tool(''Set_Current_Axes'')']);
+
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%% 
+%
+function Deactivate_RT(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %disp('RT_tool:Deactivate_Point_Tool');
 
-if nargin ==0
-    set(0, 'ShowHiddenHandles', 'On');    
-    hNewButton = gcbo;
-    set(findobj('Tag', 'menuRotateTool'),'checked', 'Off');
-else
-    hNewButton = varargin{1};
-end;
-    
-% Reactivate other buttons
-fig = get(hNewButton, 'Parent');
-if ~strcmp(get(fig, 'Type'), 'figure'),
-    fig = get(fig, 'Parent');
+aD = getAD(hFig);
+
+if ~isempty(aD.hButton)
+    aD.hButton.Tag = aD.hButton.Tag(1:end-3);
 end
 
-hToolbar = findall(fig, 'type', 'uitoolbar');
-if ~isempty(hToolbar)
-    hToolbar_Children = get(hToolbar, 'Children');
-    set(findobj(hToolbar_Children,'Tag', 'figToolRotate3D'),'Enable', 'On');
-    set(findobj(hToolbar_Children,'Tag', 'figToolZoomOut'),'Enable', 'On');
-    set(findobj(hToolbar_Children,'Tag', 'figToolZoomIn'),'Enable', 'On');
+if ~isempty(aD.hMenu)
+    aD.hMenu.Checked = 'off';
+    aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
+end
 
-end;
+% Restore old figure settings
+aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
+aD.hUtils.restoreOrigData(aD.hAllAxes, aD.origAxesProperties);
 
-% Restore old BDFs
-old_info= get(fig,'UserData');
+% Reactivate other buttons
+aD.hUtils.enableToolbarButtons(aD)
 
-fig2 = old_info{1};
-handlesRT = guidata(fig2);
-for i = 1:length(handlesRT.Axes)
-	set(findobj(handlesRT.Axes(i), 'Type', 'image'), 'ButtonDownFcn', ''); 	
-end;
+% Close Tool figure
+delete(aD.hToolFig);
 
-set(fig, 'WindowButtonDownFcn', old_info{2});
-set(fig, 'WindowButtonUpFcn', old_info{3});
-set(fig, 'WindowButtonMotionFcn', old_info{4});
-% Restore old Pointer and UserData
-set(fig, 'UserData', old_info{5});
-set(fig, 'Pointer' , old_info{6});
-set(fig, 'PointerShapeCData', old_info{7});
-set(fig, 'CloseRequestFcn', old_info{8});
-old_ToolEnables = old_info{9};
-old_ToolHandles = old_info{10};
-old_ToolStates  = old_info{11};
+% Store aD in tool-specific apdata for next Activate call
+setappdata(aD.hFig, aD.Name, aD);
+rmappdata(aD.hFig, 'AD');
 
-fig2 = old_info{1};
-try
-	set(fig2, 'CloseRequestFcn', 'closereq');
-	close(fig2); 
-catch
-	delete(fig2);
-end;    
-
-for i = 1:length(old_ToolHandles)
-	try
-		set(old_ToolHandles(i), 'Enable', old_ToolEnables{i}, 'State', old_ToolStates{i});	catc
-	end;
-end;
-%LFG
-%disable save_prefs tool button
-SP = findobj(hToolbar_Children, 'Tag', 'figSavePrefsTool');
-set(SP,'Enable','Off');
-
-set(0, 'ShowHiddenHandles', 'Off');
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-function Flip_Images(direction);
+if ~isempty(aD.hSP) %?ishghandle?
+    aD.SP.Enable = 'Off';
+end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-%disp(['RT_tool: Flip ', num2str(direction)]);
 
-fig2 = findobj('Tag', 'RT_figure');
-handlesRT = guidata(fig2);
-%guidata(fig2, handlesRT);
-apply_all = get(handlesRT.Apply_checkbox, 'value');
+%% %%%%%%%%%%%%%%%%%%%%%%%% 
+%
+function Flip_Images(~,~, hFig, direction)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
 
-% specify single or all axes
-CurrentAxes = handlesRT.CurrentAxes;
-if apply_all, CurrentAxes = handlesRT.Axes; end;
+aD = getAD(hFig);
 
-for i = 1:length(CurrentAxes)
-	% flip CData of the current image, 
-	% change the xlims and ylims dependening on the call
-	% if a 4-D array, flip all the other data in memory
-	if isappdata(CurrentAxes(i), 'CurrentImage')
-		image_data = getappdata(CurrentAxes(i), 'ImageData');	
-		current_image = getappdata(CurrentAxes(i), 'CurrentImage');
-		dim4 = 1;
-	else
-		image_data = get(findobj(CurrentAxes(i), 'Type', 'Image'), 'CData');		
-		current_image = 1;
-		dim4 = 0;
-	end;
-	
-	xlims = get(CurrentAxes(i), 'Xlim');
-	ylims = get(CurrentAxes(i), 'Ylim');
-	im_size  = [size(image_data,1), size(image_data,2)];
-	
+hCurrentAxes = getApplyToAxes(aD,aD.hGUI.Apply_checkbox);
+
+for i = 1:length(hCurrentAxes)
+    % Flip CData of the current image
+    % if a 4-D array, flip all the other data stored in appdata  
+    if isappdata(hCurrentAxes(i), 'CurrentImage'), extraDimData = 1;
+    else                                           extraDimData = 0;
+    end
+    
+    if extraDimData
+        currentImage = getappdata(hCurrentAxes(i), 'CurrentImage');
+        imageData = getappdata(hCurrentAxes(i), 'ImageData');
+    else
+        currentImage = 1;
+        imageData =  aD.hAllImages(hCurrentAxes(i)==aD.hAllAxes).CData;
+    end;
+    
+    % Change the xlims and ylims depending on the call
+    imSize  = [size(imageData,1), size(imageData,2)];
+    xlims = hCurrentAxes(i).XLim;
+    ylims = hCurrentAxes(i).YLim;
+    
 	if direction  
-		%disp('flip Vertical')
-		for j =1:size(image_data,3)
-			image_data(:,:,j) = flipud(image_data(:,:,j));
+		dispDebug('Flip Vertical')
+		for j =1:size(imageData,3)
+			imageData(:,:,j) = flipud(imageData(:,:,j));
 		end
-		ylims = [ (im_size(1) ) - (ylims(2)-0.5) , im_size(1)  - (ylims(1)-0.5)] + 0.5;
+		ylims = [ (imSize(1) ) - (ylims(2)-0.5) , imSize(1)  - (ylims(1)-0.5)] + 0.5;
 	else 
-		%disp('flip Horizontal')	
-		for j =1:size(image_data,3)
-			image_data(:,:,j) = fliplr(image_data(:,:,j));
+		dispDebug('Flip Horizontal')	
+		for j =1:size(imageData,3)
+			imageData(:,:,j) = fliplr(imageData(:,:,j));
 		end
-		xlims = [ (im_size(2) ) - (xlims(2)-0.5), (im_size(2) ) - (xlims(1)-0.5)] + 0.5;		
+		xlims = [ (imSize(2) ) - (xlims(2)-0.5), (imSize(2) ) - (xlims(1)-0.5)] + 0.5;		
 	end;
-
-	if dim4, 
-		setappdata(CurrentAxes(i), 'ImageData', image_data);
-	end;
-	
-	set(CurrentAxes(i), 'Xlim', xlims, 'Ylim', ylims);
-	set(findobj(CurrentAxes(i), 'Type', 'image'), 'CData', squeeze(image_data(:,:,current_image)));
+    
+    if extraDimData
+        setappdata(hCurrentAxes(i), 'ImageData', imageData);
+    end;
+    
+	hCurrentAxes(i).XLim =  xlims;
+    hCurrentAxes(i).YLim =  ylims;
+    aD.hAllImages(hCurrentAxes(i)==aD.hAllAxes).CData = squeeze(imageData(:,:,currentImage));
 
 end;
-figure(fig2);
-		
-		
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+figure(aD.hToolFig);
+figure(aD.hFig);
 %
-function Rotate_Images(direction);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%		
+		
+%% %%%%%%%%%%%%%%%%%%%%%%%% 
+%
+function Rotate_Images(~,~, hFig, direction)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-%disp(['RT_tool: Flip ', num2str(direction)]);
+dispDebug;
 
-fig2 = findobj('Tag', 'RT_figure');
-handlesRT = guidata(fig2);
-guidata(fig2, handlesRT);
-apply_all = get(handlesRT.Apply_checkbox, 'value');
+aD = getAD(hFig);
 
-% specify single or all axes
-CurrentAxes = handlesRT.CurrentAxes;
-if apply_all, CurrentAxes = handlesRT.Axes; end;
+hCurrentAxes = getApplyToAxes(aD,aD.hGUI.Apply_checkbox);
 
-for i = 1:length(CurrentAxes)
-	% flip CData of the current image, 
-	% change the xlims and ylims dependening on the call
-	% if a 4-D array, flip all the other data in memory
-	dim4 = 1;
-	current_image = getappdata(CurrentAxes(i), 'CurrentImage');
-	if ~isempty(current_image)
-		image_data = getappdata(CurrentAxes(i), 'ImageData');	
-	else
-		image_data = get(findobj(CurrentAxes(i), 'Type', 'Image'), 'CData');		
-		current_image = 1;
-		dim4 = 0;
-	end;
-	
-	im_size = ( size(image_data,1) + 1)/2;
-	xlims = get(CurrentAxes(i), 'Xlim') - im_size;
-	ylims = get(CurrentAxes(i), 'Ylim') - im_size;
+for i = 1:length(hCurrentAxes)
+    % Rotate CData of the current image,
+    % If a 4-D array, rotate all the other data stored in appdata
+    if isappdata(hCurrentAxes(i), 'CurrentImage');
+        currentImage = getappdata(hCurrentAxes(i), 'CurrentImage');
+        imageData = getappdata(hCurrentAxes(i), 'ImageData');
+        dim4 = 1;
+    else
+        currentImage = 1;
+        imageData =  aD.hAllImages(hCurrentAxes(i)==aD.hAllAxes).CData;
+        dim4 = 0;
+    end;
+    
+    % Change the xlims and ylims depending on the call
+    imSize  = size(imageData,1); % image is square
+	xlims = hCurrentAxes(i).XLim  - imSize;
+	ylims = hCurrentAxes(i).YLim  - imSize;
 	temp = xlims;
 
-	if direction  % Rotate CCW
-		for j =1:size(image_data,3)
-			image_data(:,:,j) = flipud(permute(image_data(:,:,j), [ 2 1]));
-		end			
-		xlims =        ylims  + im_size;
-		ylims =  sort(-1*temp + im_size);	
-	else % Rorate CW	
-		for j =1:size(image_data,3)
-			image_data(:,:,j) = fliplr(permute(image_data(:,:,j), [ 2 1]));
-		end		
-		xlims = sort(-1*ylims + im_size);
-		ylims =         temp  + im_size;
-	end;
-
-	if dim4, 
-		setappdata(CurrentAxes(i), 'ImageData', image_data);
-	end;
-	
-	set(CurrentAxes(i), 'Xlim', xlims, 'Ylim', ylims);
-	set(findobj(CurrentAxes(i), 'Type', 'image'), 'CData', squeeze(image_data(:,:,current_image)));
-	figure(fig2);
+    %newXLims =  sort(-1*hCurrentAxes(i).YLim) + imSize;
+    %newYLims =  sort(-1*hCurrentAxes(i).XLim) + imSize;
+    
+    if direction  % Rotate CCW
+        for j =1:size(imageData,3)
+            imageData(:,:,j) = flipud(permute(imageData(:,:,j), [ 2 1]));
+        end
+		xlims =        ylims  + imSize;
+		ylims =  sort(-1*temp + imSize);		
+    else % Rotate CW
+        for j =1:size(imageData,3)
+            imageData(:,:,j) = fliplr(permute(imageData(:,:,j), [ 2 1]));
+        end
+		xlims = sort(-1*ylims + imSize);
+		ylims =         temp  + imSize;
+    end;
+    
+    if dim4,
+        setappdata(hCurrentAxes(i), 'ImageData', imageData);
+    end;
+    
+    hCurrentAxes(i).XLim = xlims;
+    hCurrentAxes(i).YLim = ylims;
+    aD.hAllImages(hCurrentAxes(i)==aD.hAllAxes).CData = squeeze(imageData(:,:,currentImage));
+    
 end;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-function Set_Current_Axes(currentaxes);
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%disp('RT_tool: Set_Current_Axes');
-if (nargin == 0), currentaxes = gca; end;
-if isempty(currentaxes), currentaxes=gca; end;
 
-fig2 = findobj('Tag', 'RT_figure');
-handlesRT = guidata(fig2);
-handlesRT.CurrentAxes = currentaxes;
-guidata(fig2,handlesRT );
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-function Menu_Rotate_Tool;
+figure(aD.hToolFig);
+figure(aD.hFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-%disp('RT_tool: Menu_Rotate_Tool');
 
-hNewMenu = gcbo;
-checked=  umtoggle(hNewMenu);
-hNewButton = get(hNewMenu, 'userdata');
+%% %%%%%%%%%%%%%%%%%%%%%%%% 
+%
+function Set_Current_Axes(~,~,hFig, hCurrentAxes)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+if (nargin == 3), hCurrentAxes = gca; end;
+if isempty(hCurrentAxes), hCurrentAxes=gca; end;
 
-if ~checked
-    % turn off button
-    %Deactivate_Point_Tool(hNewButton);
-    set(hNewMenu, 'Checked', 'off');
-    set(hNewButton, 'State', 'off' );
+aD = getAD(hFig);
+aD.hCurrentAxes = hCurrentAxes;
+storeAD(aD);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%% 
+%
+function Menu_RT
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+aD = getAD(hFig);
+aD.hUtils.menuToggle(aD.hMenu,aD.hButton);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = configActiveFigure(hFig)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PART I - Environment
+dispDebug;
+objNames = retrieveNames;
+aD = getappdata(hFig, objNames.Name); 
+aD.hFig.Tag  = aD.objectNames.activeFigureName; % ActiveFigure
+
+% Check the menu object
+if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
+
+% Find toolbar and deactivate other buttons
+aD = aD.hUtils.disableToolbarButtons(aD,  aD.objectNames.buttonTag);
+
+% Store initial state of all axes in current figure for reset
+aD.hAllAxes = flipud(findobj(aD.hFig,'Type','Axes'));
+aD.hFig.CurrentAxes = aD.hAllAxes(1);
+aD.hAllImages   = aD.hUtils.findAxesChildIm(aD.hAllAxes);
+
+% Set current figure and axis
+aD = aD.hUtils.updateHCurrentFigAxes(aD);
+
+% Store the figure's old infor within the fig's own userdata
+aD.origProperties = aD.hUtils.retrieveOrigData(aD.hFig);
+aD.origAxesProperties  = aD.hUtils.retrieveOrigData(aD.hAllAxes , {'ButtonDownFcn'});
+
+
+% Find and close the old WL figure to avoid conflicts
+hToolFigOld = aD.hUtils.findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
+if ~isempty(hToolFigOld), close(hToolFigOld);end;
+pause(0.5);
+
+% Make it easy to find this button (tack on 'On')
+% Wait until after old fig is closed.
+aD.hButton.Tag = [aD.hButton.Tag,'_On'];
+aD.hMenu.Tag   = [aD.hMenu.Tag, '_On'];
+
+% Set callbacks
+aD.hFig.WindowButtonDownFcn   = {@Set_Current_Axes, aD.hFig};
+aD.hFig.CloseRequestFcn       = {aD.hUtils.closeParentFigure, aD.objectNames.figTag};
+
+% Draw faster and without flashes
+aD.hFig.Renderer = 'zbuffer';
+[aD.hAllAxes.SortMethod] = deal('Depth');
+
+% 
+% 
+% for i = 1:length(handlesRT.Axes)
+% 	set(findobj(handlesRT.Axes(i), 'Type', 'image'), 'ButtonDownFcn', ''); 	
+% end;
+
+%Set_Current_Axes(aD.hCurrentAxes);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = configGUI(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PART II Create GUI Figure
+dispDebug;
+aD.hToolFig = openfig(aD.objectNames.figFilename,'reuse');
+
+% Enable save_prefs tool button
+if ~isempty(aD.hToolbar)
+    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figButtonSP');
+    aD.hSP.Enable = 'On';
+    optionalUIControls = {'Apply_checkbox', 'Value'};
+    aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
+end
+
+% Generate a structure of handles to pass to callbacks and store it.
+aD.hGUI = guihandles(aD.hToolFig);
+
+if ismac, aD.hUtils.adjustGUIForMAC(aD.hGUI, 0.0); end
+
+aD.hToolFig.Name = aD.objectNames.figName;
+aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};
+
+% Set Object callbacks; return hFig for speed
+aD.hGUI.Rotate_CW_pushbutton.Callback  = {@Rotate_Images, aD.hFig, 0};
+aD.hGUI.Rotate_CCW_pushbutton.Callback = {@Rotate_Images, aD.hFig, 1};
+aD.hGUI.Flip_Hor_pushbutton.Callback   = {@Flip_Images, aD.hFig, 0};
+aD.hGUI.Flip_Ver_pushbutton.Callback   = {@Flip_Images, aD.hFig, 1};
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = configOther(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  PART III - Finish setup for other objects
+dispDebug;
+% Allow rotations only if images are square
+if(size(aD.hAllImages(1).CData,1) ~= size(aD.hAllImages(1).CData,2)), 
+	aD.hGUI.CCW_pushbutton.Enable = 'Off';
+    aD.hGUI.CW_pushbutton.Enable= 'Off';
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function structNames = retrieveNames
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+structNames.Name              = 'RT';
+structNames.toolName            = 'RT_tool';
+structNames.buttonTag           = 'figButtonRT';
+structNames.buttonToolTipString = 'Image Rotation Tool';
+structNames.menuTag             = 'menuRT';
+structNames.menuLabel           = 'Rotate and Flip';
+structNames.figFilename         = 'RT_tool_figure.fig';
+structNames.figName             = 'RT Tool';
+structNames.figTag              = 'RT_figure';
+structNames.activeFigureName    = 'ActiveFigure';
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function buttonImage = makeButtonImage
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The default button size is 15 x 16 x 3.
+dispDebug;
+
+buttonSize_x= 16;
+buttonImage = NaN* zeros(15,buttonSize_x);
+
+f = [...
+    24    38    39    52    53    54    65    68    69    71    79    84    87   108   118   123   133,...
+    138   148   169   172   177   185   187   188   191   202   203   204   217   218   232 ...
+    ];
+   
+buttonImage(f) = 0;
+buttonImage = repmat(buttonImage, [1,1,3]);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  storeAD(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+setappdata(aD.hFig, 'AD', aD);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = getAD(hFig)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Retrieve application data stored within Active Figure (aka image figure)
+%  Appdata name depends on tool. 
+dispDebug;
+aD = getappdata(hFig, 'AD');
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function hAxes = getApplyToAxes(aD, Apply_checkbox)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+applyAll = Apply_checkbox.Value;
+if applyAll
+    hAxes = aD.hAllAxes;
 else
-    %Activate_Point_Tool(hNewButton);
-    set(hNewMenu, 'Checked', 'on');
-    set(hNewButton, 'State', 'on' );
+    hAxes = aD.hCurrentAxes;
 end;
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-function Close_Parent_Figure;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% function to make sure that if parent figure is closed, 
-% the ROI info and ROI Tool are closed too.
-%disp('RT_tool: Close_Parent_Figure');
-set(findobj('Tag', 'RT_figure'), 'Closerequestfcn', 'closereq');
-try 
-    close(findobj('Tag','RT_figure'));
-end;
 
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  dispDebug(varargin)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Print a debug string if global debug flag is set
+global DB;
 
+if DB
+    objectNames = retrieveNames;
+    x = dbstack;
+    func_name = x(2).name;    loc = [];
+    if length(x) > 4
+        loc = [' (loc) ', repmat('|> ',1, length(x)-3)] ;
+    end
+    fprintf([objectNames.toolName, ':',loc , ' %s'], func_name);
+    if nargin>0
+        for i = 1:length(varargin)
+            str = varargin{i};
+            fprintf(': %s', str);
+        end
+    end
+    fprintf('\n');
 
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%

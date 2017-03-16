@@ -640,7 +640,7 @@ aD = aD.hUtils.updateHCurrentFigAxes(aD);
 aD.origProperties = aD.hUtils.retrieveOrigData(aD.hFig);
 
 % Find and close the old WL figure to avoid conflicts
-hToolFigOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
+hToolFigOld = aD.hUtils.findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
 if ~isempty(hToolFigOld), close(hToolFigOld);end;
 pause(0.5);
 
@@ -910,31 +910,12 @@ structNames.Name              = 'WL';
 structNames.toolName            = 'WL_tool';
 structNames.buttonTag           = 'figButtonWL';
 structNames.buttonToolTipString = 'Set Image Window Level';
-structNames.menuTag             = 'menuWindowLevel';
+structNames.menuTag             = 'menuWL';
 structNames.menuLabel           = 'Window and Level';
 structNames.figFilename         = 'WL_tool_figure.fig';
 structNames.figName             = 'WL Tool';
 structNames.figTag              = 'WL_figure';
 structNames.activeFigureName    = 'ActiveFigure';
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function h = findHiddenObj(Handle, Property, Value)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-
-h_root = groot;
-old_SHH = h_root.ShowHiddenHandles;
-h_root.ShowHiddenHandles = 'On';
-if nargin <3
-    h = findobj(Handle, Property);
-else
-    h = findobj(Handle, Property, Value);
-end;
-h_root.ShowHiddenHandles = old_SHH;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
