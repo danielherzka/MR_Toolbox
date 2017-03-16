@@ -1,36 +1,198 @@
 function hFcn = MR_utilities(varargin)
 % Create cell-list of available functions
 fs={...
-    'defaultButtonTags';...
-    'retrieveNames';...
-    'enableToolbarButtons';...
-    'disableToolbarButtons';...
-    'retrieveOrigData'; ...
-    'restoreOrigData';...
-    'updateHCurrentFigAxes';...
-    'findHiddenObj';...
-    'findHiddenObjRegexp';...
-    'findAxesChildIm';...
+    'adjustGUIForMAC';...
+    'closeParentFigure';...
+    'closeRequestCallback';...
     'createButtonObject';...
     'createMenuObject';...
-    'menuToggle';...
-    'closeRequestCallback';...
-    'closeParentFigure';...
-    'storeAD';...
-    'limitAD';...
+    'defaultButtonTags';...
+    'disableToolbarButtons';...
+    'enableToolbarButtons';...
+    'findAxesChildIm';...
+    'findHiddenObj';...
+    'findHiddenObjRegexp';...
     'getAD';...
     'getADBlind';...
+    'limitAD';...
+    'menuToggle';...
+    'restoreOrigData';...
+    'retrieveNames';...
+    'retrieveOrigData'; ...
+    'storeAD';...
+    'updateHCurrentFigAxes';...
     };
 
 % Convert each name into a function handle reachable from outside this file
-for i=1:length(fs),
+for i=1:length(fs)
     hFcn.(fs{i}) = str2func(fs{i});
 end;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%START MULTI-TOOL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Utility functions are sorted in alphabetical order since they are called
+% from many places within individual tools.
 
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function adjustGUIForMAC(hGUI, scaling)
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Adjust fontsize and figure size for OSX
+dispDebug;
+
+if nargin==1, scaling = 0; end
+
+fSize = 12; % font size
+scaleFact = 1 + scaling; % figure size scaling factor
+objs = fieldnames(hGUI);
+xDelta = scaling/2;  % relative hor shift after scaling 
+yDelta = scaling/2;  % relative ver shift after scaling 
+ 
+% Scale in size
+for i = 1:length(objs)
+    if strcmpi(hGUI.(objs{i}).Type, 'UIControl') && isprop(hGUI.(objs{i}), 'FontSize')
+                hGUI.(objs{i}).FontSize = fSize;
+    end   
+    if isprop(hGUI.(objs{i}), 'Position')
+        hGUI.(objs{i}).Position = scaleFact * hGUI.(objs{i}).Position;
+    end
+end
+
+% Calculate horizontal and vertical UIControl shift
+for i = 1:length(objs)
+    if strcmpi(hGUI.(objs{i}).Type, 'Figure')
+        figPos = hGUI.(objs{i}).Position;
+        xDelta = xDelta * figPos(3);
+        yDelta = yDelta * figPos(4);
+    end
+end
+
+% Apply deltas
+for i = 1:length(objs)
+    if strcmpi(hGUI.(objs{i}).Type, 'UIControl') && isprop(hGUI.(objs{i}), 'Postion')
+        hGUI.(objs{i}).Position = [ xDelta yDelta 0 0];
+    end   
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function closeParentFigure(hFig,~,figTag)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% function to make sure that if parent figure is closed,
+% the ROI info and ROI Tool are closed too.
+dispDebug;
+aD = getAD(hFig);
+if ~isempty(aD)
+    hToolFig = aD.hToolFig;
+else
+    % Parent Figure is somehow already gone and there aD is no aD (shouldn't happen!)
+    % Find tool figure directly via Tag
+    dispDebug('ParFig closed!');
+    hToolFig = findobj(groot, 'Tag', figTag);
+end
+delete(hToolFig);
+delete(hFig);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function closeRequestCallback(~,~,uaD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+old_SHH = uaD.hRoot.ShowHiddenHandles;
+uaD.hRoot.ShowHiddenHandles = 'On';
+
+%calls deactivate
+uaD.hButton.State = 'off';
+uaD.hRoot.ShowHiddenHandles= old_SHH;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  [hButton, hToolbar] = createButtonObject(...
+    hFig, ...
+    buttonImage, ...
+    callbackOn, ...
+    callbackOff,...
+    buttonTag, ...
+    buttonToolTipString)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+hToolbar = findall(hFig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
+
+% If the toolbar exists and the button has not been previously created
+if ~isempty(hToolbar) && isempty(findHiddenObj(hToolbar, 'Tag', buttonTag))
+    
+    hToolbar_Children = hToolbar.Children;
+    buttonTags = defaultButtonTags();
+    hButtons = cell(1,size(buttonTags,2));
+    
+    for i = 1:length(buttonTags)
+        hButtons{i} = findobj(hToolbar_Children, 'Tag', buttonTags{i});
+    end;
+    
+    separator = 'off';
+    if isempty(hButtons)
+        separator = 'on';
+    end;
+    
+    hButton = uitoggletool(hToolbar);
+    hButton.CData         = buttonImage;
+    hButton.OnCallback    = callbackOn;
+    hButton.OffCallback   = callbackOff;
+    hButton.Tag           = buttonTag;
+    hButton.TooltipString = buttonToolTipString;
+    hButton.Separator     = separator;
+    hButton.UserData      = hFig;
+    hButton.Enable         = 'on';
+else
+    % Toolbar doesn't exist, or button already exists
+    hButton = [];
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  hMenu = createMenuObject(hFig, menuTag, menuLabel,callback)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+hToolMenu = findall(hFig, 'Label', '&Tools');
+
+if ~isempty(hToolMenu) && isempty(findHiddenObj(hToolMenu,'Tag', menuTag))
+
+    % If the menubar exists and the menu item has not been previously created
+    hExistingMenus = findobj(hToolMenu, '-regexp', 'Tag', 'menu\w*');
+    
+    position = 9;
+    separator = 'On';
+    
+    if ~isempty(hExistingMenus)
+        position = position + length(hExistingMenus);
+        separator = 'Off';
+    end;
+    
+    hMenu = uimenu(hToolMenu,'Position', position);
+    hMenu.Tag       = menuTag;
+    hMenu.Label     = menuLabel;
+    hMenu.Callback  = callback;
+    hMenu.Separator = separator;
+    hMenu.UserData  = hFig;
+else
+    hMenu = [];
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -47,15 +209,6 @@ tags = { ...
     'figPointTool',...
     'figRotateTool',...
     'figProfileTool'};
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function structNames = retrieveNames
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-structNames.toolName            = '<Utils>';
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -117,70 +270,6 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function propList = retrieveOrigData(hObjs,propList)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Retrive previous settings for storage
-dispDebug;
-
-if nargin==1
-    % basic list - typically modified figure properties
-    propList = {...
-        'WindowButtonDownFcn'; ...
-        'WindowButtonMotionFcn'; ...
-        'WindowButtonUpFcn'; ...
-        'WindowKeyPressFcn'; ...
-        'UserData'; ...
-        'CloseRequestFcn'; ...
-        'Pointer'; ...
-        'PointerShapeCData'; ...
-        'Tag' ...
-        };
-end
-
-propList = repmat(propList, [1 1 length(hObjs)]);
-
-for j = 1:length(hObjs) % objects
-    for i = 1:size(propList,1) % properties
-        if isprop(hObjs(j), propList{i,1,j})
-            propList{i,2,j} = hObjs(j).(propList{i,1,j});
-        end
-    end
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function restoreOrigData(hFig, propList)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Restore previous WBDF etc to restore state after WL is done.
-dispDebug;
-for j = 1:length(hFig)
-    for i = 1:size(propList,1)
-        hFig(j).(propList{i,1,j}) = propList{i,2,j};
-    end
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function aD = updateHCurrentFigAxes(aD)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-aD.hRoot.CurrentFigure = aD.hFig;
-aD.hCurrentAxes=aD.hFig.CurrentAxes;
-if isempty(aD.hCurrentAxes)
-    aD.hCurrentAxes = aD.hAllAxes(1); 
-    aD.hFig.CurrentAxes = aD.hCurrentAxes;
-end;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
 function hIm = findAxesChildIm(hAllAxes)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -195,141 +284,39 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  [hButton, hToolbar] = createButtonObject(...
-    hFig, ...
-    buttonImage, ...
-    callbackOn, ...
-    callbackOff,...
-    buttonTag, ...
-    buttonToolTipString)
+function h = findHiddenObj(Handle, Property, Value)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
-hToolbar = findall(hFig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
 
-% If the toolbar exists and the button has not been previously created
-if ~isempty(hToolbar) && isempty(findHiddenObj(hToolbar, 'Tag', buttonTag))
-    
-    hToolbar_Children = hToolbar.Children;
-    buttonTags = defaultButtonTags();
-    hButtons = cell(1,size(buttonTags,2));
-    
-    for i = 1:length(buttonTags)
-        hButtons{i} = findobj(hToolbar_Children, 'Tag', buttonTags{i});
-    end;
-    
-    separator = 'off';
-    if isempty(hButtons)
-        separator = 'on';
-    end;
-    
-    hButton = uitoggletool(hToolbar);
-    hButton.CData         = buttonImage;
-    hButton.OnCallback    = callbackOn;
-    hButton.OffCallback   = callbackOff;
-    hButton.Tag           = buttonTag;
-    hButton.TooltipString = buttonToolTipString;
-    hButton.Separator     = separator;
-    hButton.UserData      = hFig;
-    hButton.Enable         = 'on';
+h_root = groot;
+old_SHH = h_root.ShowHiddenHandles;
+h_root.ShowHiddenHandles = 'On';
+if nargin <3
+    h = findobj(Handle, Property);
 else
-    % Toolbar doesn't exist, or button already exists
-    hButton = [];
-end
-
-
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function  hMenu = createMenuObject(hFig, menuTag, menuLabel,callback)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-hToolMenu = findall(hFig, 'Label', '&Tools');
-
-if ~isempty(hToolMenu) && isempty(findHiddenObj(hToolMenu,'Tag', menuTag))
-
-    % If the menubar exists and the menu item has not been previously created
-    hExistingMenus = findobj(hToolMenu, '-regexp', 'Tag', 'menu\w*');
-    
-    position = 9;
-    separator = 'On';
-    
-    if ~isempty(hExistingMenus)
-        position = position + length(hExistingMenus);
-        separator = 'Off';
-    end;
-    
-    hMenu = uimenu(hToolMenu,'Position', position);
-    hMenu.Tag       = menuTag;
-    hMenu.Label     = menuLabel;
-    hMenu.Callback  = callback;
-    hMenu.Separator = separator;
-    hMenu.UserData  = hFig;
-else
-    hMenu = [];
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function menuToggle(hMenu, hButton)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-
-checked   = hMenu.Checked;
-if strcmpi(checked,'on')
-    % turn off button -> Deactivate
-    hMenu.Checked = 'off';
-    hButton.State = 'off';
-else %hButton
-    hMenu.Checked = 'on';
-    hButton.State = 'on';
+    h = findobj(Handle, Property, Value);
 end;
+h_root.ShowHiddenHandles = old_SHH;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function closeRequestCallback(~,~,uaD)
+function h = findHiddenObjRegexp(Handle, Property, Value)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
-old_SHH = uaD.hRoot.ShowHiddenHandles;
-uaD.hRoot.ShowHiddenHandles = 'On';
 
-%calls deactivate
-uaD.hButton.State = 'off';
-uaD.hRoot.ShowHiddenHandles= old_SHH;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function  storeAD(aD)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-setappdata(aD.hFig, aD.Name, aD);
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function  uaD = limitAD(aD)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Return micro aD
-dispDebug;
-uaD = struct;
-uaD.hRoot    = aD.hRoot;
-uaD.hFig     = aD.hFig;
-uaD.hToolFig = aD.hToolFig;
-uaD.hButton  = aD.hButton;
+h_root = groot;
+old_SHH = h_root.ShowHiddenHandles;
+h_root.ShowHiddenHandles = 'On';
+if nargin <3
+    h = findobj('-regexp', Handle, Property);
+else
+    h = findobj(Handle, '-regexp', Property, Value);
+end;
+h_root.ShowHiddenHandles = old_SHH;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -400,26 +387,138 @@ dispDebug(['end (',num2str(toc),')']); %dbg
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function closeParentFigure(hFig,~,figTag)
+function  uaD = limitAD(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% function to make sure that if parent figure is closed,
-% the ROI info and ROI Tool are closed too.
+% Return micro aD
 dispDebug;
-aD = getAD(hFig);
-if ~isempty(aD)
-    hToolFig = aD.hToolFig;
-else
-    % Parent Figure is somehow already gone and there aD is no aD (shouldn't happen!)
-    % Find tool figure directly via Tag
-    dispDebug('ParFig closed!');
-    hToolFig = findobj(groot, 'Tag', figTag);
-end
-delete(hToolFig);
-%hFig.CloseRequestFcn = 'closereq';
-delete(hFig);
+uaD = struct;
+uaD.hRoot    = aD.hRoot;
+uaD.hFig     = aD.hFig;
+uaD.hToolFig = aD.hToolFig;
+uaD.hButton  = aD.hButton;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function menuToggle(hMenu, hButton)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+
+checked   = hMenu.Checked;
+if strcmpi(checked,'on')
+    % turn off button -> Deactivate
+    hMenu.Checked = 'off';
+    hButton.State = 'off';
+else %hButton
+    hMenu.Checked = 'on';
+    hButton.State = 'on';
+end;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function restoreOrigData(hFig, propList)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Restore previous WBDF etc to restore state after WL is done.
+dispDebug;
+for j = 1:length(hFig)
+    for i = 1:size(propList,1)
+        hFig(j).(propList{i,1,j}) = propList{i,2,j};
+    end
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function structNames = retrieveNames
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+structNames.toolName            = '<Utils>';
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function propList = retrieveOrigData(hObjs,propList)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Retrive previous settings for storage
+dispDebug;
+
+if nargin==1
+    % basic list - typically modified figure properties
+    propList = {...
+        'WindowButtonDownFcn'; ...
+        'WindowButtonMotionFcn'; ...
+        'WindowButtonUpFcn'; ...
+        'WindowKeyPressFcn'; ...
+        'UserData'; ...
+        'CloseRequestFcn'; ...
+        'Pointer'; ...
+        'PointerShapeCData'; ...
+        'Tag' ...
+        };
+end
+
+propList = repmat(propList, [1 1 length(hObjs)]);
+
+for j = 1:length(hObjs) % objects
+    for i = 1:size(propList,1) % properties
+        if isprop(hObjs(j), propList{i,1,j})
+            propList{i,2,j} = hObjs(j).(propList{i,1,j});
+        end
+    end
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  storeAD(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+setappdata(aD.hFig, aD.Name, aD);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function aD = updateHCurrentFigAxes(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+aD.hRoot.CurrentFigure = aD.hFig;
+aD.hCurrentAxes=aD.hFig.CurrentAxes;
+if isempty(aD.hCurrentAxes)
+    aD.hCurrentAxes = aD.hAllAxes(1); 
+    aD.hFig.CurrentAxes = aD.hCurrentAxes;
+end;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -451,42 +550,6 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function h = findHiddenObj(Handle, Property, Value)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
 
-h_root = groot;
-old_SHH = h_root.ShowHiddenHandles;
-h_root.ShowHiddenHandles = 'On';
-if nargin <3
-    h = findobj(Handle, Property);
-else
-    h = findobj(Handle, Property, Value);
-end;
-h_root.ShowHiddenHandles = old_SHH;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function h = findHiddenObjRegexp(Handle, Property, Value)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-
-h_root = groot;
-old_SHH = h_root.ShowHiddenHandles;
-h_root.ShowHiddenHandles = 'On';
-if nargin <3
-    h = findobj('-regexp', Handle, Property);
-else
-    h = findobj(Handle, '-regexp', Property, Value);
-end;
-h_root.ShowHiddenHandles = old_SHH;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 

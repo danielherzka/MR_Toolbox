@@ -28,27 +28,20 @@ global DB; DB = 1;
 dispDebug('Lobby');
 Create_New_Objects;
 
-% List of callback functions acceesed from outside in response to GUI 
-%      Activate_WL,		           Activate_WL
-%      Deactivate_WL,              Deactivate_WL
-%      Adjust_On, 		           Adjust_On;         % Entry
-%      Adjust_WL, 	 	           Adjust_WL;         % Cycle
-%      Adjust_WL_For_All,          Adjust_WL_For_All; % Exit
-%      Edit_Adjust,                Edit_Adjust;
-%      Set_Colormap,               Set_Colormap;
-%      Menu_WL,                    Menu_WL;
-%      WL_Reset,                   WL_Reset;
-%      Auto_WL_Reset,              Auto_WL_Reset;
-%      Key_Press_CopyPaste,        Key_Press_CopyPaste
-%      Close_Request_Callback,     Close_Request_Callback;
-%      Close_Parent_Figure,    	   Close_Parent_Figure;
-
-% Set Object callbacks; return hFig for speed
-% aD.hGUI.Colormap_popupmenu.Callback = {@Set_Colormap, aD.hFig};
-% aD.hGUI.Window_value_edit.Callback  = {@Edit_Adjust, aD.hFig};
-% aD.hGUI.Level_value_edit.Callback   = {@Edit_Adjust, aD.hFig};
-% aD.hGUI.Auto_pushbutton.Callback    = {@Auto_WL_Reset, aD.hFig};
-% aD.hGUI.Reset_pushbutton.Callback   = {@WL_Reset, aD.hFig};
+%  Object callbacks; return hFig for speed
+% aD.hButton.OnCallback                   -> {@Activate_WL, hFig}
+% aD.hButton.OffCallback                  -> {@Deactivate_WL, hFig}
+% aD.hMenu.Callback                       -> {@Menu_WL, hFig}
+% aD.hFig.WindowButtonMotionFcn            = {@Adjust_WL, aD.hFig};
+% aD.hFig.WindowButtonDownFcn              = {@Adjust_On, aD.hFig};
+% aD.hFig.WindowButtonUpFcn                = {@Adjust_WL_For_All, aD.hFig};
+% aD.hFig.WindowKeyPressFcn                =  @Key_Press_CopyPaste;
+% aD.hFig.CloseRequestFcn                 -> {aD.hUtils.closeParentFigure, figTag};
+% aD.hGUI.Colormap_popupmenu.Callback      = {@Set_Colormap, aD.hFig};
+% aD.hGUI.Window_value_edit.Callback       = {@Edit_Adjust, aD.hFig};
+% aD.hGUI.Level_value_edit.Callback        = {@Edit_Adjust, aD.hFig};
+% aD.hGUI.Auto_pushbutton.Callback         = {@Auto_WL_Reset, aD.hFig};
+% aD.hGUI.Reset_pushbutton.Callback        = {@WL_Reset, aD.hFig};
 
 %  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -692,6 +685,8 @@ end
 % Generate a structure of handles to pass to callbacks and store it.
 aD.hGUI = guihandles(aD.hToolFig);
 
+if ismac, aD.hUtils.adjustGUIForMAC(aD.hGUI, 0.3); end
+
 aD.hToolFig.Name = aD.objectNames.figName;
 aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};
 
@@ -996,3 +991,7 @@ if DB
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+   
+
