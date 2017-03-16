@@ -1,5 +1,6 @@
-load('C:\Users\herzkad\Dropbox\Herzka - MATLAB\Test DAta\VTA_Pig_G083_8_Weeks_post_MI_WIP_Hi-INAV-PSIR_SENSE_37_1.mat')
+%load('C:\Users\herzkad\Dropbox\Herzka - MATLAB\Test DAta\VTA_Pig_G083_8_Weeks_post_MI_WIP_Hi-INAV-PSIR_SENSE_37_1.mat')
 
+load('/Users/danielherzka/Dropbox/Herzka - MATLAB/New Tools/20170310 In Progress EodD stop Wl PZ MV SP/VTA_Pig_G083_8_Weeks_post_MI_WIP_Hi-INAV-PSIR_SENSE_37_1.mat')
 try
     close all
 catch
@@ -28,21 +29,20 @@ imagescn(Ims(:,:,:,:), [], [], 10 , 3);
 
 hAllAxes = flipud(findobj(f, 'type', 'axes'));
 
+% Object params
 nframes = size(I.A,3);
 
 rad = linspace (30,60, nframes);
 dx = linspace(0,10, nframes);
-
 colororder = 'rgb';
 markerorder = '+^o';
 theta = linspace(0,2*pi,50);
 patchcolor = repmat(linspace(0,1, nframes)', 1,3);
 patchalpha = linspace(1,0, nframes);
 
+objStruct = struct;
 
-objStruct = struct([]);
-
-for f = 1:length(hAllAxes)
+for f = 1:length(hAllAxes)-1
     
     for r = 1:nframes
         i=0;
@@ -96,30 +96,26 @@ for f = 1:length(hAllAxes)
         objStruct(i,r).Other.EdgeAlpha = patchalpha(r);
         
         i=i+1;
-        objStruct(i,r).XData = 0.5*rad(r)*cos(theta)+ dx(r) + size(Ims,1)*3/4;
-        objStruct(i,r).YData = 0.5*rad(r)*sin(theta) + size(Ims,2)*3/4;
-        objStruct(i,r).Type = 'Patch';  % line  point patch
-        objStruct(i,r).Color = patchcolor(r,:);
-        objStruct(i,r).Name = 'BlackPatchHole';
-        objStruct(i,r).Other.FaceAlpha = patchalpha(nframes-r+1);
-        objStruct(i,r).Other.EdgeColor = 'none';
-        
-        
-        
+        if ~mod(r,4)
+            objStruct(i,r).XData = 0.5*rad(r)*cos(theta)+ dx(r) + size(Ims,1)*3/4;
+            objStruct(i,r).YData = 0.5*rad(r)*sin(theta) + size(Ims,2)*3/4;
+            objStruct(i,r).Type = 'Patch';  % line  point patch
+            objStruct(i,r).Color = patchcolor(r,:);
+            objStruct(i,r).Name = 'BlackPatchHole';
+            objStruct(i,r).Other.FaceAlpha = patchalpha(nframes-r+1);
+            objStruct(i,r).Other.EdgeColor = 'none';
+        end        
         
     end
-    
     
     setappdata(hAllAxes(f), 'Objects', objStruct)
 end
 
-
-
+shg
 
 
 % Test single image array without time
 % figure
 % imagescn(I.A(:,:,7), [], [], 10);
 shg
-
 
