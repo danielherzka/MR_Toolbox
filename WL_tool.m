@@ -97,6 +97,7 @@ dispDebug;
 aD = configActiveFigure(hFig);
 aD = configGUI(aD);
 aD = configOther(aD);
+
 storeAD(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -164,7 +165,7 @@ point = aD.hCurrentAxes.CurrentPoint;
 % Store reference point and the refereonce CLim
 aD.refPoint = [point(1,1) point(1,2)];
 aD.refCLim  = aD.hCurrentAxes.CLim;
-%hButton.UserData = [point(1,1) point(1,2), Clim];
+
 storeAD(aD);
 updateColormapPopupmenu(aD.hFig);
 Adjust_WL([],[],aD.hFig);
@@ -182,8 +183,6 @@ aD = getAD(hFig);
 
 aD.hCurrentAxes = gca;
 point = aD.hCurrentAxes.CurrentPoint;
-
-%ref_coor = hButton.UserData;
 
 clim= aD.refCLim;
 xlim= aD.hCurrentAxes.XLim;
@@ -224,10 +223,7 @@ aD.hFig.WindowButtonMotionFcn = ' ';
 
 apply_all = aD.hGUI.Apply_to_popupmenu.Value;
 hCurrentAxes_index = find(aD.hAllAxes==aD.hFig.CurrentAxes);
-%
-% new_level = new_level{1};
-% new_window = new_level(2);
-% new_level = new_level(1);
+
 newClim = aD.hCurrentAxes.CLim;
 newWin = (newClim(2) - newClim(1) )  ;
 newLev = (newClim(2) + newClim(1) )/2;
