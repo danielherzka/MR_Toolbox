@@ -430,14 +430,7 @@ aD.hFig.CloseRequestFcn       = {aD.hUtils.closeParentFigure, aD.objectNames.fig
 % Draw faster and without flashes
 aD.hFig.Renderer = 'zbuffer';
 [aD.hAllAxes.SortMethod] = deal('Depth');
-
-% 
-% 
-% for i = 1:length(handlesRT.Axes)
-% 	set(findobj(handlesRT.Axes(i), 'Type', 'image'), 'ButtonDownFcn', ''); 	
-% end;
-
-%Set_Current_Axes(aD.hCurrentAxes);
+[aD.hAllAxes.ButtonDownFcn] = deal(''); 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
