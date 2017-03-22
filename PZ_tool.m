@@ -106,36 +106,42 @@ function Deactivate_PZ(~,~,hFig)
 dispDebug;
 
 aD = getAD(hFig);
-if ~isempty(aD.hButton)
-    aD.hButton.Tag = aD.hButton.Tag(1:end-3);
-end
-    
-if ~isempty(aD.hMenu)
-    aD.hMenu.Checked = 'off';
-    aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
-end
-   
-% Close PZ figure
-delete(aD.hToolFig);
 
 zoom off;
 dispDebug('Zoom off');
 
-% Restore old BDFs
-aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
+aD.hUtils.deactivateButton(aD);
 
-% Reactivate other buttons
-aD.hUtils.enableToolbarButtons(aD);
-
-% Store aD in tool-specific apdata for next Activate call
-setappdata(aD.hFig, aD.Name, aD);
-
-
-%Disable save_prefs tool button
-if ~isempty(aD.hSP)
-    aD.hSP.Enable = 'Off';
-end
-%
+% if ~isempty(aD.hButton)
+%     aD.hButton.Tag = aD.hButton.Tag(1:end-3);
+% end
+%     
+% if ~isempty(aD.hMenu)
+%     aD.hMenu.Checked = 'off';
+%     aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
+% end
+%    
+% % Close PZ figure
+% delete(aD.hToolFig);
+% 
+% zoom off;
+% dispDebug('Zoom off');
+% 
+% % Restore old BDFs
+% aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
+% 
+% % Reactivate other buttons
+% aD.hUtils.enableToolbarButtons(aD);
+% 
+% % Store aD in tool-specific apdata for next Activate call
+% setappdata(aD.hFig, aD.Name, aD);
+% rmappdata(aD.hFig, 'AD');
+% 
+% %Disable save_prefs tool button
+% if ~isempty(aD.hSP)
+%     aD.hSP.Enable = 'Off';
+% end
+% %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%% 
@@ -539,6 +545,7 @@ aD = aD.hUtils.disableToolbarButtons(aD, aD.objectNames.buttonTag);
 
 % Store initial state of all axes in current figure for reset
 aD.hAllAxes = flipud(findobj(aD.hFig,'Type','Axes'));
+aD.hAllImages   = aD.hUtils.findAxesChildIm(aD.hAllAxes);
 aD.origXLims = zeros(length(aD.hAllAxes),2);
 aD.origYLims = zeros(length(aD.hAllAxes),2);
 for i = 1:length(aD.hAllAxes)
@@ -551,6 +558,8 @@ aD = aD.hUtils.updateHCurrentFigAxes(aD);
 
 % Store the figure's old infor within the fig's own userdata
 aD.origProperties = aD.hUtils.retrieveOrigData(aD.hFig);
+aD.origAxesProperties  = aD.hUtils.retrieveOrigData(aD.hAllAxes , {'ButtonDownFcn', 'XLimMode', 'YLimMode'});
+aD.origImageProperties = aD.hUtils.retrieveOrigData(aD.hAllImages , {'ButtonDownFcn'});
 
 % Find and close the old PZ figure to avoid conflicts
 hToolFigOld = aD.hUtils.findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);

@@ -6,6 +6,7 @@ fs={...
     'closeRequestCallback';...
     'createButtonObject';...
     'createMenuObject';...
+    'deactivateButton';...
     'defaultButtonTags';...
     'disableToolbarButtons';...
     'enableToolbarButtons';...
@@ -190,6 +191,43 @@ if ~isempty(hToolMenu) && isempty(findHiddenObj(hToolMenu,'Tag', menuTag))
     hMenu.UserData  = hFig;
 else
     hMenu = [];
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%% 
+%
+function deactivateButton(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+
+if ~isempty(aD.hButton)
+    aD.hButton.Tag = aD.hButton.Tag(1:end-3);
+end
+
+if ~isempty(aD.hMenu)
+    aD.hMenu.Checked = 'off';
+    aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
+end
+
+% Restore old figure settings
+aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
+aD.hUtils.restoreOrigData(aD.hAllAxes, aD.origAxesProperties);
+aD.hUtils.restoreOrigData(aD.hAllImages, aD.origImageProperties);
+
+% Reactivate other buttons
+aD.hUtils.enableToolbarButtons(aD);
+
+% Close Tool figure
+delete(aD.hToolFig);
+
+% Store aD in tool-specific apdata for next Activate call
+setappdata(aD.hFig, aD.Name, aD);
+rmappdata(aD.hFig, 'AD');
+
+if ~isempty(aD.hSP) %?ishghandle?
+    aD.SP.Enable = 'Off';
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%

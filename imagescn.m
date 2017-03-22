@@ -43,7 +43,8 @@ function imagescn(I, scale, dims, FigureWidth, timedimension)
 %				Laboratory for Cardiac Energetics
 %				NIH NHBI
 %
-Nd=ndims(I);
+Nd=ndims(I)
+size(I)
 if ~exist('timedimension','var')&& Nd==5; timedimension=5;  moviemodeflag=1; end
 if ~exist('timedimension','var');         timedimension=[]; moviemodeflag=0; end
 if nargin==5
@@ -62,17 +63,17 @@ if nargin==5
     end
 end
 ntimeframes=size(I,Nd);
-if Nd==2; % case of single image
+if Nd==2 % case of single image
     N=1;
     N1=1; N2=1;
-elseif Nd==3; % case of array of images
+elseif Nd==3 % case of array of images
     if moviemodeflag==0
         N=size(I,3);
         N2=ceil(sqrt(N)); N1=ceil(N/N2);
     else
         N=1;N1=1;N2=1;
     end
-elseif Nd==4; % case of 2-d array of images
+elseif Nd==4 % case of 2-d array of images
     if moviemodeflag==0
         N1=size(I,3);
         N2=size(I,4);
@@ -81,12 +82,12 @@ elseif Nd==4; % case of 2-d array of images
         N=size(I,3);
         N2=ceil(sqrt(N)); N1=ceil(N/N2);
     end
-elseif moviemodeflag==1 && Nd==5; % case of 2-d array of images
+elseif moviemodeflag==1 && Nd==5 % case of 2-d array of images
     N1=size(I,3);
     N2=size(I,4);
     N=N1*N2;
 end
-if exist('dims','var');
+if exist('dims','var')
 	if length(dims)==2; rows=dims(1);cols=dims(2);
 		N1=rows;N2=cols;
 	else
@@ -99,8 +100,10 @@ if 1<size(scale,1) && size(scale,1) < min(N,N1*N2)
     disp('or a matrix [min1 max1;min2 max2;...] with # rows equal to number of plots');
     return
 end
-                
-set(0,'Units','Inches');
+  
+hRoot = groot;
+hRoot.Units= 'Inches';
+
 scnsize=get(0,'ScreenSize'); % [left,bottom,width,height] % full screen size available
 ScreenWidth=scnsize(3); ScreenHeight=scnsize(4); % width & height in inches
 Xsize=size(I,2);Ysize=size(I,1); % size of pixels in image (Xsize x Ysize)
@@ -117,8 +120,8 @@ FigureBottom=(ScreenHeight-FigureHeight)/2;
 FigureLeft=(ScreenWidth-FigureWidth)/2;
 %fig_handle=figure;
 fig_handle = gcf;
-set(fig_handle,'Units','Inches')
-set(fig_handle,'Position',[FigureLeft FigureBottom FigureWidth FigureHeight])
+fig_handle.Units = 'Inches';
+fig_handle.Position = [FigureLeft FigureBottom FigureWidth FigureHeight];
 
 % calculate sub-image dimensions in inches
 SubImageWidth=FigureWidth*Xsize/X0size;
@@ -127,7 +130,7 @@ Xborder=FigureWidth*deltaX/X0size;
 Yborder=FigureHeight*deltaY/Y0size;
 
 % set background color to be white
-set(fig_handle,'Color',[1 1 1]);
+fig_handle.Color = [1 1 1];
 
 % calculate sub-image dimensions in normalized units
 SubImageWidth=SubImageWidth/FigureWidth;
@@ -140,46 +143,64 @@ if ~isreal(I)
 	I=abs(I);
 end;
 
+size(I)
+
 for k=1:min(N,N1*N2)
-	i=ceil(k/N2);
-	j=k-(i-1)*N2;
-	if Nd>3
-% 		j0=ceil(k/size(I,4));
-% 		i0=k-(j0-1)*size(I,4);
-		i0=ceil(k/size(I,4));
-		j0=k-(i0-1)*size(I,4);
-	end        
-	SubImageLeft=(j-1)*(SubImageWidth+Xborder);
-	SubImageBottom=(N1-i)*(SubImageHeight+Yborder);
-	subplot('Position',[SubImageLeft SubImageBottom SubImageWidth SubImageHeight])
-	if isempty(scale)
-		if Nd>3, imagesc(I(:,:,i0,j0)); axis image; axis off;   % ozturk addition
-		else 		imagesc(I(:,:,k)); axis image; axis off;
-		end
-	elseif size(scale,1)==1
-		if Nd>3,	imagesc(I(:,:,i0,j0),scale); axis image; axis off;    % ozturk addition
-		else		imagesc(I(:,:,k),scale); axis image;axis off
-		end
-	elseif size(scale,1)==min(N,N1*N2);
-		if Nd>3, imagesc(I(:,:,i0,j0),scale(k,:)); axis image; axis off;    % ozturk addition
-		else		imagesc(I(:,:,k),scale(k,:)); axis image;axis off
-		end
-	end
-	if moviemodeflag==1        
-		if Nd==3
-			setappdata(gca, 'ImageData', I);
-		elseif Nd==4
-			setappdata(gca, 'ImageData', squeeze(I(:,:,k,:)));
-		elseif Nd==5
-			setappdata(gca, 'ImageData', squeeze(I(:,:,i0,j0,:)));
-		end
-		setappdata(gca, 'ImageRange', [1 ntimeframes]);
-		setappdata(gca, 'ImageRangeAll', [1 ntimeframes]);
-		setappdata(gca, 'CurrentImage', 1);
-	end
+    i=ceil(k/N2);
+    j=k-(i-1)*N2;
+    
+    %[ k,i,j, mod(k,N1), mod(k,N2)]
+%     if Nd>3
+%         % 		j0=ceil(k/size(I,4));
+%         % 		i0=k-(j0-1)*size(I,4);
+%         i0=ceil(k/size(I,4));
+%         j0=k-(i0-1)*size(I,4);
+%         
+%         % dim 3 index, same for each row, from 1:N1 in reach col
+%         %i0 = 
+%         %j0 = mod(k,N2)+1
+%         
+%         % dim 4 index, same for each col, from 1:N2 in each row
+%         %i0 = 1
+%         %j0
+%     end
+    SubImageLeft=(j-1)*(SubImageWidth+Xborder);
+    SubImageBottom=(N1-i)*(SubImageHeight+Yborder);
+    subplot('Position',[SubImageLeft SubImageBottom SubImageWidth SubImageHeight])
+    
+    if isempty(scale)
+        
+        if Nd>3, imagesc(I(:,:,i,j,1)); axis image; axis off;   % ozturk addition
+        else 		imagesc(I(:,:,k)); axis image; axis off;
+        end
+    elseif size(scale,1)==1
+        
+        if Nd>3,	imagesc(I(:,:,i,j,1),scale); axis image; axis off;    % ozturk addition
+        else		imagesc(I(:,:,k),scale); axis image;axis off
+        end
+    elseif size(scale,1)==min(N,N1*N2)
+        
+        if Nd>3, imagesc(I(:,:,i,j,1),scale(k,:)); axis image; axis off;    % ozturk addition
+        else		imagesc(I(:,:,k),scale(k,:)); axis image;axis off
+        end
+    end
+    
+    
+    if moviemodeflag==1
+        if Nd==3
+            setappdata(gca, 'ImageData', I);
+        elseif Nd==4
+            setappdata(gca, 'ImageData', squeeze(I(:,:,k,:)));
+        elseif Nd==5
+            setappdata(gca, 'ImageData', squeeze(I(:,:,i0,j0,:)));
+        end
+        setappdata(gca, 'ImageRange', [1 ntimeframes]);
+        setappdata(gca, 'ImageRangeAll', [1 ntimeframes]);
+        setappdata(gca, 'CurrentImage', 1);
+    end
 end
 
-set(fig_handle, 'PaperPosition', [1 1 FigureWidth+1 FigureHeight+1]);
+fig_handle.PaperPosition = [1 1 FigureWidth+1 FigureHeight+1];
 
 colormap(gray)
 MR_toolbox;

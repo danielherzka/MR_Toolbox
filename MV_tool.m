@@ -128,44 +128,59 @@ Abort_Movie;
 
 aD = getAD(hFig);
 
-if ~isempty(aD.hButton)
-    aD.hButton.Tag = aD.hButton.Tag(1:end-3);
-end
-
-if ~isempty(aD.hMenu)
-    aD.hMenu.Checked = 'off';
-    aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
-end
-
-% Restore old figure settings
-aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
-aD.hUtils.restoreOrigData(aD.hAllAxes, aD.origAxesProperties);
-aD.hUtils.restoreOrigData(aD.hAllImages, aD.origImageProperties);
-
-% Reactivate other buttons
-aD.hUtils.enableToolbarButtons(aD)
-
-delete(aD.hFrameNumbers); % redrawn every call
-
-% Close MV figure
-delete(aD.hToolFig);
-
-% Store aD in tool-specific apdata for next Activate call
-setappdata(aD.hFig, aD.Name, aD);
-rmappdata(aD.hFig, 'AD');
-
+% Delete Objects which are redrawn every time tool is activated
 if ~isempty(aD.hObjects)
     for i = 1:size(aD.hObjects,1)
         hCurrObjs = aD.hObjects{i,1};
         hCurrObjs = hCurrObjs(ishghandle(hCurrObjs));
-        delete(hCurrObjs  ); % redrawn every call
+        delete(hCurrObjs  ); 
     end
     aD.hObjects = [];
 end;
+delete(aD.hFrameNumbers); % redrawn every call
 
-if ~isempty(aD.hSP) %?ishghandle?
-    aD.SP.Enable = 'Off';
-end
+aD.hUtils.deactivateButton(aD);
+
+
+
+% if ~isempty(aD.hButton)
+%     aD.hButton.Tag = aD.hButton.Tag(1:end-3);
+% end
+% 
+% if ~isempty(aD.hMenu)
+%     aD.hMenu.Checked = 'off';
+%     aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
+% end
+%
+% % Restore old figure settings
+% aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
+% aD.hUtils.restoreOrigData(aD.hAllAxes, aD.origAxesProperties);
+% aD.hUtils.restoreOrigData(aD.hAllImages, aD.origImageProperties);
+% 
+% % Reactivate other buttons
+% aD.hUtils.enableToolbarButtons(aD)
+% 
+% delete(aD.hFrameNumbers); % redrawn every call
+% 
+% % Close MV figure
+% delete(aD.hToolFig);
+% 
+% % Store aD in tool-specific apdata for next Activate call
+% setappdata(aD.hFig, aD.Name, aD);
+% rmappdata(aD.hFig, 'AD');
+% 
+% if ~isempty(aD.hObjects)
+%     for i = 1:size(aD.hObjects,1)
+%         hCurrObjs = aD.hObjects{i,1};
+%         hCurrObjs = hCurrObjs(ishghandle(hCurrObjs));
+%         delete(hCurrObjs  ); % redrawn every call
+%     end
+%     aD.hObjects = [];
+% end;
+% 
+% if ~isempty(aD.hSP) %?ishghandle?
+%     aD.SP.Enable = 'Off';
+% end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -872,8 +887,8 @@ aD= aD.hUtils.disableToolbarButtons(aD,aD.objectNames.buttonTag);
 
 % Store initial state of all axes in current figure for reset
 aD.hAllAxes = flipud(findobj(aD.hFig,'Type','Axes'));
-aD.hFig.CurrentAxes = aD.hAllAxes(1);
 aD.hAllImages   = aD.hUtils.findAxesChildIm(aD.hAllAxes);
+aD.hFig.CurrentAxes = aD.hAllAxes(1);
 
 % Set current figure and axis
 aD = aD.hUtils.updateHCurrentFigAxes(aD);

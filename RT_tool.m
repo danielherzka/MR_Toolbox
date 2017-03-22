@@ -47,7 +47,6 @@ hFig = gcf;
 
 objNames = retrieveNames;
 
-
 [hButton, hToolbar] = hUtils.createButtonObject(hFig, ...
     makeButtonImage, ...
     {@Activate_RT,hFig}, ...
@@ -96,36 +95,36 @@ storeAD(aD)
 function Deactivate_RT(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-%disp('RT_tool:Deactivate_Point_Tool');
-
+dispDebug;
 aD = getAD(hFig);
+aD.hUtils.deactivateButton(aD);
 
-if ~isempty(aD.hButton)
-    aD.hButton.Tag = aD.hButton.Tag(1:end-3);
-end
-
-if ~isempty(aD.hMenu)
-    aD.hMenu.Checked = 'off';
-    aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
-end
-
-% Restore old figure settings
-aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
-aD.hUtils.restoreOrigData(aD.hAllAxes, aD.origAxesProperties);
-
-% Reactivate other buttons
-aD.hUtils.enableToolbarButtons(aD)
-
-% Close Tool figure
-delete(aD.hToolFig);
-
-% Store aD in tool-specific apdata for next Activate call
-setappdata(aD.hFig, aD.Name, aD);
-rmappdata(aD.hFig, 'AD');
-
-if ~isempty(aD.hSP) %?ishghandle?
-    aD.SP.Enable = 'Off';
-end
+% if ~isempty(aD.hButton)
+%     aD.hButton.Tag = aD.hButton.Tag(1:end-3);
+% end
+% 
+% if ~isempty(aD.hMenu)
+%     aD.hMenu.Checked = 'off';
+%     aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
+% end
+% 
+% % Restore old figure settings
+% aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
+% aD.hUtils.restoreOrigData(aD.hAllAxes, aD.origAxesProperties);
+% 
+% % Reactivate other buttons
+% aD.hUtils.enableToolbarButtons(aD);
+% 
+% % Close Tool figure
+% delete(aD.hToolFig);
+% 
+% % Store aD in tool-specific apdata for next Activate call
+% setappdata(aD.hFig, aD.Name, aD);
+% rmappdata(aD.hFig, 'AD');
+% 
+% if ~isempty(aD.hSP) %?ishghandle?
+%     aD.SP.Enable = 'Off';
+% end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -313,16 +312,16 @@ aD = aD.hUtils.disableToolbarButtons(aD,  aD.objectNames.buttonTag);
 
 % Store initial state of all axes in current figure for reset
 aD.hAllAxes = flipud(findobj(aD.hFig,'Type','Axes'));
-aD.hFig.CurrentAxes = aD.hAllAxes(1);
 aD.hAllImages   = aD.hUtils.findAxesChildIm(aD.hAllAxes);
+aD.hFig.CurrentAxes = aD.hAllAxes(1);
 
 % Set current figure and axis
 aD = aD.hUtils.updateHCurrentFigAxes(aD);
 
-% Store the figure's old infor within the fig's own userdata
+% Store the figure's old info within the fig's own userdata
 aD.origProperties = aD.hUtils.retrieveOrigData(aD.hFig);
-aD.origAxesProperties  = aD.hUtils.retrieveOrigData(aD.hAllAxes , {'ButtonDownFcn'});
-
+aD.origAxesProperties  = aD.hUtils.retrieveOrigData(aD.hAllAxes , {'ButtonDownFcn', 'XLimMode', 'YLimMode'});
+aD.origImageProperties = aD.hUtils.retrieveOrigData(aD.hAllImages , {'ButtonDownFcn'});
 
 % Find and close the old WL figure to avoid conflicts
 hToolFigOld = aD.hUtils.findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
@@ -398,7 +397,7 @@ end
 function structNames = retrieveNames
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-structNames.Name              = 'RT';
+structNames.Name                = 'RT';
 structNames.toolName            = 'RT_tool';
 structNames.buttonTag           = 'figButtonRT';
 structNames.buttonToolTipString = 'Image Rotation Tool';

@@ -111,21 +111,6 @@ dispDebug;
 
 aD = getAD(hFig);
 
-if ~isempty(aD.hButton)
-    aD.hButton.Tag = aD.hButton.Tag(1:end-3);
-end
-
-if ~isempty(aD.hMenu)
-    aD.hMenu.Checked = 'off';
-    aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
-end
-
-% Restore old figure settings
-aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
-
-% Reactivate other buttons
-aD.hUtils.enableToolbarButtons(aD)
-
 % Store tool state for recovery on next button press in the appdata
 setappdata(aD.hButton, 'cMapData',...
     {aD.cMapData.allColormaps, ...               % colormaps-per-axes
@@ -133,17 +118,42 @@ setappdata(aD.hButton, 'cMapData',...
      aD.hGUI.Colormap_popupmenu.String, ...      % current colormap names
      aD.hGUI.Apply_to_popupmenu.Value});         % apply to current value
 
-% Close WL figure
-delete(aD.hToolFig);
 
-% Store aD in tool-specific apdata for next Activate call
-setappdata(aD.hFig, aD.Name, aD);
-rmappdata(aD.hFig, 'AD');
-
-%Disable save_prefs tool button
-if ~isempty(aD.hSP)
-    aD.hSP.Enable = 'Off';
-end
+aD.hUtils.deactivateButton(aD);
+% 
+% if ~isempty(aD.hButton)
+%     aD.hButton.Tag = aD.hButton.Tag(1:end-3);
+% end
+% 
+% if ~isempty(aD.hMenu)
+%     aD.hMenu.Checked = 'off';
+%     aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
+% end
+% 
+% % Restore old figure settings
+% aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
+% 
+% % Reactivate other buttons
+% aD.hUtils.enableToolbarButtons(aD)
+% 
+% % Store tool state for recovery on next button press in the appdata
+% % setappdata(aD.hButton, 'cMapData',...
+% %     {aD.cMapData.allColormaps, ...               % colormaps-per-axes
+% %      aD.cMapData.allCmapValues, ...               % value-per-axes
+% %      aD.hGUI.Colormap_popupmenu.String, ...      % current colormap names
+% %      aD.hGUI.Apply_to_popupmenu.Value});         % apply to current value
+% 
+% % Close WL figure
+% delete(aD.hToolFig);
+% 
+% % Store aD in tool-specific apdata for next Activate call
+% setappdata(aD.hFig, aD.Name, aD);
+% rmappdata(aD.hFig, 'AD');
+% 
+% %Disable save_prefs tool button
+% if ~isempty(aD.hSP)
+%     aD.hSP.Enable = 'Off';
+% end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -628,6 +638,7 @@ aD = aD.hUtils.disableToolbarButtons(aD,  aD.objectNames.buttonTag);
 
 % Store initial state of all axes in current figure for reset
 aD.hAllAxes = flipud(findobj(aD.hFig,'Type','Axes'));
+aD.hAllImages   = aD.hUtils.findAxesChildIm(aD.hAllAxes);
 aD.allClims = zeros(length(aD.hAllAxes),2);
 for i = 1:length(aD.hAllAxes)
     aD.allClims(i,:) = aD.hAllAxes(i).CLim;
@@ -638,6 +649,8 @@ aD = aD.hUtils.updateHCurrentFigAxes(aD);
 
 % Store the figure's old infor within the fig's own userdata
 aD.origProperties = aD.hUtils.retrieveOrigData(aD.hFig);
+aD.origAxesProperties  = aD.hUtils.retrieveOrigData(aD.hAllAxes , {'ButtonDownFcn', 'XLimMode', 'YLimMode'});
+aD.origImageProperties = aD.hUtils.retrieveOrigData(aD.hAllImages , {'ButtonDownFcn'});
 
 % Find and close the old WL figure to avoid conflicts
 hToolFigOld = aD.hUtils.findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
