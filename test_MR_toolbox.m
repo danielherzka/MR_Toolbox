@@ -42,6 +42,9 @@ patchalpha = linspace(1,0, nframes);
 
 objStruct = struct;
 
+% Object structure: row = object list; column should match in length to #
+% of frames in temporal sequence. If less, those objects will be empty;
+
 for f = 1:length(hAllAxes)-1
     
     for r = 1:nframes
@@ -75,7 +78,7 @@ for f = 1:length(hAllAxes)-1
         objStruct(i,r).Other.MarkerSize = mod(r,10)+1;
         
         i=i+1;
-        if mod(r,2)
+        if mod(r,1)
             objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)*1/8;
             objStruct(i,r).YData = (f*0.2)*rad(r)*sin(theta) + size(Ims,2)*3/8;
             objStruct(i,r).Type = 'Points';  % line  point patch
@@ -96,7 +99,7 @@ for f = 1:length(hAllAxes)-1
         objStruct(i,r).Other.EdgeAlpha = patchalpha(r);
         
         i=i+1;
-        if ~mod(r,4)
+        if ~mod(r,1)
             objStruct(i,r).XData = 0.5*rad(r)*cos(theta)+ dx(r) + size(Ims,1)*3/4;
             objStruct(i,r).YData = 0.5*rad(r)*sin(theta) + size(Ims,2)*3/4;
             objStruct(i,r).Type = 'Patch';  % line  point patch

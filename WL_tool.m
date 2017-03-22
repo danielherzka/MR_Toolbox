@@ -97,6 +97,7 @@ dispDebug;
 aD = configActiveFigure(hFig);
 aD = configGUI(aD);
 aD = configOther(aD);
+
 storeAD(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -164,7 +165,7 @@ point = aD.hCurrentAxes.CurrentPoint;
 % Store reference point and the refereonce CLim
 aD.refPoint = [point(1,1) point(1,2)];
 aD.refCLim  = aD.hCurrentAxes.CLim;
-%hButton.UserData = [point(1,1) point(1,2), Clim];
+
 storeAD(aD);
 updateColormapPopupmenu(aD.hFig);
 Adjust_WL([],[],aD.hFig);
@@ -182,8 +183,6 @@ aD = getAD(hFig);
 
 aD.hCurrentAxes = gca;
 point = aD.hCurrentAxes.CurrentPoint;
-
-%ref_coor = hButton.UserData;
 
 clim= aD.refCLim;
 xlim= aD.hCurrentAxes.XLim;
@@ -224,10 +223,7 @@ aD.hFig.WindowButtonMotionFcn = ' ';
 
 apply_all = aD.hGUI.Apply_to_popupmenu.Value;
 hCurrentAxes_index = find(aD.hAllAxes==aD.hFig.CurrentAxes);
-%
-% new_level = new_level{1};
-% new_window = new_level(2);
-% new_level = new_level(1);
+
 newClim = aD.hCurrentAxes.CLim;
 newWin = (newClim(2) - newClim(1) )  ;
 newLev = (newClim(2) + newClim(1) )/2;
@@ -477,7 +473,7 @@ hCurrentAxes_index = find(aD.hCurrentAxes==aD.hAllAxes);
 
 if apply_all == 1,                  hAxesInterest = aD.hCurrentAxes;
 elseif apply_all == 2,              hAxesInterest = aD.hAllAxes;
-elseif apply_all == 3,
+elseif apply_all == 3
     if (mod(hCurrentAxes_index,2)), hAxesInterest = aD.hAllAxes(1:2:end);
     else                            hAxesInterest = aD.hAllAxes(2:2:end);
     end;
@@ -559,7 +555,7 @@ switch data.Key
 
         if     apply_all == 1,                hAxesInterest = aD.hCurrentAxes;
         elseif apply_all == 2,                hAxesInterest = aD.hAllAxes;
-        elseif apply_all == 3,
+        elseif apply_all == 3
             if (mod(hCurrentAxes_idx,2)),     hAxesInterest = aD.hAllAxes(1:2:end);
             else                              hAxesInterest = aD.hAllAxes(2:2:end);
             end;
@@ -644,7 +640,7 @@ aD = aD.hUtils.updateHCurrentFigAxes(aD);
 aD.origProperties = aD.hUtils.retrieveOrigData(aD.hFig);
 
 % Find and close the old WL figure to avoid conflicts
-hToolFigOld = findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
+hToolFigOld = aD.hUtils.findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
 if ~isempty(hToolFigOld), close(hToolFigOld);end;
 pause(0.5);
 
@@ -914,31 +910,12 @@ structNames.Name              = 'WL';
 structNames.toolName            = 'WL_tool';
 structNames.buttonTag           = 'figButtonWL';
 structNames.buttonToolTipString = 'Set Image Window Level';
-structNames.menuTag             = 'menuWindowLevel';
+structNames.menuTag             = 'menuWL';
 structNames.menuLabel           = 'Window and Level';
 structNames.figFilename         = 'WL_tool_figure.fig';
 structNames.figName             = 'WL Tool';
 structNames.figTag              = 'WL_figure';
 structNames.activeFigureName    = 'ActiveFigure';
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function h = findHiddenObj(Handle, Property, Value)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-
-h_root = groot;
-old_SHH = h_root.ShowHiddenHandles;
-h_root.ShowHiddenHandles = 'On';
-if nargin <3
-    h = findobj(Handle, Property);
-else
-    h = findobj(Handle, Property, Value);
-end;
-h_root.ShowHiddenHandles = old_SHH;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 

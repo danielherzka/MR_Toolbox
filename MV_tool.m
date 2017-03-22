@@ -982,7 +982,7 @@ aD.hGUI.Min_Frame_edit.String = num2str(imageRangeAll(1));
 
 % Display pre-loaded Objects (additional graphics overlaid on image)
 aD.hObjects = []; 
-aD = drawAllObjects(aD);
+drawAllObjects(aD);
 Toggle_All_Objects(aD.hFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1152,6 +1152,9 @@ function aD = drawAllObjects(aD)
 %  Objects change with temporal dimension draw temporal objects, if found
 dispDebug;
 hObjects = cell(length(aD.hAllAxes),3);
+aD = checkEmptyObjectRows(aD);
+
+
 
 drewObjectsFlag = 0;
 for i = 1:length(aD.hAllAxes)
@@ -1161,8 +1164,8 @@ for i = 1:length(aD.hAllAxes)
         objectData =  getappdata(aD.hAllAxes(i),'Objects');
         [hObjects{i,1}, hObjects{i,2}] = drawAllObjectsPerAxes(objectData , aD.hAllAxes(i)) ;
         
-        % load the current axes objets onto popupmenu
-        %if(aD.hAllAxes(i)==aD.hCurrentAxes)
+        % load the current axes objects onto popupmenu
+
         popupstring = [repmat('Hide ', size(hObjects{i,2},1),1), hObjects{i,2}];
         aD.hGUI.Object_List_popupmenu.String = popupstring;
         hObjects{i,3} = popupstring;
@@ -1175,6 +1178,8 @@ for i = 1:length(aD.hAllAxes)
     end;
 
 end;
+
+size(hObjects)
 
 if drewObjectsFlag
     %     aD.hGUI.Show_Objects_checkbox.Enable = 'On';
@@ -1204,36 +1209,36 @@ CurrImage = getappdata(hAxes,'CurrentImage');
 origNextPlot = get(hAxes, 'NextPlot');
 hAxes.NextPlot = 'Add'; % overlay
 
-
 hObject = gobjects(size(objDataStruct,1),1);
 
 % Empty objects in objDataStruct sent in by user are allowed but at least
-%  one object has to exist in a time series. If any row is empty, remove
-%  it;
+%  one object has to exist in a time series. If any row was empty, remove
+%  it was removed before entering this function. FIX BUG: if first object in a
+%  time series is empty, no object in the series will draw.
 
-% Make name list (overcomes first object of a kind being empty)
-objectNames = [];
-for i = 1:size(objDataStruct,1)
-    name = cell(1, size(objDataStruct,2));
-    for j = 1:size(objDataStruct,2)
-        
-        name{j} = objDataStruct(i,j).Name;
-    end    
-    name = unique(name(~cellfun(@isempty, name)));
-    if isempty(objectNames)
-        objectNames = name{1};
-    else
-        objectNames = char(objectNames, name{1});
-    end
-end
+
+% objectNames = [];
+% for i = 1:size(objDataStruct,1)
+%     name = cell(1, size(objDataStruct,2));
+%     for j = 1:size(objDataStruct,2)
+%         
+%         name{j} = objDataStruct(i,j).Name;
+%     end
+%     name = unique(name(~cellfun(@isempty, name)));
+%     if isempty(objectNames)
+%         objectNames = name{1};
+%     else
+%         objectNames = char(objectNames, name{1});
+%     end
+% end
+
+% Make global name list (overcomes first object of a kind being empty)
+objectNames = sortObjectNames(objDataStruct);
 
 % Draw each object in the list of objects for this axes;
 for i = 1:size(objDataStruct,1)
     
-    objType = objDataStruct(i,CurrImage).Type;
-    
-    %if ~isempty(objType)
-    
+    objType = objDataStruct(i,CurrImage).Type;    
     % Assume at least one time point has an object to draw; 
     
     if strcmpi(objType, 'Line') % min props: xdata,ydata, color, name
@@ -1272,16 +1277,6 @@ for i = 1:size(objDataStruct,1)
         hObject(i,1).UserData      = objDataStruct(i,CurrImage).Name; 
     end
         
-    %outName = objDataStruct(i,CurrImage).Name;
-% 
-%         
-%     % Add name to list
-%     if isempty( objectNames)
-%         objectNames = outName;
-%     else
-%         objectNames = char(objectNames, outName);
-%     end
-
 end
 hAxes.NextPlot =  origNextPlot;
 %
@@ -1317,6 +1312,72 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function aD = checkEmptyObjectRows(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Function to check objStruct and check to see if any has empty Rows
+% (removed) or if the first element of an array is empty (which draws will
+% result in the drawing of an invisible object). This fixes the bug that if
+% the first element of the time series of objects is empty, the rest do not
+% appear
+
+% Note: if a row is erased from one object, then it either has to be erased
+% from the object list of all axes, or it has to be filled in such a way
+% that the row exists in other axes but doesn't cause problems;
+objectData = cell(size(aD.hAllAxes));
+objectNames = cell(size(aD.hAllAxes));
+for i = 1:length(aD.hAllAxes)
+    if isappdata(aD.hAllAxes(i), 'Objects')
+        % Objects exist, condition objStruct;
+        objectData{i} =  getappdata(aD.hAllAxes(i),'Objects');        
+        objectNames{i} = sortObjectNames(objectData{i});
+    else
+        objectData{i} = [];
+        objectNames{i} = [];
+    end
+end
+
+% Make empty object in axes without objects
 
 
+
+
+
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function objectNames = sortObjectNames(objDataStruct)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Make object name list for one axes
+objectNames = [];
+for i = 1:size(objDataStruct,1)
+    name = cell(1, size(objDataStruct,2));
+    for j = 1:size(objDataStruct,2)
+        name{j} = objDataStruct(i,j).Name;
+    end
+    name = unique(name(~cellfun(@isempty, name)));
+    if isempty(name)
+        name = {'<Empty>'};
+    end
+    if isempty(objectNames)
+        objectNames = name{1};
+    else
+        objectNames = char(objectNames, name{1});
+    end
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+ 
+
+    
 
