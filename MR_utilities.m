@@ -1,7 +1,14 @@
 function hFcn = MR_utilities(varargin)
-% Create cell-list of available functions
+% Create cell-list of available functions. Functions stored alphabetically.
+% Author: Daniel Herzka, daniel.herzka@nih.gov 
+% 2017-02 -> .v0
+% Cardiovascular Intervention Program
+% National Heart, Lung and Blood Institute, NIH, DHHS
+% Bethesda, MD 20892
+
 fs={...
     'adjustGUIForMAC';...
+    'adjustGUIPosition';...
     'closeParentFigure';...
     'closeRequestCallback';...
     'createButtonObject';...
@@ -33,11 +40,11 @@ end;
 %%%%%%%%%%%%%%%%%%START MULTI-TOOL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Utility functions are sorted in alphabetical order since they are called
-% from many places within individual tools.
+%  from within individual tools.
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function adjustGUIForMAC(hGUI, scaling)
+function adjustGUIForMAC(hGUI, scaling) %#ok<*DEFNU>>
 % 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Adjust fontsize and figure size for OSX
@@ -81,6 +88,21 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
+function adjustGUIPosition(hFig, hToolFig) 
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+figPos = hFig.Position;
+hToolFig.Units = hFig.Units;
+guiPos = hToolFig.Position;
+guiVPos = figPos(2) + figPos(4)/2 - guiPos(4)/2;
+guiHPos = figPos(1) - guiPos(3)*1.1;
+hToolFig.Position = [guiHPos, guiVPos, guiPos(3:4)];
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
 function closeParentFigure(hFig,~,figTag)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -118,13 +140,8 @@ uaD.hRoot.ShowHiddenHandles= old_SHH;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  [hButton, hToolbar] = createButtonObject(...
-    hFig, ...
-    buttonImage, ...
-    callbackOn, ...
-    callbackOff,...
-    buttonTag, ...
-    buttonToolTipString)
+function  [hButton, hToolbar] = createButtonObject(hFig, buttonImage, ...
+    callbackOn, callbackOff, buttonTag, buttonToolTipString)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
@@ -234,7 +251,7 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function tags = defaultButtonTags %#ok<*DEFNU>>
+function tags = defaultButtonTags 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 dispDebug;
@@ -539,23 +556,6 @@ if isempty(aD.hCurrentAxes)
 end;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

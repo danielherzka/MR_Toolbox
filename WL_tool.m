@@ -5,7 +5,7 @@ function WL_tool(varargin)
 %
 % Usage: WL_tool;
 %
-% Author: Daniel Herzka  herzkad@nih.gov
+% Author: Daniel Herzka  daniel.herzka@nih.gov 
 % Laboratory of Cardiac Energetics
 % National Heart, Lung and Blood Institute, NIH, DHHS
 % Bethesda, MD 20892
@@ -14,7 +14,7 @@ function WL_tool(varargin)
 % Department of Biomedical Engineering
 % Johns Hopkins University Schoold of Medicine
 % Baltimore, MD 21205
-
+%
 % Updated: Daniel Herzka, 2017-02 -> .v0
 % Cardiovascular Intervention Program
 % National Heart, Lung and Blood Institute, NIH, DHHS
@@ -24,8 +24,7 @@ function WL_tool(varargin)
 %
 
 % Set or clear global debug flag
-global DB; DB = 1;
-dispDebug('Lobby');
+dispDebug('Entry');
 Create_New_Objects;
 
 %  Object callbacks; return hFig for speed
@@ -107,6 +106,8 @@ storeAD(aD)
 function Deactivate_WL(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Depressing the button deactivates tool. Save necessary info for future
+% calls as needed.
 dispDebug;
 
 aD = getAD(hFig);
@@ -120,40 +121,6 @@ setappdata(aD.hButton, 'cMapData',...
 
 
 aD.hUtils.deactivateButton(aD);
-% 
-% if ~isempty(aD.hButton)
-%     aD.hButton.Tag = aD.hButton.Tag(1:end-3);
-% end
-% 
-% if ~isempty(aD.hMenu)
-%     aD.hMenu.Checked = 'off';
-%     aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
-% end
-% 
-% % Restore old figure settings
-% aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
-% 
-% % Reactivate other buttons
-% aD.hUtils.enableToolbarButtons(aD)
-% 
-% % Store tool state for recovery on next button press in the appdata
-% % setappdata(aD.hButton, 'cMapData',...
-% %     {aD.cMapData.allColormaps, ...               % colormaps-per-axes
-% %      aD.cMapData.allCmapValues, ...               % value-per-axes
-% %      aD.hGUI.Colormap_popupmenu.String, ...      % current colormap names
-% %      aD.hGUI.Apply_to_popupmenu.Value});         % apply to current value
-% 
-% % Close WL figure
-% delete(aD.hToolFig);
-% 
-% % Store aD in tool-specific apdata for next Activate call
-% setappdata(aD.hFig, aD.Name, aD);
-% rmappdata(aD.hFig, 'AD');
-% 
-% %Disable save_prefs tool button
-% if ~isempty(aD.hSP)
-%     aD.hSP.Enable = 'Off';
-% end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -695,6 +662,8 @@ end
 aD.hGUI = guihandles(aD.hToolFig);
 
 if ismac, aD.hUtils.adjustGUIForMAC(aD.hGUI, 0.3); end
+
+aD.hUtils.adjustGUIPosition(aD.hFig, aD.hToolFig);
 
 aD.hToolFig.Name = aD.objectNames.figName;
 aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};

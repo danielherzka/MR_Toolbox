@@ -4,7 +4,7 @@ function MV_tool(varargin)
 % imagescn. Can export to avi.
 % Usage: MV_tool;
 %
-% Author: Daniel Herzka  herzkad@nih.gov
+% Author: Daniel Herzka  daniel.herzka@nih.gov 
 % Laboratory of Cardiac Energetics 
 % National Heart, Lung and Blood Institute, NIH, DHHS
 % Bethesda, MD 20892
@@ -13,15 +13,14 @@ function MV_tool(varargin)
 % Department of Biomedical Engineering
 % Johns Hopkins University Schoold of Medicine
 % Baltimore, MD 21205
-
+%
 % Updated: Daniel Herzka, 2017-02 -> .v0
 % Cardiovascular Intervention Program
 % National Heart, Lung and Blood Institute, NIH, DHHS
 % Bethesda, MD 20892
 
 % Set or clear global debug flag
-global DB; DB = 1;
-dispDebug('Lobby');
+dispDebug('Entry');
 Create_New_Objects;
 
 %  Object callbacks; return hFig for speed
@@ -129,9 +128,9 @@ Abort_Movie;
 aD = getAD(hFig);
 
 % Delete Objects which are redrawn every time tool is activated
-if ~isempty(aD.hObjects)
-    for i = 1:size(aD.hObjects,1)
-        hCurrObjs = aD.hObjects{i,1};
+if ~isempty(aD.objectStruct)
+    for i = 1:size(aD.objectStruct)
+        hCurrObjs = aD.objectStruct(i).handles;
         hCurrObjs = hCurrObjs(ishghandle(hCurrObjs));
         delete(hCurrObjs  ); 
     end
@@ -140,47 +139,6 @@ end;
 delete(aD.hFrameNumbers); % redrawn every call
 
 aD.hUtils.deactivateButton(aD);
-
-
-
-% if ~isempty(aD.hButton)
-%     aD.hButton.Tag = aD.hButton.Tag(1:end-3);
-% end
-% 
-% if ~isempty(aD.hMenu)
-%     aD.hMenu.Checked = 'off';
-%     aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
-% end
-%
-% % Restore old figure settings
-% aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
-% aD.hUtils.restoreOrigData(aD.hAllAxes, aD.origAxesProperties);
-% aD.hUtils.restoreOrigData(aD.hAllImages, aD.origImageProperties);
-% 
-% % Reactivate other buttons
-% aD.hUtils.enableToolbarButtons(aD)
-% 
-% delete(aD.hFrameNumbers); % redrawn every call
-% 
-% % Close MV figure
-% delete(aD.hToolFig);
-% 
-% % Store aD in tool-specific apdata for next Activate call
-% setappdata(aD.hFig, aD.Name, aD);
-% rmappdata(aD.hFig, 'AD');
-% 
-% if ~isempty(aD.hObjects)
-%     for i = 1:size(aD.hObjects,1)
-%         hCurrObjs = aD.hObjects{i,1};
-%         hCurrObjs = hCurrObjs(ishghandle(hCurrObjs));
-%         delete(hCurrObjs  ); % redrawn every call
-%     end
-%     aD.hObjects = [];
-% end;
-% 
-% if ~isempty(aD.hSP) %?ishghandle?
-%     aD.SP.Enable = 'Off';
-% end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -246,7 +204,7 @@ for i = 1:length(hAxesOfInterest)
     end;
 
     % Update overlay objects if they exist 
-    updateAllObjectsSingleAxes(aD, hAxesOfInterest(i),currentFrame );
+    updateAllObjectsOneAxes(aD, hAxesOfInterest(i),currentFrame );
 %     if ~isempty(aD.hObjects)
 %         objectData   = getappdata(hAxesOfInterest(i), 'Objects');
 %         Update_Objects(objectData, aD.hObjects{aD.hAllAxes == hAxesOfInterest(i),1},currentFrame);
@@ -291,7 +249,7 @@ for i = 1:length(hAxesOfInterest)
     end;
            
     % Update overlay objects if they exist
-    updateAllObjectsSingleAxes(aD, hAxesOfInterest(i),currentFrame );
+    updateAllObjectsOneAxes(aD, hAxesOfInterest(i),currentFrame );
 %     if ~isempty(aD.hObjects)
 %         object_data   = getappdata(hAxesOfInterest(i), 'Objects');
 %         Update_Objects(object_data, aD.hObjects{aD.hAllAxes == hAxesOfInterest(i),1},currentFrame);
@@ -338,7 +296,7 @@ for i = 1:length(hAxesOfInterest)
     end;
 
     % Update overlay objects if they exist
-    updateAllObjectsSingleAxes(aD, hAxesOfInterest(i),currentFrame );
+    updateAllObjectsOneAxes(aD, hAxesOfInterest(i),currentFrame );
 
 end;
 figure(aD.hFig);
@@ -456,7 +414,7 @@ while ~GLOBAL_STOP_MOVIE
         end
         
         % Update objects
-        updateAllObjectsSingleAxes(aD, hAxesOfInterest(i),currentFrame{i} );
+        updateAllObjectsOneAxes(aD, hAxesOfInterest(i),currentFrame{i} );
 
 	end;
 	drawnow;
@@ -585,7 +543,7 @@ while ~stopMovie
         aD.hFrameNumbers(hAxesOfInterest(i)==aD.hAllAxes).String =  num2str(currentFrame{i});
         
         % Update objects
-        updateAllObjectsSingleAxes(aD, hAxesOfInterest(i),currentFrame{i} );
+        updateAllObjectsOneAxes(aD, hAxesOfInterest(i),currentFrame{i} );
         
     end
     
@@ -696,12 +654,13 @@ image_range = getappdata(hCurrentAxes, 'ImageRange');
 aD.hGUI.Min_Frame_edit.String =  num2str(image_range(1));
 aD.hGUI.Max_Frame_edit.String =  num2str(image_range(2));
 
- if ~isempty(aD.hObjects)
-     % Update popupmenu string to reflect current axes
-     hCurrentAxes_idx = aD.hAllAxes==aD.hCurrentAxes;
-     aD.hGUI.Object_List_popupmenu.String = ...
-         aD.hObjects{hCurrentAxes_idx,3};
- end;
+hCurrentAxes_idx = aD.hAllAxes==aD.hCurrentAxes;
+
+if ~isempty(aD.objectStruct(hCurrentAxes_idx))
+    % Update popupmenu string to reflect current axes
+    aD.hGUI.Object_List_popupmenu.String = ...
+        aD.objectPopupString{hCurrentAxes_idx};
+end;
 
 storeAD(aD);
 %
@@ -717,19 +676,22 @@ aD = getAD(hFig);
 aD.hUtils.menuToggle(aD.hMenu,aD.hButton);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
+   
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% START FUNCTIONS RELATED TO OBJECT DISPLAY %%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  Toggle_All_Objects(varargin)
+function  Toggle_All_Objects(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Function toggle the display of the objects
+% Function toggle the display of all objects based on checkbox
 
 dispDebug;
-hFig = varargin{end}; %1 if internal; 3 if external call
 aD = getAD(hFig);
 
-if ~isempty(aD.hObjects)
+if ~isempty(aD.objectStruct)
     % Objects exist (they have already been drawn)
     aD.hGUI.Show_Objects_checkbox.Enable = 'On';
     show = aD.hGUI.Show_Objects_checkbox.Value;
@@ -741,12 +703,12 @@ if ~isempty(aD.hObjects)
         aD.hGUI.Object_List_popupmenu.Visible ='Off';
     end    
     
-    for i = 1:size(aD.hObjects,1)
-        h_obj = aD.hObjects{i,1};
+    for i = 1:size(aD.objectStruct,1)
+        hObj = aD.objectStruct(i).handles;
         if show
-            [h_obj(isgraphics(h_obj)).Visible] = deal('On');
+            [hObj(isgraphics(hObj)).Visible] = deal('On');
         else
-            [h_obj(isgraphics(h_obj)).Visible] = deal('Off');
+            [hObj(isgraphics(hObj)).Visible] = deal('Off');
         end
     end    
 else
@@ -759,48 +721,16 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  Update_All_Objects(objStruct, hObjects, frame)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Function to update the relevant properties for each type of object
-dispDebug;
-
-for j = 1:size(hObjects,1)
-    if isgraphics(hObjects(j))
-        if strcmpi(hObjects(j).Type, 'Line') ||  strcmpi( hObjects(j).Type, 'Points')
-            hObjects(j).XData = objStruct(j,frame).XData(:);
-            hObjects(j).YData = objStruct(j,frame).YData(:);
-            
-            if ~isempty(objStruct(j,frame).XData(:))
-                % empty object; do not update other properties
-                hObjects(j).Color = objStruct(j,frame).Color;
-                updateOtherObjectProps(hObjects(j), objStruct(j,frame) )
-            end
-        elseif strcmpi(hObjects(j).Type, 'Patch')
-            hObjects(j).XData = objStruct(j,frame).XData(:);
-            hObjects(j).YData = objStruct(j,frame).YData(:);
-            if ~isempty(objStruct(j,frame).XData(:))  % empty object
-                % empty object; do not update other properties
-                updateOtherObjectProps(hObjects(j), objStruct(j,frame) )
-            end
-        end
-    end
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
 function  Toggle_Object(~,~,hFig)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Function to toggle display of an object in a given axes or all 
-%  axes
+%  axes in response to a selection on the popupmenu
 dispDebug;
 aD =getAD(hFig);
 
-toggleVal    = aD.hGUI.Object_List_popupmenu.Value;
-toggleString = aD.hGUI.Object_List_popupmenu.String(toggleVal,:);
+toggleVal       = aD.hGUI.Object_List_popupmenu.Value;
+toggleString    = aD.hGUI.Object_List_popupmenu.String(toggleVal,:);
 popupmenuString = aD.hGUI.Object_List_popupmenu.String;
 
 % Specify single or all axes
@@ -814,7 +744,7 @@ end;
 
 for i = 1:length(hAxesOfInterest)
     
-    hCurrObjects = aD.hObjects{ aD.hAllAxes == hAxesOfInterest(i), 1};
+    hCurrObjects = aD.objectStruct( aD.hAllAxes == hAxesOfInterest(i)).handles;
     
     popupmenuString(toggleVal,:) = strrep(toggleString,oldString,newString);
     
@@ -829,15 +759,229 @@ for i = 1:length(hAxesOfInterest)
             end;
         end
     end;
-    aD.hObjects{ aD.hAllAxes == hAxesOfInterest(i),3} = popupmenuString;    
+    aD.objectPopupString{ aD.hAllAxes == hAxesOfInterest(i)} = popupmenuString;    
 end;
 
 storeAD(aD);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  updateAllObjectsOneAxes(aD, hAx, frame ) 
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Function to update the relevant properties for each type of object 
+%  typically called when the frame changes. Called to update all objects
+%  within a single axes.
+dispDebug;
+
+if ~isempty(aD.objectStruct)
+    objStruct = aD.objectStruct(aD.hAllAxes == hAx,1);
+    
+    for j = 1:size(objStruct.handles,1)
+        
+        if isgraphics(objStruct.handles(j))
+            
+            if strcmpi(objStruct.data(j,frame).Type, 'Line') ||  strcmpi( objStruct.data(j,frame).Type, 'Points')
+                objStruct.handles(j).XData = objStruct.data(j,frame).XData(:);
+                objStruct.handles(j).YData = objStruct.data(j,frame).YData(:);
+                
+                if ~isempty(objStruct.data(j,frame).XData(:))
+                    % empty object; do not update other properties
+                    objStruct.handles(j).Color = objStruct.data(j,frame).Color;
+                    updateOtherObjectProps(objStruct.handles(j), objStruct.data(j,frame) )
+                end
+                
+            elseif strcmpi(objStruct.handles(j).Type, 'Patch')
+                objStruct.handles(j).XData = objStruct.data(j,frame).XData(:);
+                objStruct.handles(j).YData = objStruct.data(j,frame).YData(:);
+                if ~isempty(objStruct.data(j,frame).XData(:))  % empty object
+                    % empty object; do not update other properties
+                    updateOtherObjectProps(objStruct.handles(j), objStruct.data(j,frame) )
+                end
+            else
+                dispDebug('Unrecognized Object!');
+            end
+            
+        end
+        
+    end
+    
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function aD = drawAllObjects(aD)
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Function to draw a series of graphics objects per axis; 
+% Objects change with temporal dimension
+% Object info is stored in a cell array (# rows = # axes; # cols = 3 with
+%  1) data; 2) handles, 3) object names, 4) popupstring ready to be loaded into popupmenu 
+% Only axes with 'Objects' appdata are used. Other axes are ignored.
+
+dispDebug;
+
+oStruct = struct('data', [], 'handles', [],'names', []);
+oPopupString = cell(length(aD.hAllAxes),1);
+%hObjects = cell(length(aD.hAllAxes),3);
+
+
+
+drewObjectsFlag = 0;
+for i = 1:length(aD.hAllAxes)
+
+    if isappdata(aD.hAllAxes(i), 'Objects')
+
+        oStruct(i,1).data    = getappdata(aD.hAllAxes(i),'Objects');
+        oStruct(i,1).names   = makeObjectNameList(oStruct(i).data);
+        oStruct(i,1).handles = drawAllObjectsOneAxes(oStruct(i).data , aD.hAllAxes(i)) ;
+        oPopupString{i}      = [repmat('Hide ', size(oStruct(i).names ,1),1), oStruct(i).names ];
+
+        drewObjectsFlag = 1;
+
+        % load the current axes object list into popupmenu
+        if(aD.hAllAxes(i)==aD.hCurrentAxes)
+            aD.hGUI.Object_List_popupmenu.String = oPopupString{i};
+        end
+    else
+        % make sure that the object structure has the right size 
+        %  (#axis=#rows)
+        oStruct(i,1).data = [];        
+    end;
+
+end;
+
+if drewObjectsFlag
+    aD.hGUI.Object_List_popupmenu.Visible = 'On';
+    aD.objectStruct = oStruct;
+    aD.objectPopupString = oPopupString;
+else
+    aD.hGUI.Object_List_popupmenu.Visible = 'Off';
+    aD.objectStruct = [];
+    aD.objectPopupString = [];
+end
+storeAD(aD);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function hObjects = drawAllObjectsOneAxes(objDataStruct, hAxes)
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Function to cycle through drawing objects; 
+%  Each object (data loaded into appdata 'Objects' for each axes, is
+%  composed of structure that contains field type (line,point,patch), 
+%  xdata ydata and color 
+dispDebug;
+
+CurrImage = getappdata(hAxes,'CurrentImage'); 
+origNextPlot = get(hAxes, 'NextPlot');
+hAxes.NextPlot = 'Add'; % overlay
+
+hObjects = gobjects(size(objDataStruct,1),1);
+
+% Empty objects in objDataStruct sent in by user are allowed but at least
+%  one object has to exist in a time series. If any row was empty, remove
+%  it was removed before entering this function. FIX BUG: if first object in a
+%  time series is empty, no object in the series will draw.
+
+% Draw each object in the list of objects for this axes;
+for i = 1:size(objDataStruct,1)
+    
+    objType = objDataStruct(i,CurrImage).Type;    
+    % Assume at least one time point has an object to draw; 
+    
+    if ~isempty(objType)
+        if strcmpi(objType, 'Line') % min props: xdata,ydata, color, name
+            hObjects(i,1) = plot(hAxes, ...
+                objDataStruct(i,CurrImage).XData(:), ...
+                objDataStruct(i,CurrImage).YData(:),...
+                'color', objDataStruct(i,CurrImage).Color );
+            hObjects(i,1).LineStyle = '-';
+            hObjects(i,1).Marker    = 'none';
+            hObjects(i,1).UserData  = objDataStruct(i,CurrImage).Name;
+            
+            updateOtherObjectProps( hObjects(i,1), objDataStruct(i,CurrImage) ) ;
+            
+        elseif strcmpi(objType, 'Points') % min props: xdata,ydata, color, marker, name
+            hObjects(i,1) = plot(hAxes, ...
+                objDataStruct(i,CurrImage).XData(:), ....
+                objDataStruct(i,CurrImage).YData(:),...
+                'color', objDataStruct(i,CurrImage).Color );
+            hObjects(i,1).LineStyle = 'none';
+            hObjects(i,1).Marker    =  objDataStruct(i,CurrImage).Marker;
+            hObjects(i,1).UserData  = objDataStruct(i,CurrImage).Name;
+            
+            updateOtherObjectProps( hObjects(i,1), objDataStruct(i,CurrImage) ) ;
+            
+        elseif strcmpi(objType, 'Patch') % min props: xdata,ydata, color, name
+            hObjects(i,1) = patch(hAxes, ...
+                objDataStruct(i,CurrImage).XData(:), ...
+                objDataStruct(i,CurrImage).YData(:),...
+                objDataStruct(i,CurrImage).Color ) ;
+            hObjects(i,1).UserData      = objDataStruct(i,CurrImage).Name;
+            
+            updateOtherObjectProps( hObjects(i,1), objDataStruct(i,CurrImage) ) ;            
+        
+        else
+            dispDebug('Unknown object Type!');
+        end       
+    end
+        
+end
+hAxes.NextPlot =  origNextPlot;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function updateOtherObjectProps( hObject, objDataStruct ) 
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+if isfield(objDataStruct, 'Other') && ~isempty(objDataStruct.Other)
+    props = fieldnames(objDataStruct.Other);
+    for idx = 1:length(props)
+        if isprop(hObject, props{idx})
+            hObject.(props{idx}) = objDataStruct.Other.(props{idx});
+        end
+    end
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function objectNames = makeObjectNameList(objDataStruct)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Make object name list for one axes
+objectNames = [];
+for i = 1:size(objDataStruct,1)
+    name = cell(1, size(objDataStruct,2));
+    for j = 1:size(objDataStruct,2)
+        name{j} = objDataStruct(i,j).Name;
+    end
+    name = unique(name(~cellfun(@isempty, name)));
+    if isempty(name)
+        name = {'<Empty>'};
+    end
+    if isempty(objectNames)
+        objectNames = name{1};
+    else
+        objectNames = char(objectNames, name{1});
+    end
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%START SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%% START SUPPORT FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
@@ -949,6 +1093,8 @@ aD.hGUI = guihandles(aD.hToolFig);
 
 if ismac, aD.hUtils.adjustGUIForMAC(aD.hGUI); end
 
+aD.hUtils.adjustGUIPosition(aD.hFig, aD.hToolFig);
+
 aD.hToolFig.Name = aD.objectNames.figName;
 aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};
 
@@ -998,7 +1144,7 @@ aD.hGUI.Min_Frame_edit.String = num2str(imageRangeAll(1));
 % Display pre-loaded Objects (additional graphics overlaid on image)
 aD.hObjects = []; 
 drawAllObjects(aD);
-Toggle_All_Objects(aD.hFig);
+Toggle_All_Objects([],[],aD.hFig);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1158,236 +1304,7 @@ aD.hUtils.closeParentFigure(hFig,[], figTag);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function aD = drawAllObjects(aD)
-% 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Function to draw a series of pre-drawn objects per axis; 
-%  Objects change with temporal dimension draw temporal objects, if found
-dispDebug;
-hObjects = cell(length(aD.hAllAxes),3);
-aD = checkEmptyObjectRows(aD);
 
-
-
-drewObjectsFlag = 0;
-for i = 1:length(aD.hAllAxes)
-
-    if isappdata(aD.hAllAxes(i), 'Objects')
-        % Objects exist, Draw them
-        objectData =  getappdata(aD.hAllAxes(i),'Objects');
-        [hObjects{i,1}, hObjects{i,2}] = drawAllObjectsPerAxes(objectData , aD.hAllAxes(i)) ;
-        
-        % load the current axes objects onto popupmenu
-
-        popupstring = [repmat('Hide ', size(hObjects{i,2},1),1), hObjects{i,2}];
-        aD.hGUI.Object_List_popupmenu.String = popupstring;
-        hObjects{i,3} = popupstring;
-        drewObjectsFlag = 1;
-
-        % load the current axes object list into popupmenu
-        if(aD.hAllAxes(i)==aD.hCurrentAxes)
-            aD.hGUI.Object_List_popupmenu.String = popupstring;
-        end
-    end;
-
-end;
-
-size(hObjects)
-
-if drewObjectsFlag
-    %     aD.hGUI.Show_Objects_checkbox.Enable = 'On';
-    aD.hGUI.Object_List_popupmenu.Visible = 'On';
-    aD.hObjects = hObjects;
-else
-    %     aD.hGUI.Show_Objects_checkbox.Enable = 'Off';
-    aD.hGUI.Object_List_popupmenu.Visible = 'Off';
-    aD.hObjects = [];
-end
-storeAD(aD);
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function [hObject, objectNames] = drawAllObjectsPerAxes(objDataStruct, hAxes)
-% 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Function to cycle through drawing objects; 
-%  Each object (data loaded into appdata 'Objects' for each axes, is
-%  composed of structure that contains field type (line,point,patch), 
-%  xdata ydata and color 
-dispDebug;
-
-CurrImage = getappdata(hAxes,'CurrentImage'); 
-origNextPlot = get(hAxes, 'NextPlot');
-hAxes.NextPlot = 'Add'; % overlay
-
-hObject = gobjects(size(objDataStruct,1),1);
-
-% Empty objects in objDataStruct sent in by user are allowed but at least
-%  one object has to exist in a time series. If any row was empty, remove
-%  it was removed before entering this function. FIX BUG: if first object in a
-%  time series is empty, no object in the series will draw.
-
-
-% objectNames = [];
-% for i = 1:size(objDataStruct,1)
-%     name = cell(1, size(objDataStruct,2));
-%     for j = 1:size(objDataStruct,2)
-%         
-%         name{j} = objDataStruct(i,j).Name;
-%     end
-%     name = unique(name(~cellfun(@isempty, name)));
-%     if isempty(objectNames)
-%         objectNames = name{1};
-%     else
-%         objectNames = char(objectNames, name{1});
-%     end
-% end
-
-% Make global name list (overcomes first object of a kind being empty)
-objectNames = sortObjectNames(objDataStruct);
-
-% Draw each object in the list of objects for this axes;
-for i = 1:size(objDataStruct,1)
-    
-    objType = objDataStruct(i,CurrImage).Type;    
-    % Assume at least one time point has an object to draw; 
-    
-    if strcmpi(objType, 'Line') % min props: xdata,ydata, color, name
-        hObject(i,1) = plot(hAxes, ...
-            objDataStruct(i,CurrImage).XData(:), ...
-            objDataStruct(i,CurrImage).YData(:),...
-            'color', objDataStruct(i,CurrImage).Color );
-        hObject(i,1).LineStyle = '-';
-        hObject(i,1).Marker    = 'none';
-        
-        updateOtherObjectProps( hObject(i,1), objDataStruct(i,CurrImage) ) ;
-        
-    elseif strcmpi(objType, 'Points') % min props: xdata,ydata, color, marker, name
-        hObject(i,1) = plot(hAxes, ...
-            objDataStruct(i,CurrImage).XData(:), ....
-            objDataStruct(i,CurrImage).YData(:),...
-            'color', objDataStruct(i,CurrImage).Color );
-        hObject(i,1).LineStyle = 'none';
-        hObject(i,1).Marker    =  objDataStruct(i,CurrImage).Marker;
-        
-        updateOtherObjectProps( hObject(i,1), objDataStruct(i,CurrImage) ) ;
-        
-    elseif strcmpi(objType, 'Patch') % min props: xdata,ydata, color, name
-        hObject(i,1) = patch(hAxes, ...
-            objDataStruct(i,CurrImage).XData(:), ...
-            objDataStruct(i,CurrImage).YData(:),...
-            objDataStruct(i,CurrImage).Color ) ;
-        
-        updateOtherObjectProps( hObject(i,1), objDataStruct(i,CurrImage) ) ;
-        
-    else
-        disp('Unknown object type!');
-    end;
-        
-    if ~isempty(objType)
-        hObject(i,1).UserData      = objDataStruct(i,CurrImage).Name; 
-    end
-        
-end
-hAxes.NextPlot =  origNextPlot;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function updateAllObjectsSingleAxes(aD, hAx, frame ) 
-% 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-if ~isempty(aD.hObjects)
-    objectData   = getappdata(hAx, 'Objects');
-    Update_All_Objects(objectData, aD.hObjects{aD.hAllAxes == hAx,1},frame);
-end;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function updateOtherObjectProps( hObject, objDataStruct ) 
-% 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-if isfield(objDataStruct, 'Other') && ~isempty(objDataStruct.Other)
-    props = fieldnames(objDataStruct.Other);
-    for idx = 1:length(props)
-        if isprop(hObject, props{idx})
-            hObject.(props{idx}) = objDataStruct.Other.(props{idx});
-        end
-    end
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function aD = checkEmptyObjectRows(aD)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Function to check objStruct and check to see if any has empty Rows
-% (removed) or if the first element of an array is empty (which draws will
-% result in the drawing of an invisible object). This fixes the bug that if
-% the first element of the time series of objects is empty, the rest do not
-% appear
-
-% Note: if a row is erased from one object, then it either has to be erased
-% from the object list of all axes, or it has to be filled in such a way
-% that the row exists in other axes but doesn't cause problems;
-objectData = cell(size(aD.hAllAxes));
-objectNames = cell(size(aD.hAllAxes));
-for i = 1:length(aD.hAllAxes)
-    if isappdata(aD.hAllAxes(i), 'Objects')
-        % Objects exist, condition objStruct;
-        objectData{i} =  getappdata(aD.hAllAxes(i),'Objects');        
-        objectNames{i} = sortObjectNames(objectData{i});
-    else
-        objectData{i} = [];
-        objectNames{i} = [];
-    end
-end
-
-% Make empty object in axes without objects
-
-
-
-
-
-
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function objectNames = sortObjectNames(objDataStruct)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Make object name list for one axes
-objectNames = [];
-for i = 1:size(objDataStruct,1)
-    name = cell(1, size(objDataStruct,2));
-    for j = 1:size(objDataStruct,2)
-        name{j} = objDataStruct(i,j).Name;
-    end
-    name = unique(name(~cellfun(@isempty, name)));
-    if isempty(name)
-        name = {'<Empty>'};
-    end
-    if isempty(objectNames)
-        objectNames = name{1};
-    else
-        objectNames = char(objectNames, name{1});
-    end
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 

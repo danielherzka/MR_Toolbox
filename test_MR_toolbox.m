@@ -23,8 +23,8 @@ end
 %% Test object drawing in MV
 
 f=figure;
-Ims = cat(4, I.A,I.A,fliplr(I.A));
-Ims = cat(5, Ims, flipud(Ims));
+Ims = cat(4, I.A,flipud(I.A),fliplr(I.A));
+%Ims = cat(5, Ims, flipud(Ims));
 imagescn(Ims(:,:,:,:,:), [], [], 10 , 3);
 
 
@@ -79,7 +79,7 @@ for f = 1:length(hAllAxes)-1
         objStruct(i,r).Other.MarkerSize = mod(r,10)+1;
         
         i=i+1;
-        if mod(r,1)
+        if mod(r,1) % never / all empty      
             objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)*1/8;
             objStruct(i,r).YData = (f*0.2)*rad(r)*sin(theta) + size(Ims,2)*3/8;
             objStruct(i,r).Type = 'Points';  % line  point patch
@@ -90,17 +90,30 @@ for f = 1:length(hAllAxes)-1
         end
         
         i=i+1;
-        objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)*3/4;
-        objStruct(i,r).YData = rad(r)*sin(theta) + size(Ims,2)*3/4;
-        objStruct(i,r).Type = 'Patch';  % line  point patch
-        objStruct(i,r).Color = patchcolor(r,:);
-        objStruct(i,r).Name = 'BlackPatch';
-        objStruct(i,r).Other.FaceAlpha = patchalpha(r);
-        objStruct(i,r).Other.EdgeColor = [0 1 1];
-        objStruct(i,r).Other.EdgeAlpha = patchalpha(r);
+        if mod(r,4) % 3 out of 4     
+            objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)*1/8;
+            objStruct(i,r).YData = (f*0.2)*rad(r)*sin(theta) + size(Ims,2)*3/8;
+            objStruct(i,r).Type = 'Points';  % line  point patch
+            objStruct(i,r).Color = 'g';
+            objStruct(i,r).Marker = '+';
+            objStruct(i,r).Name = 'GreenPoints++';
+            hold on;
+        end
         
         i=i+1;
-        if ~mod(r,1)
+        if mod(r+1,2) % every other, first one on
+            objStruct(i,r).XData = rad(r)*cos(theta)+ dx(r) + size(Ims,1)*3/4;
+            objStruct(i,r).YData = rad(r)*sin(theta) + size(Ims,2)*3/4;
+            objStruct(i,r).Type = 'Patch';  % line  point patch
+            objStruct(i,r).Color = patchcolor(r,:);
+            objStruct(i,r).Name = 'BlackPatch';
+            objStruct(i,r).Other.FaceAlpha = patchalpha(r);
+            objStruct(i,r).Other.EdgeColor = [0 1 1];
+            objStruct(i,r).Other.EdgeAlpha = patchalpha(r);
+        end
+            
+        i=i+1;
+        if mod(r,2) % every other, first one off
             objStruct(i,r).XData = 0.5*rad(r)*cos(theta)+ dx(r) + size(Ims,1)*3/4;
             objStruct(i,r).YData = 0.5*rad(r)*sin(theta) + size(Ims,2)*3/4;
             objStruct(i,r).Type = 'Patch';  % line  point patch

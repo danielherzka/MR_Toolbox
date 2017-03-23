@@ -1,6 +1,6 @@
 function RT_tool(varargin)
 % function RT_tool(varargin);
-% Function for rotations and flips of images
+% Function for image rotation and reflection (flip). Use with imagescn.
 %
 % Usage: RT_tool;
 %
@@ -13,14 +13,12 @@ function RT_tool(varargin)
 % Department of Biomedical Engineering
 % Johns Hopkins University Schoold of Medicine
 % Baltimore, MD 21205
-
+%
 % Updated: Daniel Herzka, 2017-02 -> .v0
 % Cardiovascular Intervention Program
 % National Heart, Lung and Blood Institute, NIH, DHHS
 % Bethesda, MD 20892
-
-global DB; DB = 1;
-dispDebug('Lobby');
+dispDebug('Entry');
 Create_New_Objects;
 
 % Object callbacks; return hFig for speed
@@ -98,33 +96,6 @@ function Deactivate_RT(~,~,hFig)
 dispDebug;
 aD = getAD(hFig);
 aD.hUtils.deactivateButton(aD);
-
-% if ~isempty(aD.hButton)
-%     aD.hButton.Tag = aD.hButton.Tag(1:end-3);
-% end
-% 
-% if ~isempty(aD.hMenu)
-%     aD.hMenu.Checked = 'off';
-%     aD.hMenu.Tag = aD.hMenu.Tag(1:end-3);
-% end
-% 
-% % Restore old figure settings
-% aD.hUtils.restoreOrigData(aD.hFig, aD.origProperties);
-% aD.hUtils.restoreOrigData(aD.hAllAxes, aD.origAxesProperties);
-% 
-% % Reactivate other buttons
-% aD.hUtils.enableToolbarButtons(aD);
-% 
-% % Close Tool figure
-% delete(aD.hToolFig);
-% 
-% % Store aD in tool-specific apdata for next Activate call
-% setappdata(aD.hFig, aD.Name, aD);
-% rmappdata(aD.hFig, 'AD');
-% 
-% if ~isempty(aD.hSP) %?ishghandle?
-%     aD.SP.Enable = 'Off';
-% end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -365,6 +336,8 @@ end
 aD.hGUI = guihandles(aD.hToolFig);
 
 if ismac, aD.hUtils.adjustGUIForMAC(aD.hGUI, 0.5); end
+
+aD.hUtils.adjustGUIPosition(aD.hFig, aD.hToolFig);
 
 aD.hToolFig.Name = aD.objectNames.figName;
 aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};

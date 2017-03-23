@@ -14,9 +14,12 @@ function PM_tool(varargin)
 % Department of Biomedical Engineering
 % Johns Hopkins University Schoold of Medicine
 % Baltimore, MD 21205
-
-global DB; DB = 1;
-dispDebug('Lobby');
+% 
+% Updated: Daniel Herzka, 2017-02 -> .v0
+% Cardiovascular Intervention Program
+% National Heart, Lung and Blood Institute, NIH, DHHS
+% Bethesda, MD 20892
+dispDebug('Entry');
 Create_New_Objects;
 
 % Object callbacks; return hFig for speed
@@ -142,8 +145,8 @@ if      currentPoint(1,1) >= currentAxes_XLim(1)  && ...
     end
     
     aD.hGUI.Value_listbox.String =  s;
-    figure(aD.hToolFig);
-    figure(aD.hFig);    
+%    figure(aD.hToolFig);
+%    figure(aD.hFig);    
 end;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -251,6 +254,8 @@ end
 aD.hGUI = guihandles(aD.hToolFig);
 
 if ismac, aD.hUtils.adjustGUIForMAC(aD.hGUI, 0.2); end
+
+aD.hUtils.adjustGUIPosition(aD.hFig, aD.hToolFig);
 
 aD.hToolFig.Name = aD.objectNames.figName;
 aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};

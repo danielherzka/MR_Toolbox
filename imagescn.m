@@ -192,7 +192,7 @@ for k=1:min(N,N1*N2)
         elseif Nd==4
             setappdata(gca, 'ImageData', squeeze(I(:,:,k,:)));
         elseif Nd==5
-            setappdata(gca, 'ImageData', squeeze(I(:,:,i0,j0,:)));
+            setappdata(gca, 'ImageData', squeeze(I(:,:,i,j,:)));
         end
         setappdata(gca, 'ImageRange', [1 ntimeframes]);
         setappdata(gca, 'ImageRangeAll', [1 ntimeframes]);
