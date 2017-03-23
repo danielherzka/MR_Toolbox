@@ -347,6 +347,8 @@ aD.hGUI.Rotate_CW_pushbutton.Callback  = {@Rotate_Images, aD.hFig, 0};
 aD.hGUI.Rotate_CCW_pushbutton.Callback = {@Rotate_Images, aD.hFig, 1};
 aD.hGUI.Flip_Hor_pushbutton.Callback   = {@Flip_Images, aD.hFig, 0};
 aD.hGUI.Flip_Ver_pushbutton.Callback   = {@Flip_Images, aD.hFig, 1};
+
+aD.hToolFig.Visible = 'On';
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -585,6 +585,8 @@ aD.hGUI.Pan_radiobutton.Callback  = {@Switch_PZ, aD.hFig};
 aD.hGUI.Zoom_radiobutton.Callback = {@Switch_PZ, aD.hFig};
 aD.hGUI.Reset_pushbutton.Callback = {@PZ_Reset, aD.hFig};
 aD.hGUI.Auto_pushbutton.Callback  = {@Auto_PZ_Reset, aD.hFig};
+
+aD.hToolFig.Visible = 'On';
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 

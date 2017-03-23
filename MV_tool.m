@@ -1113,6 +1113,8 @@ aD.hGUI.Make_Movie_pushbutton.Callback   = {@Make_Movie,         aD.hFig};
 aD.hGUI.Show_Frames_checkbox.Callback    = {@Show_Frame_Numbers, aD.hFig};
 aD.hGUI.Show_Objects_checkbox.Callback   = {@Toggle_All_Objects, aD.hFig};
 aD.hGUI.Object_List_popupmenu.Callback   = {@Toggle_Object,      aD.hFig};
+
+aD.hToolFig.Visible = 'On';
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 

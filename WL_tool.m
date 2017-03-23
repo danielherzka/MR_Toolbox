@@ -674,6 +674,8 @@ aD.hGUI.Window_value_edit.Callback  = {@Edit_Adjust, aD.hFig};
 aD.hGUI.Level_value_edit.Callback   = {@Edit_Adjust, aD.hFig};
 aD.hGUI.Auto_pushbutton.Callback    = {@Auto_WL_Reset, aD.hFig};
 aD.hGUI.Reset_pushbutton.Callback   = {@WL_Reset, aD.hFig};
+
+aD.hToolFig.Visible = 'On';
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
