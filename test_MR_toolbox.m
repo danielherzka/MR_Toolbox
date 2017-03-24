@@ -27,7 +27,6 @@ Ims = cat(4, I.A,flipud(I.A),fliplr(I.A));
 %Ims = cat(5, Ims, flipud(Ims));
 imagescn(Ims(:,:,:,:,:), [], [], 10 , 3);
 
-
 hAllAxes = flipud(findobj(f, 'type', 'axes'));
 
 % Object params

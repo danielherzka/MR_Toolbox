@@ -186,35 +186,24 @@ for i = 1:length(hCurrentAxes)
     % Image is square and axes are one pixel wider than the image (half
     % pixel on each side)
     halfImSize  = (size(imageData,1)+1)/2;
-    
 	inXLims = hCurrentAxes(i).XLim ;
 	inYLims = hCurrentAxes(i).YLim  ;
 
-    % im_size = ( size(image_data,1) + 1)/2;
-	%xlims = get(CurrentAxes(i), 'Xlim') - im_size;
-	%ylims = get(CurrentAxes(i), 'Ylim') - im_size;
-    %temp = xlims;
-
     % Change the xlims and ylims depending on the call
      if direction  % Rotate CW
-        disp('CCW')
+        dispDebug('CCW')
         for j =1:size(imageData,3)
             imageData(:,:,j) = flipud(permute(imageData(:,:,j), [ 2 1]));
         end
 		outXLims =          inYLims;
 		outYLims =  sort(-1*inXLims  + 2*halfImSize) ;
-        %		xlims =        ylims  + im_size;
-		%       ylims =  sort(-1*temp + im_size);	
     else % Rotate CCW
-        disp('CW')
+        dispDebug('CW')
         for j =1:size(imageData,3)
             imageData(:,:,j) = fliplr(permute(imageData(:,:,j), [ 2 1]));
         end
         outXLims =  sort(-1*inYLims  + 2*halfImSize);
         outYLims =          inXLims;
-        
-        % 		xlims = sort(-1*ylims + im_size);
-		%       ylims =         temp  + im_size;
     end
         
     aD.hAllImages(hCurrentAxes(i)==aD.hAllAxes).CData = squeeze(imageData(:,:,currentImage));
@@ -226,7 +215,6 @@ for i = 1:length(hCurrentAxes)
         setappdata(hCurrentAxes(i), 'ImageData', imageData);
     end;
 
-    
 end;
 
 figure(aD.hToolFig);

@@ -43,8 +43,7 @@ function imagescn(I, scale, dims, FigureWidth, timedimension)
 %				Laboratory for Cardiac Energetics
 %				NIH NHBI
 %
-Nd=ndims(I)
-size(I)
+Nd=ndims(I);
 if ~exist('timedimension','var')&& Nd==5; timedimension=5;  moviemodeflag=1; end
 if ~exist('timedimension','var');         timedimension=[]; moviemodeflag=0; end
 if nargin==5
@@ -142,8 +141,6 @@ Yborder=Yborder/FigureHeight;
 if ~isreal(I)
 	I=abs(I);
 end;
-
-size(I)
 
 for k=1:min(N,N1*N2)
     i=ceil(k/N2);

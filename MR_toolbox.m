@@ -1,8 +1,7 @@
 function MR_toolbox
-% function to run all tools;
+
 global DB % debug flag
 DB = 1;
-
 
 WL_tool;  % launch window level tool (button)
 PZ_tool;  % launch Pan-Zoom tool (button)
