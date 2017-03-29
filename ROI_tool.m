@@ -1,4 +1,4 @@
-function ROI_tool(varargin);
+function ROI_tool(varargin)
 % function ROI_tool(varargin);
 % Function to create ROIs and manipulate ROIs on a montage of images.
 % Use with imagescn or iamgesc.
@@ -14,6 +14,15 @@ function ROI_tool(varargin);
 % Department of Biomedical Engineering
 % Johns Hopkins University School of Medicine
 % Baltimore, MD 21205
+%
+% Updated: Daniel Herzka, 2017-02 -> .v0
+% Cardiovascular Intervention Program
+% National Heart, Lung and Blood Institute, NIH, DHHS
+% Bethesda, MD 20892
+
+% Set or clear global debug flag
+dispDebug('Entry');
+Create_New_Objects;
 
 if isempty(varargin) 
    Action = 'New';
@@ -29,364 +38,264 @@ else
     end
 end
 
-% set or clear the global debug flag
-global DB; DB = 1;
-
 switch Action
-	
-case 'New'
-    Create_New_Button(Image_handles);
-
-case 'Activate_ROI_Tool'
-    Activate_ROI_Tool(varargin(2:end));
     
-case 'Deactivate_ROI_Tool'
-    Deactivate_ROI_Tool(varargin{2:end});
- 
-case 'Create_New_ROI'
-    Create_New_ROI;
-
-case 'Delete_ROI'
-    Delete_ROI;
-    
-case 'Copy_Current_ROI'
-    Copy_Current_ROI;
-	
-case 'Edit_ROI'
-	Prep_Draw_ROI(1, []);
-
-case 'Edit_ROI_Finish'
-	Edit_ROI_Finish(varargin{2:end});
-
-	
-case 'Paste_Current_ROI'
-    Paste_Current_ROI;
-
-case 'Change_Current_Axes'
-    Change_Current_Axes;
-
-case 'Change_Current_ROI'
-    Change_Current_ROI;
-
-
-    
-case 'ROI_Angle_Adjust_Entry'
-    % Entry
-    ROI_Angle_Adjust_Entry;
-case 'ROI_Angle_Adjust'
-    % Cycle
-    ROI_Angle_Adjust;
-case 'ROI_Angle_Adjust_Exit'
-    % Exit
-    set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
-    ROI_Angle_Adjust_Exit;    
-    
-case 'ROI_Size_Adjust_Entry'
-    % Entry
-    ROI_Size_Adjust_Entry;
-case 'ROI_Size_Adjust'
-    % Cycle
-    ROI_Size_Adjust;
-case 'ROI_Size_Adjust_Exit'
-    % Exit
-    set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
-    ROI_Size_Adjust_Exit;    
-
-case 'ROI_Pos_Adjust_Entry'
-    % Entry
-    ROI_Pos_Adjust_Entry(varargin{2});
-case 'ROI_Pos_Adjust'
-    % Cycle
-    ROI_Pos_Adjust(varargin{2});
-case 'ROI_Pos_Adjust_Exit'
-    % Exit
-    set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
-    ROI_Pos_Adjust_Exit;  
-		
-case 'ROI_Draw_Entry'
-    % Entry
-    ROI_Draw_Entry(varargin{2:end});
-case 'ROI_Draw'
-    % Cycle
-    ROI_Draw;
-case 'ROI_Draw_Exit'
-    % Exit
-    set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
-    ROI_Draw_Exit;    
-	
-case 'ROI_Point_Move_Entry'
-    % Entry
-    ROI_Point_Move_Entry(varargin{2:end});;
-case 'ROI_Point_Move'
-    % Cycle
-    ROI_Point_Move(varargin{2:end});
-case 'ROI_Point_Move_Exit'
-    % Exit
-    set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
-    ROI_Point_Move_Exit(varargin{2:end});
-	
-case 'ROI_Push_Point_Entry'
-    % Entry
-    ROI_Push_Point_Entry(varargin{2:end});;
-case 'ROI_Push_Point'
-    % Cycle
-    ROI_Push_Point(varargin{2:end});
-case 'ROI_Push_Point_Exit'
-    % Exit
-    set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
-    ROI_Push_Point_Exit(varargin{2:end});
-
-case 'Draw_ROI_Finish'
-    Draw_ROI_Finish(varargin{2:end});
-case 'Draw_Spline'
-	Draw_Spline;
-case 'Draw_Clear_ROI'
-	Draw_Clear_ROI;
-case 'Toggle_Draw_Mode'
-	Toggle_Draw_Mode(varargin{2:end});
-case 'ROI_Push_Move_Cursor'
-	ROI_Push_Move_Cursor;
-case 'Toggle_Spline_Poly'
-	Toggle_Spline_Poly(varargin{2:end});
-case 'Show_Pixels'
-	Show_Pixels;
-case 'Draw_Change_Edit_Value'
-	Draw_Change_Edit_Value(varargin{2:end});
-case 'Draw_Push_Radius'
-	Draw_Push_Radius(varargin{2:end});
-case 'Draw_Change_Radius_Value'
-	Draw_Change_Radius_Value(varargin{2:end});
-
-		 
-case 'Resort_ROI_Info_Listbox'
-    Resort_ROI_Info_Listbox(varargin{2});
-case 'Listbox_Change_Current_ROI'
-    Listbox_Change_Current_ROI;
-
-case 'Save_ROI'
-    Save_ROI(varargin{2:end});
-case 'Load_ROI'
-    Load_ROI(varargin{2:end});
-	
-case 'Close_Parent_Figure'
-    Close_Parent_Figure;   
-case 'Menu_ROI_Tool'
-	Menu_ROI_Tool;
-	
-case 'Exit';
-    disp('Unknown Input Argument');
-    
-otherwise
-    disp(['Unimplemented Functionality: ', Action]);
+ %   case 'New',                                Create_New_Button(Image_handles);
+    case 'Activate_ROI_Tool',                  Activate_ROI_Tool(varargin(2:end));
+    case 'Deactivate_ROI_Tool',                Deactivate_ROI_Tool(varargin{2:end});
+    case 'Create_New_ROI',                     Create_New_ROI;
+    case 'Delete_ROI',                         Delete_ROI;
+    case 'Copy_Current_ROI',                   Copy_Current_ROI;
+    case 'Edit_ROI', 	                       Prep_Draw_ROI(1, []);
+    case 'Edit_ROI_Finish', 	               Edit_ROI_Finish(varargin{2:end});
+        
+    case 'Paste_Current_ROI',                  Paste_Current_ROI;
+    case 'Change_Current_Axes',                Change_Current_Axes;
+    case 'Change_Current_ROI',                 Change_Current_ROI;
+        
+    case 'ROI_Angle_Adjust_Entry',             ROI_Angle_Adjust_Entry;    % Entry
+    case 'ROI_Angle_Adjust',                   ROI_Angle_Adjust;     % Cycle
+    case 'ROI_Angle_Adjust_Exit',              set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
+                                               ROI_Angle_Adjust_Exit;    % Exit
+    case 'ROI_Size_Adjust_Entry',              ROI_Size_Adjust_Entry;    % Entry
+    case 'ROI_Size_Adjust',                    ROI_Size_Adjust;     % Cycle
+    case 'ROI_Size_Adjust_Exit',               set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
+                                               ROI_Size_Adjust_Exit;        % Exit
+    case 'ROI_Pos_Adjust_Entry',               ROI_Pos_Adjust_Entry(varargin{2});   % Entry
+    case 'ROI_Pos_Adjust',                     ROI_Pos_Adjust(varargin{2}); % Cycle
+    case 'ROI_Pos_Adjust_Exit',                set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
+                                               ROI_Pos_Adjust_Exit;      % Exit
+    case 'ROI_Draw_Entry',                     ROI_Draw_Entry(varargin{2:end});     % Entry
+    case 'ROI_Draw',                           ROI_Draw;    % Cycle
+    case 'ROI_Draw_Exit',                      set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
+                                               ROI_Draw_Exit;    % Exit
+    case 'ROI_Point_Move_Entry',               ROI_Point_Move_Entry(varargin{2:end}); % Entry
+    case 'ROI_Point_Move',                     ROI_Point_Move(varargin{2:end});     % Cycle
+    case 'ROI_Point_Move_Exit',                set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
+                                               ROI_Point_Move_Exit(varargin{2:end});    % Exit
+    case 'ROI_Push_Point_Entry',               ROI_Push_Point_Entry(varargin{2:end});     % Entry
+    case 'ROI_Push_Point',                     ROI_Push_Point(varargin{2:end});    % Cycle
+    case 'ROI_Push_Point_Exit',                set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
+                                               ROI_Push_Point_Exit(varargin{2:end});     % Exit
+    case 'Draw_ROI_Finish' ,                   Draw_ROI_Finish(varargin{2:end});
+    case 'Draw_Spline',                        Draw_Spline;
+    case 'Draw_Clear_ROI',                     Draw_Clear_ROI;
+    case 'Toggle_Draw_Mode',                   Toggle_Draw_Mode(varargin{2:end});
+    case 'ROI_Push_Move_Cursor',               ROI_Push_Move_Cursor;
+    case 'Toggle_Spline_Poly',                 Toggle_Spline_Poly(varargin{2:end});
+    case 'Show_Pixels',                        Show_Pixels;
+    case 'Draw_Change_Edit_Value',             Draw_Change_Edit_Value(varargin{2:end});
+    case 'Draw_Push_Radius',                   Draw_Push_Radius(varargin{2:end});
+    case 'Draw_Change_Radius_Value',           Draw_Change_Radius_Value(varargin{2:end});
+        
+    case 'Resort_ROI_Info_Listbox',            Resort_ROI_Info_Listbox(varargin{2});
+    case 'Listbox_Change_Current_ROI',         Listbox_Change_Current_ROI;
+    case 'Save_ROI',                           Save_ROI(varargin{2:end});
+    case 'Load_ROI',                           Load_ROI(varargin{2:end});
+    case 'Close_Parent_Figure',                Close_Parent_Figure;
+    case 'Menu_ROI_Tool',                      Menu_ROI_Tool;
+    case 'Exit',                               disp('Unknown Input Argument');
+    otherwise,                                 disp(['Unimplemented Functionality: ', Action]);
 end;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Create_New_Button(varargin)
+%  Object callbacks; return hFig for speed
+% aD.hButton.OnCallback                   -> {@Activate_ROI, hFig}
+% aD.hButton.OffCallback                  -> {@Deactivate_ROI, hFig}
+% aD.hMenu.Callback                       ->  @Menu_ROI
+% aD.hFig.CloseRequestFcn                  = {aD.hUtils.closeParentFigure, aD.objectNames.figTag};
+% aD.hAllImages.ButtonDownFcn              = {@Change_Current_Axes, aD.hFig};
+% aD.hGUI.Create_ROI_pushbutton.Callback   = {@Create_New_ROI,  aD.hFig};
+% aD.hGUI.Edit_ROI_pushbutton.Callback     = {@Edit_ROI,  aD.hFig};
+% aD.hGUI.Copy_ROI_pushbutton.Callback     = {@Copy_Current_ROI,  aD.hFig};
+% aD.hGUI.Paste_ROI_pushbutton.Callback    = {@Paste_Current_ROI,  aD.hFig};
+% aD.hGUI.Delete_ROI_pushbutton.Callback   = {@Delete_ROI,  aD.hFig};
+% aD.hGUI.Save_ROI_pushbutton.Callback     = {@Save_ROI,  aD.hFig};
+% aD.hGUI.Load_ROI_pushbutton.Callback     = {@Load_ROI,  aD.hFig};
+
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
-
-fig = gcf;
-
-% Find handle for current image toolbar and menubar
-hToolbar = findall(fig, 'type', 'uitoolbar', 'Tag','FigureToolBar' );
-hToolMenu = findall(fig, 'Label', '&Tools');
-
-% If the toolbar exists, create toolbar button
-if ~isempty(hToolbar) & isempty(findobj(hToolbar, 'Tag', 'figROITool'))
-	hToolbar_Children = get(hToolbar, 'Children');
-    
-   % The default button size is 15 x 16 x 3. Create Button Image
-   button_size_x= 16;
-   button_image = NaN* zeros(15,button_size_x);
-   f = [...
-     6     7     8     9    10    19    27    33    36    37    38    39    40    43    47    51 ...
-    53    59    62    66    67    69    70    74    91    96    97    98    99   100   105   106 ...
-   111   115   120   121   126   130   135   136   141   142   143   144   145   150   167   171 ...
-   175   179   182   186   187   188   189   190   194   198   201   205   208   214   222   231 ...
-   232   233   234];
-   button_image(f) = 0;
-   button_image = repmat(button_image, [1,1,3]);
-
-	buttontags = {'figWindowLevel', 'figPanZoom', 'figROITool', 'figViewImages', 'figPointTool', 'figRotateTool', 'figProfileTool'};
-	separator = 'off';
-	
-	hbuttons = [];
-	for i = 1:length(buttontags)
-		hbuttons = [hbuttons, findobj(hToolbar_Children, 'Tag', buttontags{i})];
-	end;
-	if isempty(hbuttons)
-       separator = 'on';
-   end;
-
-         
-   hNewButton = uitoggletool(hToolbar);
-   set(hNewButton, 'Cdata', button_image, ...
-      'OnCallback', 'ROI_tool(''Activate_ROI_Tool'')',...
-      'OffCallback', 'ROI_tool(''Deactivate_ROI_Tool'')',...
-      'Tag', 'figROITool', ...
-      'TooltipString', 'Create and Manipulate ROIs',...
-      'Separator', separator, ...
-      'Enable', 'on');   
-end;
-
-% If the menubar exists, create menu item
-if ~isempty(hToolMenu) & isempty(findobj(hToolMenu, 'Tag', 'menuROITool'))
-    
-  hWindowLevelMenu = findobj(hToolMenu, 'Tag', 'menuWindowLevel');
-  hPanZoomMenu     = findobj(hToolMenu, 'Tag', 'menuPanZoom');
-  hROIToolMenu     = findobj(hToolMenu, 'Tag', 'menuROITool');
-  hViewImageMenu   = findobj(hToolMenu, 'Tag', 'menuViewImages');
-  hPointToolMenu   = findobj(hToolMenu, 'Tag', 'menuPointTool');
-  hRotateToolMenu  = findobj(hToolMenu, 'Tag', 'menuRotateTool');
-  hProfileToolMenu = findobj(hToolMenu, 'Tag', 'menuProfileTool');
-  
-  position = 9;
-  separator = 'On';
-  hMenus = [ hWindowLevelMenu, hPanZoomMenu, hViewImageMenu, hPointToolMenu,hRotateToolMenu,hProfileToolMenu ];
-  if length(hMenus>0) 
-	  position = position + length(hMenus);
-	  separator = 'Off';
-  end;
-  
-  hNewMenu = uimenu(hToolMenu,'Position', position);
-  set(hNewMenu, 'Tag', 'menuROITool','Label',...
-      'ROI Tool',...
-      'CallBack', 'ROI_tool(''Menu_ROI_Tool'')',...
-      'Separator', separator,...
-      'UserData', hNewButton...
-  ); 
-end;
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function Create_New_Objects
 %
-function Activate_ROI_Tool(varargin);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+
+hUtils = MR_utilities;
+
+hFig = gcf;
+
+objNames = retrieveNames;
+
+[hButton, hToolbar] = hUtils.createButtonObject(hFig, ...
+    makeButtonImage, ...
+    {@Activate_ROI_Tool,hFig}, ...
+    {@Deactivate_ROI_Tool,hFig},...
+    objNames.buttonTag, ...
+    objNames.buttonToolTipString);
+
+hMenu  = hUtils.createMenuObject(hFig, ...
+    objNames.menuTag, ...
+    objNames.menuLabel, ...
+    @Menu_RT);
+
+aD.Name        = objNames.Name;
+aD.hUtils      = hUtils;
+aD.hRoot       = groot;
+aD.hFig        = hFig;
+aD.hInfoFig    = [];
+aD.hDrawFig    = [];
+aD.hButton     = hButton;
+aD.hMenu       = hMenu;
+aD.hToolbar    = hToolbar;
+aD.objectNames = objNames;
+aD.cMapData = [];
+
+% Store app data structure in tool-specific field. If this is a return
+%  call to the ROI tool, load the old as a field in the new AD. Activation
+%  of the tool by pressing the button will use the info to set the new state.
+if isappdata(aD.hFig, aD.Name)
+    aD.oldAD = getappdata(aD.hFig, aD.Name);
+end
+setappdata(aD.hFig, aD.Name, aD);
+
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
-if nargin == 0 | isempty(varargin{1})
-    set(0, 'ShowHiddenHandles', 'On');
-    hNewButton = gcbo;
-	
-	% DHL - TEMP for external calls
-	if isempty(hNewButton) 
-		hNewButton = findobj('Tag', 'figROITool');
-	end;
-	
-    set(findobj('Tag', 'menuROITool'),'checked', 'on');
-else % sent in something (could be empty)
-    %if  isempty(varargin{1}(1))
-    t = varargin{1};
-    hNewButton = t{1};
-end;
+function Activate_ROI_Tool(~,~,hFig)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+
+aD = configActiveFigure(hFig);
+
+aD = configGUI(aD);
+
+aD = configOther(aD);
+
+storeAD(aD);
+% 
+% if nargin == 0 || isempty(varargin{1})
+%     set(0, 'ShowHiddenHandles', 'On');
+%     hNewButton = gcbo;
+% 	
+% 	% DHL - TEMP for external calls
+% 	if isempty(hNewButton) 
+% 		hNewButton = findobj('Tag', 'figROITool');
+% 	end;
+% 	
+%     set(findobj('Tag', 'menuROITool'),'checked', 'on');
+% else % sent in something (could be empty)
+%     %if  isempty(varargin{1}(1))
+%     t = varargin{1};
+%     hNewButton = t{1};
+% end;
 
 % allows for calls from buttons other than those in toolbar
-fig = get(hNewButton, 'Parent');
-if ~strcmp(get(fig, 'Type'), 'figure')
-    fig = get(fig, 'Parent');
-end;
+% fig = get(hNewButton, 'Parent');
+% if ~strcmp(get(fig, 'Type'), 'figure')
+%     fig = get(fig, 'Parent');
+% end;
 
 % Deactivate zoom and rotate buttons
-hToolbar = findall(fig, 'type', 'uitoolbar');
-hToolbar = findobj(hToolbar, 'Tag', 'FigureToolBar');
-if ~isempty(hToolbar) 
-	
-	
-	hToolbar_Children = get(hToolbar, 'Children');
-	
-	% disable MATLAB's own tools
-	Rot3D = findobj(hToolbar_Children,'Tag', 'figToolRotate3D');
-	ZoomO = findobj(hToolbar_Children,'Tag', 'figToolZoomOut');
-	ZoomI = findobj(hToolbar_Children,'Tag', 'figToolZoomIn');
-
-	% try to disable other tools buttons - if they exist
-	WL = findobj(hToolbar_Children, 'Tag', 'figWindowLevel');
-	PZ = findobj(hToolbar_Children, 'Tag', 'figPanZoom');
-	RT = findobj(hToolbar_Children, 'Tag', 'figROITool');
-	MV = findobj(hToolbar_Children, 'Tag', 'figViewImages');
-	PM = findobj(hToolbar_Children, 'Tag', 'figPointTool');
-	RotT = findobj(hToolbar_Children, 'Tag', 'figRotateTool');
-	Prof = findobj(hToolbar_Children, 'Tag', 'figProfileTool');
-	
-	old_ToolHandles  =     [Rot3D, ZoomO, ZoomI,WL,PZ,MV,PM,RotT,Prof];
-	old_ToolEnables  = get([Rot3D, ZoomO, ZoomI,WL,PZ,MV,PM,RotT,Prof], 'Enable');
-	old_ToolStates   = get([Rot3D, ZoomO, ZoomI,WL,PZ,MV,PM,RotT,Prof], 'State');
-	
-	for i = 1:length(old_ToolHandles)
-		if strcmp(old_ToolStates(i) , 'on')			
-			set(old_ToolHandles(i), 'State', 'Off');
-		end;
-		set(old_ToolHandles(i), 'Enable', 'Off');
-	end;
-        %LFG
-        %enable save_prefs tool button
-        SP = findobj(hToolbar_Children, 'Tag', 'figSavePrefsTool');
-        set(SP,'Enable','On');
-end;
+% hToolbar = findall(fig, 'type', 'uitoolbar');
+% hToolbar = findobj(hToolbar, 'Tag', 'FigureToolBar');
+% if ~isempty(hToolbar) 
+% 	
+% 	
+% 	hToolbar_Children = get(hToolbar, 'Children');
+% 	
+% 	% disable MATLAB's own tools
+% 	Rot3D = findobj(hToolbar_Children,'Tag', 'figToolRotate3D');
+% 	ZoomO = findobj(hToolbar_Children,'Tag', 'figToolZoomOut');
+% 	ZoomI = findobj(hToolbar_Children,'Tag', 'figToolZoomIn');
+% 
+% 	% try to disable other tools buttons - if they exist
+% 	WL = findobj(hToolbar_Children, 'Tag', 'figWindowLevel');
+% 	PZ = findobj(hToolbar_Children, 'Tag', 'figPanZoom');
+% 	RT = findobj(hToolbar_Children, 'Tag', 'figROITool');
+% 	MV = findobj(hToolbar_Children, 'Tag', 'figViewImages');
+% 	PM = findobj(hToolbar_Children, 'Tag', 'figPointTool');
+% 	RotT = findobj(hToolbar_Children, 'Tag', 'figRotateTool');
+% 	Prof = findobj(hToolbar_Children, 'Tag', 'figProfileTool');
+% 	
+% 	old_ToolHandles  =     [Rot3D, ZoomO, ZoomI,WL,PZ,MV,PM,RotT,Prof];
+% 	old_ToolEnables  = get([Rot3D, ZoomO, ZoomI,WL,PZ,MV,PM,RotT,Prof], 'Enable');
+% 	old_ToolStates   = get([Rot3D, ZoomO, ZoomI,WL,PZ,MV,PM,RotT,Prof], 'State');
+% 	
+% 	for i = 1:length(old_ToolHandles)
+% 		if strcmp(old_ToolStates(i) , 'on')			
+% 			set(old_ToolHandles(i), 'State', 'Off');
+% 		end;
+% 		set(old_ToolHandles(i), 'Enable', 'Off');
+% 	end;
+%         %LFG
+%         %enable save_prefs tool button
+%         SP = findobj(hToolbar_Children, 'Tag', 'figSavePrefsTool');
+%         set(SP,'Enable','On');
+% end;
 
 % Start ROI Tool GUI
 % close the other ROI Tool figures to avoid conflicts
-Close_Old_Figure('ROI_figure');
-Close_Old_Figure('RTi_figure');
-Close_Old_Figure('ROI_Draw_figure');
+% Close_Old_Figure('ROI_figure');
+% Close_Old_Figure('RTi_figure');
+% Close_Old_Figure('ROI_Draw_figure');
 
 % open new figure
 %LFG
-fig2_file = 'ROI_tool_figure.fig';
-fig2 = openfig(fig2_file,'reuse');
-optional_uicontrols = { ...
-    'Link_ROI_togglebutton', 'Value'; ...
-    'Create_ROI_checkbox',   'Value'; ...
-    'Create_ROI_popupmenu',  'Value'; ...
-    'Paste_ROI_checkbox',    'Value'; ...
-    'Delete_ROI_popupmenu',  'Value'; ...
-    'Save_MAT_checkbox',     'Value'; ...
-    'Save_TXT_checkbox',     'Value'; ...
-    'Close_ROI_checkbox',    'Value'; ...
-    'Show_Pixels_checkbox',  'Value'; ...
-    'Point_Drop_edit',       'String'; ...
-    'Push_Radius_edit',      'String'; ...
-    'Spline_checkbox',       'Value'; ...
-    'Polygon_checkbox',      'Value'; ...
-    'Sort_Order_pushbutton', 'Value'; ...
-                   };
-set(SP,'Userdata',{fig2, fig2_file, optional_uicontrols});
+% fig2_file = 'ROI_tool_figure.fig';
+% fig2 = openfig(fig2_file,'reuse');
+% optional_uicontrols = { ...
+%     'Link_ROI_togglebutton', 'Value'; ...
+%     'Create_ROI_checkbox',   'Value'; ...
+%     'Create_ROI_popupmenu',  'Value'; ...
+%     'Paste_ROI_checkbox',    'Value'; ...
+%     'Delete_ROI_popupmenu',  'Value'; ...
+%     'Save_MAT_checkbox',     'Value'; ...
+%     'Save_TXT_checkbox',     'Value'; ...
+%     'Close_ROI_checkbox',    'Value'; ...
+%     'Show_Pixels_checkbox',  'Value'; ...
+%     'Point_Drop_edit',       'String'; ...
+%     'Push_Radius_edit',      'String'; ...
+%     'Spline_checkbox',       'Value'; ...
+%     'Polygon_checkbox',      'Value'; ...
+%     'Sort_Order_pushbutton', 'Value'; ...
+%                    };
+% set(SP,'Userdata',{fig2, fig2_file, optional_uicontrols});
 
-% Generate a structure of handles to pass to callbacks, and store it. 
-handles = guihandles(fig2);
-guidata(fig2,handles);
-
-% Make and set the close String for the ROI Tool figure
-close_str = [ 'hNewButton = findobj(''Tag'', ''figROITool'');' ...
-        ' if strcmp(get(hNewButton, ''Type''), ''uitoggletool''),'....
-        ' set(hNewButton, ''State'', ''off'' );' ...
-        ' else,  ' ...
-        ' ROI_tool(''Deactivate_ROI_Tool'' ,hNewButton);'...
-        ' set(hNewButton, ''Value'', 0);',...
-        ' end;',...
-		' clear hNewsButton;'];
-
-set(fig2, 'Name', 'ROI Tool', 'CloseRequestfcn', close_str);
+% % Generate a structure of handles to pass to callbacks, and store it. 
+% handles = guihandles(fig2);
+% guidata(fig2,handles);
+% 
+% % Make and set the close String for the ROI Tool figure
+% close_str = [ 'hNewButton = findobj(''Tag'', ''figROITool'');' ...
+%         ' if strcmp(get(hNewButton, ''Type''), ''uitoggletool''),'....
+%         ' set(hNewButton, ''State'', ''off'' );' ...
+%         ' else,  ' ...
+%         ' ROI_tool(''Deactivate_ROI_Tool'' ,hNewButton);'...
+%         ' set(hNewButton, ''Value'', 0);',...
+%         ' end;',...
+% 		' clear hNewsButton;'];
+% 
+% set(fig2, 'Name', 'ROI Tool', 'CloseRequestfcn', close_str);
 
 % Record and store previous WBDF etc to restore state after RT is done. 
-old_WBDF = get(fig, 'WindowButtonDownFcn');
-old_WBMF = get(fig, 'WindowButtonMotionFcn');
-old_WBUF = get(fig, 'WindowButtonUpFcn');
-old_UserData = get(fig, 'UserData');
-old_CRF = get(fig, 'Closerequestfcn');
+% old_WBDF = get(fig, 'WindowButtonDownFcn');
+% old_WBMF = get(fig, 'WindowButtonMotionFcn');
+% old_WBUF = get(fig, 'WindowButtonUpFcn');
+% old_UserData = get(fig, 'UserData');
+% old_CRF = get(fig, 'Closerequestfcn');
 
 % Store initial state of all axes in current figure for reset
 % Note that using appdata for storage means that if figure is saved, 
 % ROI information is saved and usable too
-if isappdata(fig, 'ROI_Info_Table')
-	ROI_info_table   = getappdata(fig, 'ROI_Info_Table');
-	h_all_axes       = getappdata(fig, 'ROI_Axes_Handles');
-	old_current_info = getappdata(fig, 'ROI_Current_Info');
-else
-	ROI_info_table = Init_ROI_info_table;
-	h_all_axes = Find_All_Axes(fig);
-end;
+% if isappdata(fig, 'ROI_Info_Table')
+% 	ROI_info_table   = getappdata(fig, 'ROI_Info_Table');
+% 	h_all_axes       = getappdata(fig, 'ROI_Axes_Handles');
+% 	old_current_info = getappdata(fig, 'ROI_Current_Info');
+% else
+% 	ROI_info_table = Init_ROI_info_table;
+% 	h_all_axes = Find_All_Axes(fig);
+% end;
 
 %UserData = get(hNewButton,'Userdata');
 % if isempty(UserData)
@@ -397,282 +306,196 @@ end;
 %     h_all_axes = UserData{2};
 % end;
 
-h_axes = h_all_axes(1,1);
-set(fig, 'CurrentAxes', h_axes);
-
-% store all the old nextplots and bdf's
-h_all_axes=h_all_axes';
-for i = 1:length(find(h_all_axes(:)))
-    if (h_all_axes(i))
-        old_axes_BDF{i} = get(h_all_axes(i), 'ButtonDownFcn');
-        old_axes_NextPlot{i} = get(h_all_axes(i),'NextPlot');
-		h_image = findobj(h_all_axes(i), 'Type', 'Image');
-
-		set(h_all_axes(i),'NextPlot', 'add');
-		old_image_BDF{i} = get(h_image, 'ButtonDownFcn');
-        set(h_image,'ButtonDownFcn', 'ROI_tool(''Change_Current_Axes'')');
-    end;
-end;
-h_all_axes = h_all_axes';
-set(fig, 'CurrentAxes', h_axes);
+% h_axes = h_all_axes(1,1);
+% set(fig, 'CurrentAxes', h_axes);
+% 
+% % store all the old nextplots and bdf's
+% h_all_axes=h_all_axes';
+% for i = 1:length(find(h_all_axes(:)))
+%     if (h_all_axes(i))
+%         old_axes_BDF{i} = get(h_all_axes(i), 'ButtonDownFcn');
+%         old_axes_NextPlot{i} = get(h_all_axes(i),'NextPlot');
+% 		h_image = findobj(h_all_axes(i), 'Type', 'Image');
+% 
+% 		set(h_all_axes(i),'NextPlot', 'add');
+% 		old_image_BDF{i} = get(h_image, 'ButtonDownFcn');
+%         set(h_image,'ButtonDownFcn', 'ROI_tool(''Change_Current_Axes'')');
+%     end;
+% end;
+% h_all_axes = h_all_axes';
+% set(fig, 'CurrentAxes', h_axes);
 
 % Draw faster and without flashes
-set(fig, 'Closerequestfcn', [ old_CRF , ',ROI_tool(''Close_Parent_Figure'')']);
-set(fig, 'Renderer', 'zbuffer');
-set(0,   'ShowHiddenHandles', 'On', 'CurrentFigure', fig);
-set(gca, 'Drawmode', 'Fast');
+% set(fig, 'Closerequestfcn', [ old_CRF , ',ROI_tool(''Close_Parent_Figure'')']);
+% set(fig, 'Renderer', 'zbuffer');
+% set(0,   'ShowHiddenHandles', 'On', 'CurrentFigure', fig);
+% set(gca, 'Drawmode', 'Fast');
 
-% store the figure's old infor within the fig's own userdata
-set(fig, 'UserData', {fig2, old_WBDF, old_WBMF, old_WBUF, ... 
-        old_UserData, old_axes_BDF, old_axes_NextPlot, old_CRF, old_image_BDF, ...
-		old_ToolEnables,old_ToolHandles});
-
-
-% Now check if previous use of ROI Tool left an ROI_info_table with handles to reset
-if isempty([ROI_info_table.ROI_Exists])
-    % disable all buttons until an ROI has been created
-    Change_Object_Enable_State(handles, 'Off', 1);
-    set(hNewButton, 'UserData', {ROI_info_table, h_all_axes});
-    i_current_ROI = [];
-    ifig = [];
-else    
-    % set all graphics related to each ROI to visible and
-    % allot the appropiate callback to each one
-    h_ROI_elements = [ROI_info_table(:).ROI_Data];
-    h_ROI_elements = h_ROI_elements(1,:);
-    h_ROI_elements = h_ROI_elements(find(h_ROI_elements));
-    
-    %give each element the correct callack function
-    %h_circle, h_center, h_size, h_angle, h_number; 
-    set(h_ROI_elements(1:5:end),'Visible', 'On', 'ButtonDownFcn', 'ROI_tool(''Change_Current_ROI'')');    
-    set(h_ROI_elements(2:5:end),'Visible', 'On', 'ButtonDownFcn', 'ROI_tool(''ROI_Pos_Adjust_Entry'',1)');    
-    set(h_ROI_elements(3:5:end),'Visible', 'On', 'ButtonDownFcn', 'ROI_tool(''ROI_Size_Adjust_Entry'')');    
-    set(h_ROI_elements(4:5:end),'Visible', 'On', 'ButtonDownFcn', 'ROI_tool(''ROI_Angle_Adjust_Entry'')');    
-    set(h_ROI_elements(5:5:end),'Visible', 'On', 'ButtonDownFcn', 'ROI_tool(''ROI_Pos_Adjust_Entry'',2)');    
-
-    % Enable Buttons since ROIs exists, but not the paste objects
-    Change_Object_Enable_State(handles, 'Off', 1);
-    Change_Object_Enable_State(handles, 'On', 0);
-    
-    % if this is a re-run, there exists a UserData{3}
-    %old_current_info = UserData{3};
-    h_axes = old_current_info{4};          % current axes
-    i_current_ROI = old_current_info{5};   % current ROI(s)
-
-	% now erase the stored data from reactivation from the userdata of the
-	% button
-	set(hNewButton,'Userdata', {ROI_info_table,h_all_axes} );
-	
-    % open new figure for ROI information
-    % set info in holder temporarily so that the Create function can use it
-    set(handles.ROI_Title_text, 'UserData', {fig, fig2, h_all_axes, h_axes, i_current_ROI, []});
-    ifig = Create_ROI_Info_Figure(i_current_ROI);
-    Resort_ROI_Info_Listbox;
-	
-	%set(hNewButton,'Userdata', {ROI_info_table,h_all_axes} );
- end;
-
-% store all relevant info for faster use during calls
-set(handles.ROI_Title_text, 'UserData', {fig, fig2, h_all_axes, h_axes, i_current_ROI, ifig});
+% % store the figure's old infor within the fig's own userdata
+% set(fig, 'UserData', {fig2, old_WBDF, old_WBMF, old_WBUF, ... 
+%         old_UserData, old_axes_BDF, old_axes_NextPlot, old_CRF, old_image_BDF, ...
+% 		old_ToolEnables,old_ToolHandles});
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % Now check if previous use of ROI Tool left an ROI_info_table with handles to reset
+% if isempty([ROI_info_table.ROI_Exists])
+%     % disable all buttons until an ROI has been created
+%     Change_Object_Enable_State(handles, 'Off', 1);
+%     set(hNewButton, 'UserData', {ROI_info_table, h_all_axes});
+%     ROI_CurrentIdx = [];
+%     ifig = [];
+% else    
+%     % set all graphics related to each ROI to visible and
+%     % allot the appropiate callback to each one
+%     h_ROI_elements = [ROI_info_table(:).ROI_Data];
+%     h_ROI_elements = h_ROI_elements(1,:);
+%     h_ROI_elements = h_ROI_elements(find(h_ROI_elements));
+%     
+%     %give each element the correct callack function
+%     %h_circle, h_center, h_size, h_angle, h_number; 
+%     set(h_ROI_elements(1:5:end),'Visible', 'On', 'ButtonDownFcn', 'ROI_tool(''Change_Current_ROI'')');    
+%     set(h_ROI_elements(2:5:end),'Visible', 'On', 'ButtonDownFcn', 'ROI_tool(''ROI_Pos_Adjust_Entry'',1)');    
+%     set(h_ROI_elements(3:5:end),'Visible', 'On', 'ButtonDownFcn', 'ROI_tool(''ROI_Size_Adjust_Entry'')');    
+%     set(h_ROI_elements(4:5:end),'Visible', 'On', 'ButtonDownFcn', 'ROI_tool(''ROI_Angle_Adjust_Entry'')');    
+%     set(h_ROI_elements(5:5:end),'Visible', 'On', 'ButtonDownFcn', 'ROI_tool(''ROI_Pos_Adjust_Entry'',2)');    
+% 
+%     % Enable Buttons since ROIs exists, but not the paste objects
+%     Change_Object_Enable_State(handles, 'Off', 1);
+%     Change_Object_Enable_State(handles, 'On', 0);
+%     
+%     % if this is a re-run, there exists a UserData{3}
+%     %old_current_info = UserData{3};
+%     hCurrentAxes   = old_current_info{4};          % current axes
+%     aD.ROI_CurrentIdx = old_current_info{5};   % current ROI(s)
+% 
+% 	% now erase the stored data from reactivation from the userdata of the
+% 	% button
+% 	set(hNewButton,'Userdata', {ROI_info_table,h_all_axes} );
+% 	
+%     % open new figure for ROI information
+%     % set info in holder temporarily so that the Create function can use it
+%     set(handles.ROI_Title_text, 'UserData', {fig, fig2, h_all_axes, hCurrentAxes, aD.ROI_CurrentIdx, []});
+%     aD = Create_ROI_Info_Figure(aD);
+%     Resort_ROI_Info_Listbox;
+% 	
+% 	%set(hNewButton,'Userdata', {ROI_info_table,h_all_axes} );
+%  end;
+% 
+% % store all relevant info for faster use during calls
+% set(handles.ROI_Title_text, 'UserData', {fig, fig2, h_all_axes, hCurrentAxes, ROI_CurrentIdx, ifig});
+% %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Deactivate_ROI_Tool(varargin);
+function Deactivate_ROI_Tool(~,~,hFig)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
 
-if nargin == 0     
-    % called from button
-    set(0, 'ShowHiddenHandles', 'On');    
-    hNewButton = gcbo;
-	
-	% DHL - TEMP for external calls
-	if isempty(hNewButton) 
-		hNewButton = findobj('Tag', 'figROITool');
-	end;
-	
-    set(findobj('Tag', 'menuROITool'),'checked', 'Off');
-else
-    % called from menu
-    hNewButton = varargin{1};
-end;
-    
-% Reactivate other buttons
-fig = get(hNewButton, 'Parent');
-if ~strcmp(get(fig, 'Type'), 'figure'),
-    fig = get(fig, 'Parent');
-end
+aD = getAD(hFig);
 
-hToolbar = findall(fig, 'type', 'uitoolbar');
-hToolbar = findobj(hToolbar, 'Tag', 'FigureToolBar');
-
-if ~isempty(hToolbar)
-    hToolbar_Children = get(hToolbar, 'Children');
-    set(findobj(hToolbar_Children,'Tag', 'figToolRotate3D'),'Enable', 'On');
-    set(findobj(hToolbar_Children,'Tag', 'figToolZoomOut'),'Enable', 'On');
-    set(findobj(hToolbar_Children,'Tag', 'figToolZoomIn'),'Enable', 'On'); 
-end;
-   
-% Restore old WBDFs and USer Data
-old_info= get(fig,'UserData');
-fig2 = old_info{1};
-set(fig, 'WindowButtonDownFcn', old_info{2});
-set(fig, 'WindowButtonUpFcn', old_info{3});
-set(fig, 'WindowButtonMotionFcn', old_info{4});
-set(fig, 'UserData', old_info{5});
-set(fig, 'closerequestfcn', old_info{8});
-old_ToolEnables  = old_info{10}; 
-old_ToolHandles = old_info{11};
-
-% restore axes BDF's and hide all objects by making invisible
-% and clearing all object's bdf's
-
-Userdata=get(hNewButton, 'UserData');
-ROI_info_table = Userdata{1};
-h_all_axes = Userdata{2};
-exist_flags = [Userdata{1}.ROI_Exists];
-
-
-%save temp_old_info old_info h_all_axes Userdata
-h_all_axes = h_all_axes';   % TEMP
-for i = 1:length(find(h_all_axes(:)))
-	set(h_all_axes(i),'ButtonDownFcn', char(old_info{6}(i)), 'NextPlot', char(old_info{7}(i)));    
-	h_image = findobj(h_all_axes(i), 'Type', 'Image');
-	set(h_image, 'ButtonDownFcn', char(old_info{9}(i)));
-end     
-
-% in case an ROI was created...
-if ~isempty(exist_flags)
-    h_ROI_elements = [ROI_info_table(:).ROI_Data];
-    h_ROI_elements = h_ROI_elements(1,:);    
-    set(h_ROI_elements(find(h_ROI_elements)),'Visible', 'Off', 'ButtonDownFcn', '');    
+% If ROIs were created, hide objects and remove ButtonDown functions
+if any(aD.ROI_InfoTable(:).ROI_Exists)
+    hROIElements = [aD.ROI_InfoTable(:).ROI_Data];
+    hROIElements = hROIElements(1,:);    
+    [hROIElements(isgraphics(hROIElements)).Visible] =  deal('Off');
+    [hROIElements(isgraphics(hROIElements)).ButtonDownFcn] =  deal('');
 end;
 
-% store current state, that is, current axes, current ROI into memory to be used next
-% start of the ROI Tool
-current_info = get(findobj(fig2, 'Tag','ROI_Title_text'), 'Userdata');
+% store current state for next tool call
+setappdata(aD.hFig, 'ROI_InfoTable'  , aD.ROI_InfoTable) 
+setappdata(aD.hFig, 'ROI_CurrentInfo', aD.ROI_CurrentInfo);
 
-setappdata(fig, 'ROI_Info_Table', Userdata{1});
-setappdata(fig, 'ROI_Axes_Handles', Userdata{2});
-setappdata(fig, 'ROI_Current_Info', current_info);
+aD.hUtils.deactivateButton(aD);
 
-%set(hNewButton, 'Userdata', {Userdata{1}, Userdata{2}, current_info});
-set(hNewButton, 'Userdata', []);
-
-Close_Old_Figure([],current_info{6});  % ifig 
-Close_Old_Figure([],old_info{1});      % fig2
-Close_Old_Figure('ROI_Draw_figure');   % Draw Figure (in case close command comes during Draw/Edit operation);
-
-
-for i = 1:length(old_ToolHandles)
-	try
-		set(old_ToolHandles(i), 'Enable', old_ToolEnables{i});
-	catch
-	end;
-end;
-%LFG
-%disable save_prefs tool button
-SP = findobj(hToolbar_Children, 'Tag', 'figSavePrefsTool');
-set(SP,'Enable','Off');
-
-
-set(0, 'ShowHiddenHandles', 'Off');
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Close other figures
+if isgraphics(aD.hInfoFig), delete(aD.hInfoFig); end
+if isgraphics(aD.hDrawFig), delete(aD.hDrawFig); end
 %
-function Create_New_ROI(varargin);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function Create_New_ROI(~,~,hFig)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Function creates new ROI. If this is the first ROI at all, creates the table of 
 % ROI info. If the table alreay exists, then adds a new row to the ROI info table
 % ROI info table is ROIs x Num Images long;
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
-% load data of interest
-data_holder = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
-fig = data_holder{1};
-fig2 = data_holder{2};
-ifig = data_holder{6};
-h_axes = data_holder{4};
-i_current_ROI = data_holder{5};
-h_all_axes = data_holder{3};
+aD = getAD(hFig);
 
-handles = guidata(fig2);
-apply_all = get(handles.Create_ROI_checkbox,'Value');
 
 ELLIPSE = 1;  FREEHAND = 2;
-Create_ROI_method = get(handles.Create_ROI_popupmenu, 'Value');
 
-% get old ROI_info table
-Userdata = get(findobj(fig, 'Tag', 'figROITool'), 'UserData');
-ROI_table = Userdata{1};
+createROIMethod = aD.hGUI.Create_ROI_popupmenu.Value;
+applyAll        = aD.hGUI.Create_ROI_checkbox.Value;
 
 % if all ROI exist fields are empty, then this is the first ROI
-if isempty([ROI_table(:).ROI_Exists])
+if ~any([aD.ROI_InfoTable(:).ROI_Exists])
     % create ROI info table to correct size (rows = number of ROIs, columns = images) 
     % now make the invalid last in case grid is not complete
-    temp_h_all_axes = find(h_all_axes);
+  %  temp_h_all_axes = find(h_all_axes);
+    [aD.ROI_InfoTable(1, 1:length(aD.hAllAxes))]  = deal(initROIinfoTable);
     % cycle through to create 0's in the Exist field. marks the ROI table as initialized
-    [ROI_info_table(1,1:length(temp_h_all_axes)).ROI_Exists] = deal(0);
-	[ROI_info_table(1,1:length(temp_h_all_axes)).ROI_Info]   = deal([]);
-	[ROI_info_table(1,1:length(temp_h_all_axes)).ROI_Data]   = deal([]);
-	[ROI_info_table(1,1:length(temp_h_all_axes)).ROI_x_original]   = deal([]);
-	[ROI_info_table(1,1:length(temp_h_all_axes)).ROI_y_original]   = deal([]);
+%     [aD.ROI_InfoTable(1,1:length(temp_h_all_axes)).ROI_Exists]      = deal(0);
+% 	[aD.ROI_InfoTable(1,1:length(temp_h_all_axes)).ROI_Info]        = deal([]);
+% 	[aD.ROI_InfoTable(1,1:length(temp_h_all_axes)).ROI_Data]        = deal([]);
+% 	[aD.ROI_InfoTable(1,1:length(temp_h_all_axes)).ROI_x_original]  = deal([]);
+% 	[aD.ROI_InfoTable(1,1:length(temp_h_all_axes)).ROI_y_original]  = deal([]);
     first_ROI_flag = 1;    
 else
-    % an ROI table exists, use it;
-    ROI_info_table = ROI_table;    
     first_ROI_flag = 0;
 end;
-    
-% find empty slots in ROI_info Table
-Current_ROI_index = [];
-for i = size(ROI_info_table,1):-1:1
-    % found empty slot, use it; search in reverse to use the nearest one    
-    if ~([ROI_info_table(i,:).ROI_Exists])
-        Current_ROI_index = i;
-	end;
+
+% Find empty slots in ROI_info Table
+aD.ROI_CurrentIndex = [];
+for i = size(aD.ROI_InfoTable,1):-1:1
+    % found empty slot, use it; search in reverse to use the nearest one
+    if (any([aD.ROI_InfoTable(i,:).ROI_Exists]))
+        aD.ROI_CurrentIndex = i;
+    end;
+end;
+
+% If didn't find an empty slot, create a new row in ROI info table
+if isempty(aD.ROI_CurrentIndex)
+    aD.ROI_CurrentIndex = size(aD.ROI_InfoTable,1) + 1 - first_ROI_flag;
+    [aD.ROI_InfoTable(aD.ROI_CurrentIndex,:).ROI_Exists] = deal(0);
 end;
     
-% if didn't find an empty slot, create a new row in ROI info table
-if isempty(Current_ROI_index)
-    Current_ROI_index = size(ROI_info_table,1) + 1;
-    [ROI_info_table(Current_ROI_index,1:length(find(h_all_axes))).ROI_Exists] = deal(0);
-end;
-    
-% make sure we don't over clutter the screen
-if Current_ROI_index > 10
+% Limit max number of ROIs to make sure we don't over clutter the screen
+if aD.ROI_CurrentIndex > 10
     msgbox('Too Many ROIs. Please delete some before creating new ones.');
     return;
 end;
 
-% colors: red, blue, green, yellow, magenta, cyan, white 
+% ROI colors: red, blue, green, yellow, magenta, cyan, and repeat
 colororder = repmat('rbgymcw',1,4);
 
-if apply_all % create ROI in all images
+hAxesOfInterest = aD.hCurrentAxes;
+if applyAll % create ROI in all images
     % flipud to create ROI in reverse order... so that the current ROI index 
     % one on the first image  
-    t_h_all_axes = h_all_axes';
-    h_axes_interest = flipud(h_all_axes(find(h_all_axes)));
-else
-    h_axes_interest = h_axes;
+    hAxesOfInterest = aD.hAllAxes;
 end;
 
-switch Create_ROI_method
+
+switch createROIMethod
 	
 	case ELLIPSE	
 		% create an ellipse, default
-		for i = 1:length(h_axes_interest(:))
-			set(fig, 'CurrentAxes', h_axes_interest(i));
-			h_axes_index = find(h_all_axes'==h_axes_interest(i));
-			set(0, 'CurrentFigure', fig);
-			xlim = get(gca, 'xlim');
-			ylim = get(gca, 'ylim');
+        updateList = zeros(length(hAxesOfInterest(:)),2);
+        listCounter = 1;
+		for i = 1:length(hAxesOfInterest(:))
+
+            %set(fig, 'CurrentAxes', hAxesOfInterest(i));
+			hAxesIdx = find(aD.hAllAxes==hAxesOfInterest(i));
+            
+			%set(0, 'CurrentFigure', fig);
+			xlim = hAxesOfInterest(i).XLim;
+			ylim = hAxesOfInterest(i).YLim;
 			
 			center_x = mean(xlim);
 			center_y = mean(ylim);
@@ -682,14 +505,15 @@ switch Create_ROI_method
 			size_y = diff(xlim)*percent_size_ROI;
 			
 			basic_points = 32;
-			theta = 0:(360/basic_points):360;
+			theta = linspace(0,360, basic_points);
 			[x,y] = pol2cart(theta*pi/180, repmat(size_x,size(theta,1), size(theta,2)));
 			alpha = 0 ;
 			
-			handle_values = Make_ROI_Elements(...
+			hROI_Elements = Make_ROI_Elements( ...
+                aD.hFig, hAxesOfInterest(i), ...
 				x + center_x, y + center_y,...
-				colororder(Current_ROI_index),...
-				Current_ROI_index,...
+				colororder(aD.ROI_CurrentIndex),...
+				aD.ROI_CurrentIndex,...
 				center_x, center_y,...
 				center_x - size_x, center_y - size_y, ...
 				center_x + size_x, center_y,...
@@ -697,33 +521,38 @@ switch Create_ROI_method
 			
 			ROI_values = [center_x, center_y, size_x, size_y, alpha];
 			
-			set(handle_values, 'UserData', ...
-				[Current_ROI_index, h_axes_index, handle_values, ROI_values ]);
-			ROI_info_table(Current_ROI_index,h_axes_index).ROI_Data = ...
-				[handle_values; ...
-					ROI_values];
-			ROI_info_table(Current_ROI_index, h_axes_index).ROI_Exists = 1;
+			[hROI_Elements(:).UserData] = [ROI_CurrentIndex, hAxesIdx]
+            %      deal( [aD.ROI_CurrentIndex, hAxesIdx, hROI_Elements, ROI_values ] );
+            
+			aD.ROI_InfoTable(ROI_CurrentIndex,hAxesIdx).ROI_Data   = ROI_values;
+			aD.ROI_InfoTable(ROI_CurrentIndex,hAxesIdx).ROI_Handles = hROI_Elements;
 
-			ROI_info_table(Current_ROI_index, h_axes_index).ROI_x_original = [];
-			ROI_info_table(Current_ROI_index, h_axes_index).ROI_y_original = [];
+			aD.ROI_InfoTable(ROI_CurrentIndex, hAxesIdx).ROI_Exists = 1;
 
-			update_list(i,:) = [Current_ROI_index, h_axes_index];
+			aD.ROI_InfoTable(ROI_CurrentIndex, hAxesIdx).ROI_x_original = [];
+			aD.ROI_InfoTable(ROI_CurrentIndex, hAxesIdx).ROI_y_original = [];
+
 			
-			i_current_ROI = [Current_ROI_index, h_axes_index];
-			drawnow
-		end;
+			aD.ROI_CurrentIDX = [ROI_CurrentIndex, hAxesIdx];
 
+            updateList(i,:) = [ROI_CurrentIndex, hAxesIdx];
+            listCounter = listCounter+1;
+            
+            drawnow
+		end;
+        updateList = updateList(1:(listCounter-1),:);
+        
 		% Now Restore ROI_info_table to its hiding spot
-		Userdata{1} = ROI_info_table;
-		set(findobj(fig, 'Tag', 'figROITool'), 'UserData', Userdata);
+		%Userdata{1} = aD.ROI_InfoTable;
+		%set(findobj(fig, 'Tag', 'figROITool'), 'UserData', Userdata);
 		
 		% call the ROI_info update function: puts data into ROI_info_table
-		Update_ROI_Info(update_list);
+		Update_ROI_Info(aD, updateList);
 		
 		if first_ROI_flag
 			% creates figure the first time and creates the string table that is to be
 			% used for "publishing" the ROI data
-			ifig = Create_ROI_Info_Figure(update_list);
+			aD = Create_ROI_Info_Figure(aD, updateList);
 			% published the string into the listbox
 			
 			% turn on buttons, but turn off print objects
@@ -733,47 +562,47 @@ switch Create_ROI_method
 			% call function that will take info string table and "publish" it
 			
 			%Update_ROI_Info(update_list);
-			Update_ROI_Info_String(update_list);
+			Update_ROI_Info_String(updateList);
 		end;
 		
 		Resort_ROI_Info_Listbox;
 		% update current ROI index
-		set(findobj('Tag', 'ROI_Title_text'), 'Userdata', { fig, fig2, h_all_axes, h_axes, i_current_ROI, ifig});
-		Highlight_Current_ROI(i_current_ROI);
+        
+		Highlight_Current_ROI(aD.ROI_CurrentIdx);
 		
 		
-	case FREEHAND
-		% Call Drawing Tool Prep	
-		handlesDraw = Prep_Draw_ROI(0, h_axes);		
-		% set the current axes
-		set(fig, 'CurrentAxes', h_axes);
-				
-		% Disable objects while in Draw Mode
-
-		if ~isempty(fig2), 
-			[h_objects, object_enable_states] = Change_Figure_States('Disable', [fig2, ifig]);
-		end;
-		
-		stored_data = { fig, fig2, ifig, h_axes_interest, h_all_axes, h_axes, ...
-				colororder, Current_ROI_index, Userdata, ...
-				ROI_info_table, first_ROI_flag, handles, ...
-				h_objects, object_enable_states};
-		set(handlesDraw.Parent_figure, 'Userdata', stored_data);
-		
+% 	case FREEHAND
+% 		% Call Drawing Tool Prep	
+%         if 0 
+%             handlesDraw = Prep_Draw_ROI(0, h_axes);
+%             % set the current axes
+%             set(fig, 'CurrentAxes', h_axes);
+%             
+%             % Disable objects while in Draw Mode
+%             
+%             if ~isempty(fig2)
+%                 [h_objects, object_enable_states] = Change_Figure_States('Disable', [fig2, ifig]);
+%             end;
+%             
+%             stored_data = { fig, fig2, ifig, h_axes_interest, h_all_axes, h_axes, ...
+%                 colororder, Current_ROI_index, Userdata, ...
+%                 ROI_info_table, first_ROI_flag, handles, ...
+%                 h_objects, object_enable_states};
+%             set(handlesDraw.Parent_figure, 'Userdata', stored_data);
+%         end
+%         
 		% finish ROI insertion after return from drawing window via
 		% Create_ROI_finish
 end;
-
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Copy_Current_ROI;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+function Copy_Current_ROI
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
 
 h_all_axes = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
 fig = h_all_axes{1};
@@ -784,14 +613,15 @@ handles = guidata(fig2);
 set(handles.Copy_ROI_pushbutton, 'UserData', UserData{1}(i_current_ROI(1), i_current_ROI(2)));
 set(handles.Paste_ROI_pushbutton, 'Enable', 'On');
 set(handles.Paste_ROI_checkbox, 'Enable', 'On');
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Paste_Current_ROI;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function Paste_Current_ROI
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 data_holder = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
 fig = data_holder{1};
@@ -825,7 +655,6 @@ else
  %   c=a & b    
     indexes_of_interest = find((h_all_axes==h_current_axes) & (h_all_axes~=h_current_ROI_axes));  
 end;
-
 
 
 update_list = [];
@@ -881,19 +710,21 @@ Update_ROI_Info(update_list);
 Update_ROI_Info_String(update_list);
 Resort_ROI_Info_Listbox;
 Highlight_Current_ROI(update_list)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Delete_ROI(scope);
+function Delete_ROI(scope)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % function to delete an ROI. Check scope of deletion:
 %  current ROI 
 %  All ROIs in current Image
 %  All ROIs with same number
 %  All ROIs
 
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 % load data of interest
 data_holder = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
@@ -915,7 +746,7 @@ update_list = [];
 ROIs_left = 0;
 % don't want to try to erase if there is not current ROI 
 % unless all ROIs are to be deleted
-if (~isempty(i_current_ROI)) | (isempty(i_current_ROI) & (scope==4 | scope ==2) )
+if (~isempty(i_current_ROI)) || (isempty(i_current_ROI) && (scope==4 || scope ==2) )
     UserData = get(findobj(fig, 'Tag', 'figROITool'), 'UserData');
     ROI_info_table = UserData{1};
     new_current_ROI = [];
@@ -956,7 +787,7 @@ if (~isempty(i_current_ROI)) | (isempty(i_current_ROI) & (scope==4 | scope ==2) 
 		
         % if the current axes and the parent of the current ROI are the same, 
         % then clear out the current ROI index as the ROI does not exist anymore
-        if ~isempty(i_current_ROI) & (h_all_axes(i_current_ROI(2))~=h_axes)
+        if ~isempty(i_current_ROI) && (h_all_axes(i_current_ROI(2))~=h_axes)
             new_current_ROI = i_current_ROI;
         end;
         
@@ -1047,32 +878,46 @@ if (~isempty(i_current_ROI)) | (isempty(i_current_ROI) & (scope==4 | scope ==2) 
     
 
 end;
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Change_Current_Axes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function Change_Current_Axes(varargin)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Update the current axes when user clicks on an axes
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
-h_axes= gca;
-data_holder = findobj('Tag','ROI_Title_text');
-data=  get(data_holder, 'Userdata');
-data{4} = h_axes;
-set(data_holder,'UserData',data);
+if nargin==1
+    hFig = varargin{1}; % internal call
+else 
+    hFig = varargin{3}; % external callback
+end
+    
+aD = getAD(hFig);
+aD.hCurrentAxes = gca;
+storeAD(aD);
 
+% XXX Remove during update
+% h_axes= gca;
+% data_holder = findobj('Tag','ROI_Title_text');
+% data=  get(data_holder, 'Userdata');
+% data{4} = h_axes;
+% set(data_holder,'UserData',data);
+%%% XXX
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % now highlight current axes in the information windows
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function Change_Current_ROI(ROI_info)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Update the current ROI when user clicks on an active object
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 h_ROI_circle= gco;
 data_holder = findobj('Tag','ROI_Title_text');
@@ -1097,27 +942,31 @@ set(findobj('Tag', 'ROI_Title_text'), 'UserData', data);
 
 % now select the current ROI in the information windows
 Highlight_Current_ROI(data{5});
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function ROI_Angle_Adjust_Entry;
+function ROI_Angle_Adjust_Entry
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Execute once at the beggining of a drag cycle
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 fig = gcf;
 set(fig, 'WindowButtonMotionFcn', 'ROI_tool(''ROI_Angle_Adjust'');');
 set(fig,'WindowButtonUpFcn', 'ROI_tool(''ROI_Angle_Adjust_Exit'')');
 Change_Current_Axes;
 ROI_Angle_Adjust;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function ROI_Angle_Adjust
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 h_angle = gco;
 h_axes = get(h_angle, 'Parent');
@@ -1149,16 +998,19 @@ set(val(6), 'xdata', c(1,:)+ val(8), 'ydata', c(2,:)+ val(9));
 p = get(val(7),'Position')';
 c = rotmat*( [p(1:2) - [val(8) val(9)]']) ;
 set(val(7), 'Position', [ c' + [val(8),val(9)] ,p(3)]);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % update only the current object's userdata... 
 %set(val(6),'UserData', [val(1:11), alpha]);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function ROI_Angle_Adjust_Exit
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
+
 h_angle = gco;
 val = get(h_angle, 'Userdata');
 
@@ -1259,82 +1111,106 @@ Resort_ROI_Info_Listbox;
 figure(fig2);
 figure(ifig);
 figure(fig);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function ROI_Size_Adjust_Entry;
+function ROI_Size_Adjust_Entry(hObj, ~, hFig)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Execute once at the beggining of a drag cycle
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
-
-fig = gcf;
-set(fig, 'WindowButtonMotionFcn', 'ROI_tool(''ROI_Size_Adjust'');');
-set(fig,'WindowButtonUpFcn', 'ROI_tool(''ROI_Size_Adjust_Exit'')');
-Change_Current_Axes;
-ROI_Size_Adjust;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+hFig.WindowButtonMotionFcn = {@ROI_Size_Adjust,      hFig};
+hFig.WindowButtonUpFcn     = {@ROI_Size_Adjust_Exit, hFig};
+Change_Current_Axes(hFig);
+ROI_Size_Adjust(hObj, [], hFig);
 %
-function ROI_Size_Adjust
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+function ROI_Size_Adjust(hSize, ~, hFig)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 % global STORAGE_VAR
 
-h_size = gco;
-h_axes = get(h_size, 'Parent');
-point = get(h_axes,'CurrentPoint');
-val = get(h_size, 'Userdata');
+%h_size = gco;
+%h_axes = get(h_size, 'Parent');
+aD = getAD(hFig);
+point = aD.hCurrentAxes.CurrentPoint;
+
+ROI_Idx = hSize.UserData(1);
+Ax_Idx = hSize.UserData(2);
+
+loc_ROI_InfoTable = aD.ROI_InfoTable(ROI_Idx, Ax_Idx);
+
+% OLD: val = get(hSize, 'Userdata');
 % 1,2  info table indexes
 % 3-7  handle_values = [h_circle, h_center, h_size, h_angle, h_number]
-% 8-12 ROI_values = [center_x, center_y, size_x, size_y, angle]
+% 8-12 ROI_values =   [center_x, center_y, size_x, size_y, angle]
 
-%CALCULATION
-%val(8:12)
-%alpha_deg = val(12)*180/pi
+% NEW: ROI_handles (1-5) = [h_circle, h_center, h_size, h_angle, h_number]
+% ROI_Data (1-5)    = [center_x, center_y, size_x, size_y, angle]
+
+if ~(hSize==loc_ROI_InfoTable.ROI_Handles(3))
+    debugDisp(' Error! HObject In doesn not match expected object!!');
+end
+
+hCircle = loc_ROI_InfoTable.ROI_Handles(1); 
+hAngle  = loc_ROI_InfoTable.ROI_Handles(4);
+hNumber = loc_ROI_InfoTable.ROI_Handles(5);
 
 % get the new position
-center_pt = [val(8) val(9)];
-v1 = [point(1,1)           point(1,2)]           - center_pt;   % new position
-v2 = [get(val(5),'xdata'), get(val(5),'ydata')]  - center_pt ;  % old position
 
+loc_Values = loc_ROI_InfoTable.ROI_data;
+center_pt = [loc_Values(1),  loc_Values(2)];
+v1 = [point(1,1)   point(1,2)]   - center_pt;   % new position
+
+%v2 = [hSize.XData, hSize.YData]  - center_pt ;  % old position
 
 
 % Undo rotation v1 -> inverse v1 - val(12)= angle from +x-axis to circle marker 
-alpha = val(12);
-%alpha = alpha;
+alpha = loc_Values(5);
 rotmat =[cos(alpha), -sin(alpha); sin(alpha), cos(alpha)];
 % undo rotation by alpha on the new point
 iv1 = rotmat'*v1';
 
-% d = cross([v2 0],[v1 0])     % angle between old size marker and new size marker                              % after return to horizontal plane
-% theta=  acos(  dot(v1,v2)   /(norm(v1) * norm(v2)) ) *sign(d(3));
-% theta_deg = theta*180/pi
-
-% determine the skew and use the ratio of the old skew value to the new
-% skew value to determine the new coordinates
+% Determine the skew and use the ratio of the old skew value to the new
+%  skew value to determine the new coordinates
 sx2 = -(iv1(1));
 sy2 = -(iv1(2));
 
-%temp_skewmat = [sx2/val(10) 0 ; 0 sy2/val(11)];
-skewmat = rotmat * [sx2/val(10) 0 ; 0 sy2/val(11)] * rotmat';
+skewmat = rotmat * [sx2/loc_Values(3) 0 ; 0 sy2/loc_Values(4)] * rotmat';
 
-c = skewmat * [get(val(3),'xdata') - center_pt(1); get(val(3), 'ydata') - center_pt(2)];
-set(val(3), 'xdata', c(1,:) + center_pt(1), 'ydata', c(2,:) + center_pt(2));
+c = skewmat * [hCircle.XData - center_pt(1); hCircle.YDdata - center_pt(2)];
+hCircle.XData =  c(1,:) + center_pt(1);
+hCircle.YData =  c(2,:) + center_pt(2);
 
-c = (skewmat*[ [get(val(5),'xdata'), get(val(5),'ydata')] - center_pt]')' + center_pt;
-set(val(5), 'xdata', c(1), 'ydata', c(2), 'UserData', [val(1:9), sx2, sy2, val(12)]);
-c = (skewmat*[  [ get(val(6),'xdata'),get(val(6), 'ydata') ] - center_pt]')'  + center_pt;
-set(val(6), 'xdata', c(1), 'ydata', c(2));
-p = get(val(7),'Position')';
+c = (skewmat* ( [hSize.XData , hSize.YData  ] - center_pt)' )'  + center_pt;
+%set(val(5), 'xdata', c(1), 'ydata', c(2), 'UserData', [val(1:9), sx2, sy2, val(12)]);
+hSize.XData =  c(1);
+hSize.YData =  c(2);
+loc_Values =  [loc_Values(1:2), sx2, sy2, loc_Values(5)];
+
+c = (skewmat* ( [hAngle.XData, hAngle.YData] - center_pt)' )'  + center_pt;
+hAngle.XData =  c(1);
+hAngle.YData =  c(2);
+
+p = hNumber.Position;
 
 c = skewmat* ( p(1:2) - center_pt') + center_pt';
-set(val(7), 'Position',    [c ;p(3)]);
+hNumber.Position = [c ; p(3)];
 
-set(h_size,'Userdata', [val(1:9), sx2, sy2 ,val(12)]);
+%set(h_size,'Userdata', [val(1:9), sx2, sy2 ,val(12)]);
 
+aD.ROI_InfoTable(ROI_Idx, Ax_Idx).ROI_Data = loc_Values;
+storeAD(aD);
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % DEBUG Trajectory Storage
 % STORAGE_VAR(end+1).alpha = alpha_deg;
@@ -1353,111 +1229,140 @@ set(h_size,'Userdata', [val(1:9), sx2, sy2 ,val(12)]);
 % STORAGE_VAR(end).sy2 = sy2;
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function ROI_Size_Adjust_Exit
+function ROI_Size_Adjust_Exit(~, ~, hFig, ROI_Idx, Ax_Idx)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
+
+aD = getAD(hFig);
+
+%h_size = gco;
+%val = get(h_size, 'Userdata');
+%set(val(3:7), 'userdata', val);
+%data_holder = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
+%fig = data_holder{1};
+%fig2 = data_holder{2};
+%ifig = data_holder{6};
+%h_all_axes = data_holder{3};
+%handles = guidata(fig2);
+
+%applyAll = aD.hGUI.Link_ROI_togglebutton.Value;
+
+%userdata = get(findobj(fig, 'Tag', 'figROITool'),'Userdata')
+%ROI_info_table = userdata{1}
 
 
-h_size = gco;
-val = get(h_size, 'Userdata');
-set(val(3:7), 'userdata', val);
 
-data_holder = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
-fig = data_holder{1};
-fig2 = data_holder{2};
-ifig = data_holder{6};
-h_all_axes = data_holder{3};
-handles = guidata(fig2);
-apply_all = get(handles.Link_ROI_togglebutton,'Value');
 
-userdata = get(findobj(fig, 'Tag', 'figROITool'),'Userdata')
-ROI_info_table = userdata{1}
-update_list = [];
+% OLD: val = get(hSize, 'Userdata');
+% 1,2  info table indexes
+% 3-7  handle_values = [h_circle, h_center, h_size, h_angle, h_number]
+% 8-12 ROI_values =   [center_x, center_y, size_x, size_y, angle]
+% NEW:
+% ROI_Handles (1-5) = [h_circle, h_center, h_size, h_angle, h_number] (graphics objects)
+% ROI_Data (1-5)    = [center_x, center_y, size_x, size_y, angle]     (numbers)
+
 
 if apply_all
-    for i = 1:length(h_all_axes(find(h_all_axes)))       
-        if ~isempty(ROI_info_table(val(1),i).ROI_Exists) & ROI_info_table(val(1),i).ROI_Exists
-            set(ROI_info_table(val(1),i).ROI_Data(1,1), ...
-                'xdata', get(val(3),'xdata') ,...
-                'ydata', get(val(3),'ydata'));
-            set(ROI_info_table(val(1),i).ROI_Data(1,2), ...
-                'xdata', get(val(4),'xdata') ,...
-                'ydata', get(val(4),'ydata'));
-            set(ROI_info_table(val(1),i).ROI_Data(1,3), ...
-                'xdata', get(val(5),'xdata') ,...
-                'ydata', get(val(5),'ydata'));
-            set(ROI_info_table(val(1),i).ROI_Data(1,4), ...
-                'xdata', get(val(6),'xdata') ,...
-                'ydata', get(val(6),'ydata'));
-            set(ROI_info_table(val(1),i).ROI_Data(1,5), ...
-                'position', get(val(7), 'Position'));
-            for k = 1:5
-                old_val  = get(ROI_info_table(val(1),i).ROI_Data(1,k), 'Userdata');
-                set(ROI_info_table(val(1),i).ROI_Data(1,k),...
-                    'Userdata', [old_val(1:7), val(8:end)]); 
-            end; 
-            ROI_info_table(val(1),i).ROI_Data(2,1:5) =  val(8:end);
+    updateList = zeros(length(aD.hAllAXes),1);
+    listCounter=1;
+    for i = 1:length(aD.hAllAxes)       
+        
+        if ~isempty(aD.ROI_InfoTable(ROI_Idx,i).ROI_Exists) && ROI_InfoTable(ROI_Idx,i).ROI_Exists
+            % For ROIs that exist, copy relevant values form recently  modified ROI
+            aD.ROI_InfoTable(ROI_Idx,i).ROI_handles(1).XData   = aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_Handles(1).XData;
+            aD.ROI_InfoTable(ROI_Idx,i).ROI_handles(1).XData   = aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_Handles(1).YData;
+            
+            aD.ROI_InfoTable(ROI_Idx,i).ROI_handles(2).XData   = aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_Handles(2).XData;
+            aD.ROI_InfoTable(ROI_Idx,i).ROI_handles(2).YData   = aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_Handles(2).YData;
+            
+            aD.ROI_InfoTable(ROI_Idx,i).ROI_handles(3).XData   = aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_Handles(3).XData;
+            aD.ROI_InfoTable(ROI_Idx,i).ROI_handles(3).YData   = aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_Handles(3).YData;
+
+            aD.ROI_InfoTable(ROI_Idx,i).ROI_handles(4).XData   = aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_Handles(4).XData;
+            aD.ROI_InfoTable(ROI_Idx,i).ROI_handles(4).YData   = aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_Handles(4).YData;
+            
+            aD.ROI_InfoTable(ROI_Idx,i).ROI_handles(5).Position= aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_Handles(5).Position;
+            
+%             for k = 1:5
+%                 old_val  = get(ROI_info_table(val(1),i).ROI_Data(1,k), 'Userdata');
+%                 set(ROI_info_table(val(1),i).ROI_Data(1,k),...
+%                     'Userdata', [old_val(1:7), val(8:end)]); 
+%             end; 
+            
+            aD.ROI_InfoTable(ROI_Idx,i).ROI_Data(1:5) =  aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_Data(1:5);
 			
-			if ~isempty (ROI_info_table(val(1),i).ROI_x_original)
-				xdata = get(val(3),'xdata')';
-				ydata = get(val(3),'ydata')';
+			if ~isempty(aD.ROI_InfoTable(ROI_Idx,i).ROI_x_original)
+                
+				xdata = aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_handles(1).XData';
+				ydata = aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_handles(1).YData';
+                
 				% downsample the new data to create "original" data
-				ROI_info_table(val(1),i).ROI_x_original = xdata(1:Sample_Rate:end);
-				ROI_info_table(val(1),i).ROI_y_original = ydata(1:Sample_Rate:end);				
+				aD.ROI_InfoTable(ROI_Idx,i).ROI_x_original = xdata(1:Sample_Rate:end);
+				aD.ROI_InfoTable(ROI_Idx,i).ROI_y_original = ydata(1:Sample_Rate:end);				
 			end;
 			
-            update_list(size(update_list,1)+1,:) = [val(1), i];       
+            updateList(listCounter,:) = [ROI_Idx, i];      
+            listCounter=listCounter+1;
         end;
     end;
+    updateList = updateList(1:(listCounter)-1,:);
+  
+    
 else
-    update_list = [val(1:2)];
+    % Update only pertains to current ROI
+    updateList = [ROI_Idx, Ax_Idx];
 	
-	if ~isempty(ROI_info_table(val(1),val(2)).ROI_x_original)
-		xdata = get(val(3),'xdata')';
-		ydata = get(val(3),'ydata')';
+	if ~isempty(aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_x_original)
+		xdata = aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_handles(1).XData';
+        ydata = aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_handles(1).YData';
 		% downsample the new data to create "original" data
-		ROI_info_table(val(1),val(2)).ROI_x_original = xdata(1:Sample_Rate:end);
-		ROI_info_table(val(1),val(2)).ROI_y_original = ydata(1:Sample_Rate:end);
+		aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_x_original = xdata(1:Sample_Rate:end);
+		aD.ROI_InfoTable(ROI_Idx,Ax_Idx).ROI_y_original = ydata(1:Sample_Rate:end);
 	end;
 	
 	
 end;
 
-userdata{1} = ROI_info_table;
-set(findobj(fig, 'Tag', 'figROITool'),'Userdata',userdata);
+%userdata{1} = ROI_info_table;
+%set(findobj(fig, 'Tag', 'figROITool'),'Userdata',userdata);
 
-Change_Current_ROI(val(1:2));
-Update_ROI_Info(update_list);
-Update_ROI_Info_String(update_list);
+Change_Current_ROI(ROI_Idx, Ax_Idx);
+
+Update_ROI_Info(updateList);
+Update_ROI_Info_String(updateList);
 Resort_ROI_Info_Listbox;
-figure(fig2);
-figure(ifig);
-figure(fig);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+figure(aD.hToolFig);
+figure(aD.hInfoFig);
+figure(aD.hFig);
 %
-function ROI_Pos_Adjust_Entry(origin);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function ROI_Pos_Adjust_Entry(origin)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Execute once at the beggining of a drag cycle
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
-
+dispDebug;
 
 fig = gcf;
 set(fig, 'WindowButtonMotionFcn', ['ROI_tool(''ROI_Pos_Adjust'',' num2str(origin) ');']);
 set(fig,'WindowButtonUpFcn', 'ROI_tool(''ROI_Pos_Adjust_Exit'')');
 Change_Current_Axes;
 ROI_Pos_Adjust(origin);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function ROI_Pos_Adjust(origin)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 h_pos = gco;
 h_axes = get(h_pos, 'Parent');
@@ -1493,15 +1398,15 @@ set(val(7), 'Position',  [c ;p(3)]);
 
 % update info in both number and center
 set([val(4), val(7)], 'Userdata', [val(1:7), d(1:2), val(10:12)]);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function ROI_Pos_Adjust_Exit
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 h_pos = gco;
 % 1,2  infor table indexes
@@ -1586,14 +1491,15 @@ Resort_ROI_Info_Listbox;
 figure(fig2);
 figure(ifig);
 figure(fig);
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function handles = Prep_Draw_ROI(mode, h_axes);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+function handles = Prep_Draw_ROI(mode, h_axes)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 h_all_axes = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
 if isempty(h_axes)
@@ -1709,15 +1615,16 @@ if mode == EDIT
 	% Now draw the current ROIsand setup the points
 	Prep_Edit_Current_ROI(handles);
 end;
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Prep_Edit_Current_ROI(handlesDraw);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function Prep_Edit_Current_ROI(handlesDraw)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Function to prepare editing of an exisitng ROI
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 data_holder = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
 fig = data_holder{1};
@@ -1729,7 +1636,7 @@ h_current_axes = data_holder{4};
 colororder = repmat('rbgymcw',1,4);
 
 % disable the other figures, if they exist
-if ~isempty(fig2), 
+if ~isempty(fig2)
 	[handlesDraw.h_objects, handlesDraw.object_enable_states] = Change_Figure_States('Disable', [fig2, ifig]);
 end;
 
@@ -1753,7 +1660,7 @@ end
 % Should be made more general (i.e. matrix of distances between points, 
 % remove all second points with zero distance
 thresh = 0.0001;
-if ( abs( x_coors(1)- x_coors(end)) < thresh) & ( abs( y_coors(1)- y_coors(end)) < thresh)
+if ( abs( x_coors(1)- x_coors(end)) < thresh) && ( abs( y_coors(1)- y_coors(end)) < thresh)
 	x_coors = x_coors(1:end-1);
 	y_coors = y_coors(1:end-1);
 end;
@@ -1778,15 +1685,16 @@ guidata(handlesDraw.Parent_figure, handlesDraw);
 
 Draw_Spline;
 Show_Pixels;
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Draw_ROI_Finish(Mode);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function Draw_ROI_Finish(Mode)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Function to finish creating Freehand ROIs or exit from editing any ROI
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 handlesDraw = guidata(findobj('Tag', 'ROI_Draw_figure'));
 stored_data = get(handlesDraw.Parent_figure, 'Userdata');
@@ -1796,7 +1704,7 @@ apply_spline = get(handlesDraw.Spline_checkbox,'Value');
 		ROI_info_table, first_ROI_flag, handlesROI, h_objects, object_enable_states	]  = deal(stored_data{:});
 	
 % Enable objects after in Draw Mode
-if ~isempty(fig2), 
+if ~isempty(fig2)
 	Change_Figure_States('Enable', [fig2, ifig], h_objects,object_enable_states);
 end;
 
@@ -1805,7 +1713,7 @@ end;
 delete(handlesDraw.Parent_figure);
 
 pts = handlesDraw.Points;
-if isempty(pts) | strcmp(Mode, 'Cancel')
+if isempty(pts) || strcmp(Mode, 'Cancel')
 	return
 end;	
 
@@ -1915,16 +1823,18 @@ Highlight_Current_ROI(i_current_ROI);
 figure(fig2);
 figure(ifig);
 figure(fig);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Edit_ROI_Finish(Mode);
+function Edit_ROI_Finish(Mode)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % function to insert the edited ROI into the ROI_info table
 % MODE = 'DONE' - insert ROI
 % MODE = 'CANCEL' - do nothing but close the ROI
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 handlesDraw = guidata(findobj('Tag', 'ROI_Draw_figure'));
 apply_spline = get(handlesDraw.Spline_checkbox,'Value');
@@ -2081,27 +1991,31 @@ Highlight_Current_ROI(update_list)
 figure(fig2);
 figure(ifig);
 figure(fig);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function ROI_Draw_Entry(h_figure);
+function ROI_Draw_Entry(h_figure)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Execute once at the beggining of a drag cycle
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 global OLD_POINT; 
 OLD_POINT = [-10, -10];  % initialize so that first point is automatically drawn.
 set(h_figure, 'WindowButtonMotionFcn', 'ROI_tool(''ROI_Draw'');');
 set(h_figure, 'WindowButtonUpFcn',     'ROI_tool(''ROI_Draw_Exit'')'   );
 ROI_Draw;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function ROI_Draw;
+function ROI_Draw
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 global OLD_POINT;
 h_axes = gca;
@@ -2119,25 +2033,28 @@ if  d > point_drop_pix_thresh
 	OLD_POINT = p;
 end;
 guidata(get(h_axes, 'Parent'), handlesDraw );
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function ROI_Draw_Exit
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 Sort_Points;
 Draw_Spline;
 Show_Pixels;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function ROI_Point_Move_Entry(h_figure, h_point);
+function ROI_Point_Move_Entry(h_figure, h_point)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Execute once at the beggining of a drag cycle
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 sel_type = get(h_figure, 'SelectionType');
 handlesDraw = guidata(h_figure);
@@ -2169,26 +2086,27 @@ else
 	Draw_Spline;
 	Show_Pixels;
 end;
-	
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function ROI_Point_Move(h_point)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 h_point = str2num(h_point);
 h_axes = get(h_point, 'Parent');
 p = get(h_axes,'CurrentPoint');
 set(h_point, 'Xdata', p(1,1), 'Ydata', p(1,2));
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function ROI_Point_Move_Exit(h_point)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 % Change the position of the point in the cue
 handlesDraw = guidata(findobj('Tag', 'ROI_Draw_figure'));
@@ -2214,16 +2132,18 @@ handlesDraw.Points(idx,:) = new_pos;
 guidata(findobj('Tag', 'ROI_Draw_figure'),handlesDraw);
 Draw_Spline;
 Show_Pixels;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Draw_Spline;
+function Draw_Spline
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Function that draws the fitted spline to a series of point on an ROI
 % curve. If spline is not desired, a straight line fit (polygon) is
 % created.
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 handlesDraw = guidata(findobj('Tag', 'ROI_Draw_figure'));
 draw_spline = get(handlesDraw.Spline_checkbox, 'Value');
@@ -2240,10 +2160,10 @@ points = handlesDraw.Points;
 if ~isempty(points)
 	
 	close_ROI = get(handlesDraw.Close_ROI_checkbox, 'Value');
-	if close_ROI,
+	if close_ROI
 		points = [points; points(1,:)];
 	end;
-	if  draw_spline & ( size(points,1) > 1)	
+	if  draw_spline && ( size(points,1) > 1)	
 		% draw or redraw spline
 		set(handlesDraw.Parent_figure, 'CurrentAxes', handlesDraw.Temp_Spline_axes);
 		[xs, ys] = Spline_ROI(points(:,1),points(:,2));
@@ -2256,14 +2176,16 @@ if ~isempty(points)
 	end;	
 end;
 guidata(findobj('Tag', 'ROI_Draw_figure'), handlesDraw);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function Toggle_Spline_Poly(h_checkbox)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %function to toggle between drawing splines and polygons
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 val = get(h_checkbox, 'Value');
 
@@ -2274,15 +2196,18 @@ else
 end;
 Draw_Spline;
 Show_Pixels;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function Toggle_Draw_Mode(Mode)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
+
 % switch between draw mode and edit-push more
-handlesDraw = guidata(findobj('Tag', 'ROI_Draw_figure'));;
+handlesDraw = guidata(findobj('Tag', 'ROI_Draw_figure'));
 
 if strcmp(Mode, 'Push')	
 	set(handlesDraw.Parent_figure, 'PointerShapeCData', handlesDraw.cursors.plus_cursor);
@@ -2304,29 +2229,31 @@ elseif strcmp(Mode, 'Draw')
 	end;
 	guidata(findobj('Tag', 'ROI_Draw_figure'),handlesDraw);
 end;
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function ROI_Push_Move_Cursor;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+function ROI_Push_Move_Cursor
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 h_axes = gca;
 p = get(h_axes, 'CurrentPoint');
 h_circle = findobj(h_axes, 'Tag', 'Cursor_Circle');
 xy = get(h_circle, 'UserData');
 set(h_circle, 'XData', xy(:,1) + p(1,1), 'YData', xy(:,2) + p(1,2));
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Sort_Points;
+function Sort_Points
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Function to sort the newly added points to the end of the cue
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 h_axes = gca;
 handlesDraw = guidata(get(h_axes, 'Parent'));
@@ -2380,27 +2307,30 @@ end;
 % Store points and clear new pts
 handlesDraw.NewPoints = [];
 guidata(get(h_axes, 'Parent'),handlesDraw );
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function ROI_Push_Point_Entry(h_figure);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function ROI_Push_Point_Entry(h_figure)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Execute once at the beggining of a drag cycle
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 % Normal selection = move point around
 set(h_figure, 'WindowButtonMotionFcn', ['ROI_tool(''ROI_Push_Point'');']);
 set(h_figure, 'WindowButtonUpFcn',     ['ROI_tool(''ROI_Push_Point_Exit'');']);
 ROI_Push_Point;
-	
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function ROI_Push_Point
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 handlesDraw = guidata(findobj('Tag', 'ROI_Draw_figure'));
 points = handlesDraw.Points;
@@ -2431,25 +2361,29 @@ if ~isempty(points)
 	Draw_Spline;
 end;
 ROI_Push_Move_Cursor;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function ROI_Push_Point_Exit;
+function ROI_Push_Point_Exit
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 % Update the Pixels 
 handlesDraw = guidata(findobj('Tag', 'ROI_Draw_figure'));
 set(handlesDraw.Parent_figure, 'WindowButtonMotionFcn', 'ROI_tool(''ROI_Push_Move_Cursor'');');
 Show_Pixels;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Draw_Clear_ROI;
+function Draw_Clear_ROI
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 handlesDraw = guidata(findobj('Tag', 'ROI_Draw_figure'));
 all_points = findobj(handlesDraw.Temp_Spline_axes,'Type', 'line')';
@@ -2466,13 +2400,15 @@ handlesDraw.Spline = [];
 handlesDraw.Points = [];
 handlesDraw.h_pixels = [];
 guidata(findobj('Tag', 'ROI_Draw_figure'), handlesDraw );
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Show_Pixels;
+function Show_Pixels
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 handlesDraw = guidata(findobj('Tag', 'ROI_Draw_figure'));
 handlesDraw.Show_Pixels = get(handlesDraw.Show_Pixels_checkbox, 'Value');
@@ -2482,7 +2418,7 @@ if ~isempty(handlesDraw.h_pixels)
 	handlesDraw.h_pixels = [];
 end;
 
-if handlesDraw.Show_Pixels & ~isempty(handlesDraw.Points)
+if handlesDraw.Show_Pixels && ~isempty(handlesDraw.Points)
 	if ~isempty(handlesDraw.Spline)
 		xpts = handlesDraw.Spline(:,1);
 		ypts = handlesDraw.Spline(:,2);
@@ -2493,20 +2429,22 @@ if handlesDraw.Show_Pixels & ~isempty(handlesDraw.Points)
 	im = get(findobj(handlesDraw.Temp_Spline_axes,'Type', 'Image'),'CData');		
 	% 	xx = repmat([1:size(im,2)], size(im,1),1);
 	% 	yy = repmat([1:size(im,1)]',1,          size(im,2));
-	[xx,yy] = meshgrid([1:size(im,2)],[1:size(im,1)]);
+	[xx,yy] = meshgrid( 1:size(im,2) , 1:size(im,1));
 	rr = inpolygon(xx,yy,xpts,ypts);
 	[ii,jj] = find(rr);
 	h_pixels = plot3(jj,ii,repmat(-1, size(jj)), 'bs' , 'MarkerSize', 2, 'MarkerFaceColor', 'b');
 	handlesDraw.h_pixels = h_pixels;
 end;
 guidata(findobj('Tag', 'ROI_Draw_figure'), handlesDraw );
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function Draw_Change_Edit_Value(h_edit,Limits, Default_value)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 % Function to insure number entered into editable text
 % box is valid
@@ -2524,13 +2462,15 @@ end;
 if reject
 	set(h_edit, 'String', num2str(Default_value));
 end;	
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Draw_Push_Radius(Mode);
+function Draw_Push_Radius(Mode)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 % Function to (re)draw the cursor for the push tool
 % if Mode == 1, then first time in, and draw cursor
@@ -2540,33 +2480,34 @@ basic_points = 64;
 theta = 0:(360/basic_points):360;
 [x,y] = pol2cart(theta*pi/180, repmat(handlesDraw.circle_size * handlesDraw.circle_ratio , size(theta,1), size(theta,2)));
 
-if ~isempty(handlesDraw.h_circle) | (Mode==1)
+if ~isempty(handlesDraw.h_circle) || (Mode==1)
 	delete(handlesDraw.h_circle);
 	handlesDraw.h_circle = plot(x-100 ,y-100, 'w-', 'Tag', 'Cursor_Circle', 'Userdata', [x',y']); 
 	guidata(findobj('Tag', 'ROI_Draw_figure'), handlesDraw );
 end;
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Draw_Change_Radius_Value(h_edit);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+function Draw_Change_Radius_Value(h_edit)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 handlesDraw = guidata(findobj('Tag', 'ROI_Draw_figure'));
 handlesDraw.circle_ratio = str2num(get(handlesDraw.Push_Radius_edit, 'String'))/100;
 guidata(findobj('Tag', 'ROI_Draw_figure'), handlesDraw );
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function Update_ROI_Info(update_list)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % updates the roi info (mean, std, pixs, etc) into the ROI table
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 if ~isempty(update_list)
     h_all_axes = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
@@ -2647,13 +2588,15 @@ if ~isempty(update_list)
     set(findobj(fig, 'Tag','figROITool'), 'UserData', userdata);
 
 end;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Listbox_Change_Current_ROI;
+function Listbox_Change_Current_ROI
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 h_listbox = gcbo;
 
 % now determine the index of the current ROI
@@ -2684,59 +2627,73 @@ if ~isempty(str)
 	
 	set(h_data_holder,'UserData',data);
 end
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Resort_ROI_Info_Listbox(h_pushbutton);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function Resort_ROI_Info_Listbox(varargin)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Function to reassemble the String_info_table into a page 
 % for display in the listbox; selects the current ROI;
 % if called by the toggle button, handle is sent in, if 
 % called after the addition of data to the _table,
 % then no handle is sent in.
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
-if nargin == 0 
-    h_pushbutton = findobj('Tag', 'Sort_Order_pushbutton');
-end;
-a = get(h_pushbutton, {'Value','Userdata', 'String', 'Parent'} );
-sort_order = a{1}; new_str= a{2}; cur_str = a{3}; ifig = a{4};
+if nargin == 1
+    hFig = varargin{1};
+else 
+    % call form pushbutton on GUI
+    hFig = varargin{3};
+end
+aD = getAD(hFig);    
+
+%a = get(aD.hGUIInfo.Sort_Order_pushbutton, {'Value','Userdata', 'String', 'Parent'} );
+% sortOrder = a{1}; new_str= a{2}; cur_str = a{3}; ifig = a{4};
+% sortOrder = 1 = sort by image, 2 = sort by ROI
+
+sortOrder = aD.hGUIInfo.Sort_Order_pushbutton.Value
+newStr    = aD.hGUIInfo.Sort_Order_pushbutton.UserData
+curStr    = aD.hGUIInfo.Sort_Order_pushbutton.String
+%aD.hGUIInfo.Sort_Order_pushbutton.Parent
+
 % sort_order = 1 = sort by image, 2 = sort by ROI
 
 % if call from button, toggle button string
-if nargin ==1, set(h_pushbutton, 'String', new_str, 'UserData', cur_str); end;
+if nargin ==3
+    %set(h_pushbutton, 'String', new_str, 'UserData', cur_str); end;
+    aD.hGUIInfo.Sort_Order_pushbutton.UserData = curStr;
+    aD.hGUIInfo.Sort_Order_pushbutton.String   = newStr;
+end
 
-handles = guidata(ifig);
-String_info_table = get(handles.ROI_Info_listbox, 'Userdata');
-userdata = get(findobj('Tag', 'figROITool'), 'Userdata'); 
-ROI_info_table = userdata{1};
-
-if strcmp('Image', new_str)
-    String_info_table = permute(String_info_table, [2 1 3]);
+if strcmp('Image', newStr)
+    String_InfoTable = permute(aD.String_InfoTable, [2 1 3]);
 end;
 
-st = size(String_info_table);
-String_info_table = reshape(String_info_table, st(1)*st(2), st(3));
+st = size(String_InfoTable);
+String_InfoTable = reshape(String_InfoTable, st(1)*st(2), st(3));
 
 % now deblank empty rows
 % assumes last digit in row is not space in normal strings
-if (size(String_info_table, 1)>1)
-    g = find(String_info_table(:,size(String_info_table,2))'=='x');
-    String_info_table = String_info_table(g,:);
+if (size(String_InfoTable, 1)>1)
+    g =  String_InfoTable(:,size(String_InfoTable,2))'=='x';
+    String_InfoTable = String_InfoTable(g,:);
 end;
-set(handles.ROI_Info_listbox,'String', String_info_table(:,1:end-1));
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%set(handles.ROI_Info_listbox,'String', String_InfoTable(:,1:end-1));
+aD.String_InfoTabel = String_InfoTable;
 %
-function Save_ROI(pname, fname);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function Save_ROI(pname, fname)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %Subfunction that saves the ROI_info_table and String_update_table
 % into .mat file and/or saves the Page displayed in the listbox to a text file
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 h_data_holder = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
 fig = h_data_holder{1};    
@@ -2806,15 +2763,16 @@ if save_text
     end;
     fclose(fid);
 end;    
-  
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Load_ROI(pathname,filename);
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% function to load an old ROI.mat file
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%  
 
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function Load_ROI(pathname,filename)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+% function to load an old ROI.mat file
+dispDebug;
 
 if nargin < 2
     [filename, pathname] = uigetfile('*.mat', 'Pick an Mat-file containing ROIs');
@@ -2869,17 +2827,18 @@ else
     end;
     
 end;
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Close_Parent_Figure;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function Close_Parent_Figure
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % function to make sure that if parent figure is closed, 
 % the ROI info, ROI Tooland ROI Draw figures are closed too.
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 %set(findobj('Tag', 'RT_Info_figure'), 'Closerequestfcn', 'closereq');
 try 
@@ -2895,15 +2854,16 @@ end;
 try 
     delete(findobj('Tag','ROI_Draw_figure'));
 end;
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Menu_ROI_Tool;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+function Menu_ROI_Tool
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 hNewMenu = gcbo;
 checked=  umtoggle(hNewMenu);
@@ -2919,41 +2879,233 @@ else
     set(hNewMenu, 'Checked', 'on');
     set(hNewButton, 'State', 'on' );
 end;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%Support Routines %%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%START LOCAL SUPPORT FUNCTIONS%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % functions called internally function and not as callbacks
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function h_axes = Sort_Axes_handles(h_all_axes);
+function  aD = configActiveFigure(hFig)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% PART I - Environment
+dispDebug;
+objNames = retrieveNames;
+aD = getappdata(hFig, objNames.Name); 
+aD.hFig.Tag = aD.objectNames.activeFigureName; % ActiveFigure
+
+% Check the menu object
+if ~isempty(aD.hMenu), aD.hMenu.Checked = 'on'; end
+
+% Find toolbar and deactivate other buttons
+aD= aD.hUtils.disableToolbarButtons(aD,aD.objectNames.buttonTag);
+
+% Store initial state of all axes in current figure for reset
+aD.hAllAxes =  flipud(findobj(aD.hFig,'Type','Axes'));
+aD.hAllImages   = aD.hUtils.findAxesChildIm(aD.hAllAxes);
+aD.hFig.CurrentAxes = aD.hAllAxes(1);
+
+% Set current figure and axis
+aD = aD.hUtils.updateHCurrentFigAxes(aD);
+
+% Store the figure's old property settings within the fig's own userdata.
+%  Store any setting modified by the tools to make behavior transparent.
+aD.origProperties      = aD.hUtils.retrieveOrigData(aD.hFig);
+aD.origAxesProperties  = aD.hUtils.retrieveOrigData(aD.hAllAxes , ...
+    {'ButtonDownFcn', 'XLimMode', 'YLimMode', 'SortMethod', 'NextPlot'});
+aD.origImageProperties = aD.hUtils.retrieveOrigData(aD.hAllImages , ...
+    {'ButtonDownFcn'});
+
+% Find and close the old tool figures to avoid conflicts
+hToolFigOld     = aD.hUtils.findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
+hToolInfoFigOld = aD.hUtils.findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figInfoTag);
+hToolDrawFigOld = aD.hUtils.findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figDrawTag);
+
+if ~isempty(hToolFigOld),     delete(hToolFigOld);end
+if ~isempty(hToolInfoFigOld), delete(hToolFigOld);end
+if ~isempty(hToolDrawFigOld), delete(hToolFigOld);end
+pause(0.5);
+
+% Make it easy to find this button (tack on 'On') after old fig is closed
+aD.hButton.Tag   = [aD.hButton.Tag,'_On'];
+aD.hMenuPZ.Tag   = [aD.hMenu.Tag, '_On'];
+
+% Set callbacks
+%aD.hFig.WindowButtonDownFcn   =  @Measure_Start;
+aD.hFig.CloseRequestFcn       = {aD.hUtils.closeParentFigure, aD.objectNames.figTag};
+
+% Draw faster and without flashes
+aD.hFig.Renderer = 'zbuffer';
+[aD.hAllAxes.SortMethod] = deal('depth');
+[aD.hAllAxes.XLimMode]   = deal('manual');
+[aD.hAllAxes.YLimMode]   = deal('manual');
+[aD.hAllAxes.NextPlot]   = deal('add');
+[aD.hAllImages.ButtonDownFcn] = deal({@Change_Current_Axes, aD.hFig});
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = configGUI(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+
+aD.hToolFig = openfig(aD.objectNames.figFilename,'reuse');
+
+% Enable save_prefs tool button
+if ~isempty(aD.hToolbar)
+    aD.hSP = findobj(aD.hToolbarChildren, 'Tag', 'figButtonSP');
+    aD.hSP.Enable = 'On';
+%     optionalUIControls = { ...
+%         'Link_ROI_togglebutton', 'Value'; ...
+%         'Create_ROI_checkbox',   'Value'; ...
+%         'Create_ROI_popupmenu',  'Value'; ...
+%         'Paste_ROI_checkbox',    'Value'; ...
+%         'Delete_ROI_popupmenu',  'Value'; ...   
+%         'Save_MAT_checkbox',     'Value'; ...
+%         'Save_TXT_checkbox',     'Value'; ...
+%         'Close_ROI_checkbox',    'Value'; ...
+%         'Show_Pixels_checkbox',  'Value'; ...
+%         'Point_Drop_edit',       'String'; ...
+%         'Push_Radius_edit',      'String'; ...
+%         'Spline_checkbox',       'Value'; ...
+%         'Polygon_checkbox',      'Value'; ...
+%         'Sort_Order_pushbutton', 'Value'; ...
+%         };
+    aD.hSP.UserData = {aD.hToolFig, aD.objectNames.figFilename, optionalUIControls};
+end
+
+% Generate a structure of handles to pass to callbacks, and store it. 
+aD.hGUI = guihandles(aD.hToolFig);
+
+if ismac, aD.hUtils.adjustGUIForMAC(aD.hGUI); end
+
+aD.hUtils.adjustGUIPositionTop(aD.hFig, aD.hToolFig);
+
+aD.hToolFig.Name = aD.objectNames.figName;
+aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};
+
+% Set Object callbacks; return hFig for speed
+aD.hGUI.Create_ROI_pushbutton.Callback     = {@Create_New_ROI,  aD.hFig};
+aD.hGUI.Edit_ROI_pushbutton.Callback       = {@Edit_ROI,  aD.hFig};
+aD.hGUI.Copy_ROI_pushbutton.Callback       = {@Copy_Current_ROI,  aD.hFig};
+aD.hGUI.Paste_ROI_pushbutton.Callback      = {@Paste_Current_ROI,  aD.hFig};
+aD.hGUI.Delete_ROI_pushbutton.Callback     = {@Delete_ROI,  aD.hFig};
+aD.hGUI.Save_ROI_pushbutton.Callback       = {@Save_ROI,  aD.hFig};
+aD.hGUI.Load_ROI_pushbutton.Callback       = {@Load_ROI,  aD.hFig};
+
+aD.hToolFig.Visible = 'On';
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = configOther(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  PART III - Finish setup for other objects
+aD.hRoot.CurrentFigure = aD.hFig;
+
+aD.hFig.CurrentAxes = aD.hCurrentAxes;
+aD.hRoot.CurrentFigure = aD.hToolFig;
+
+if isfield(aD, 'oldAD')
+    % previous call exits. Recover necessary info
+    aD.ROI_InfoTable    = getappdata(fig, 'ROI_InfoTable');
+	aD.ROI_CurrentInfo  = getappdata(fig, 'ROI_CurrentInfo');
+else
+	aD.ROI_InfoTable    = initROIinfoTable;
+    aD.ROI_CurrentInfo  = [];
+end;
+
+% Now check if previous use of ROI Tool left an ROI_InfoTable with handles to reset
+if ~any([aD.ROI_InfoTable.ROI_Exists])
+    % Disable a subset of buttons until an ROI has been created
+    aD.hUtils.enableGUIObjects(aD.hGUI); % all
+    aD.hUtils.disableGUIObjects(aD.hGUI, disableUponStartupObjectList(1))
+
+    aD.ROI_CurrentIdx = [];
+    aD.hInfoFig = [];
+else    
+    % set all graphics related to each ROI to visible and
+    % set the appropiate callback to each one
+    hROI_Elements = [aD.ROI_InfoTable(:).ROI_Data];
+    hROI_Elements = hROI_Elements(1,:);
+    hROI_Elements = hROI_Elements(isgraphics(hROI_Elements));
+    
+    %give each element the correct callack function
+    %h_circle, h_center, h_size, h_angle, h_number;
+    
+    [hROI_Elements(:).Visible ] = deal('On');
+    [hROI_Elements(1:5:end).ButtonDownFcn] = deal({@Change_Current_ROI,     hFig});
+    [hROI_Elements(2:5:end).ButtonDownFcn] = deal({@ROI_Pos_Adjust_Entry,   hFig,  1});  
+    [hROI_Elements(3:5:end).ButtonDownFcn] = deal({@ROI_Size_Adjust_Entry,  hFig});    
+    [hROI_Elements(4:5:end).ButtonDownFcn] = deal({@ROI_Angle_Adjust_Entry, hFig});     
+    [hROI_Elements(5:5:end).ButtonDownFcn] = deal({@ROI_Pos_Adjust_Entry,   hFig,  2});     
+
+    % Enable GUI objects except the paste objects
+    pasteObjects = fieldnames(hGUI);
+    pasteObjects = pasteObjects(startsWith(pasteObjects, 'Paste'));
+    ad.hUtils.enableGUIObjects(hGUI, pasteObjects);
+    
+    % if this is a re-run, there exists a UserData{3}
+    %old_current_info = UserData{3};
+    aD.hCurrentAxes   = aD.currentInfo{4};   % current axes
+    aD.ROI_CurrentIdx = aD.currentInfo{5};   % current ROI(s)
+
+	% now erase the stored data from reactivation from the userdata of the
+	% button
+	%set(hNewButton,'Userdata', {ROI_info_table,h_all_axes} );
+	
+    % open new figure for ROI information
+    % set info in holder temporarily so that the Create function can use it
+    %set(handles.ROI_Title_text, 'UserData', {fig, fig2, h_all_axes, h_axes, currentROIidx, []});
+    
+    aD.hInfoFig = Create_ROI_Info_Figure(currentROIidx);
+    Resort_ROI_Info_Listbox;
+	
+	%set(hNewButton,'Userdata', {ROI_info_table,h_all_axes} );
+ end;
+
+% store all relevant info for faster use during calls
+%set(handles.ROI_Title_text, 'UserData', {fig, fig2, h_all_axes, h_axes, currentROIidx, ifig});
+
+storeAD(aD);
+
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function h_axes = Sort_Axes_handles(h_all_axes)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % receives a column vector of handles and 
 % returns a matrix depending onthe position of 
 % each image on the screen
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 % assumes axes are in a grid pattern
 % so sort them by position on the figure
-for i = 1:length(h_all_axes);
+for i = 1:length(h_all_axes)
     position(i,:) = get(h_all_axes(i),'Position');
 end;
 
 % calculate the different number of row values and the different number of column values to 
 % set the matrix size
-[hist_pos_y, bins_y] = hist(position(:,1));
-[hist_pos_x, bins_x] = hist(position(:,2));
+[hist_pos_y, ~] = hist(position(:,1));
+[hist_pos_x, ~] = hist(position(:,2));
 hy = sum(hist_pos_y>0);
 hx = sum(hist_pos_x>0) ;
-[hist_pos_y, bins_y] = hist(position(:,1), hy);
-[hist_pos_x, bins_x] = hist(position(:,2), hx);
+[hist_pos_y, ~] = hist(position(:,1), hy);
+[hist_pos_x, ~] = hist(position(:,2), hx);
 
 %hist_pos_x = fliplr(hist_pos_x);
 h_axes = zeros(hx,hy);
@@ -2979,85 +3131,127 @@ end;
 for i = 1:size(sorted_positions,1)
     h_axes(round(sorted_positions(i,6)),round(sorted_positions(i,7))) = sorted_positions(i,5);
 end;
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Change_Object_Enable_State(handles, State, Paste_Flag)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
-
-set(handles.Save_ROI_pushbutton, 'Enable', State);
-set(handles.Copy_ROI_pushbutton, 'Enable', State);
-set(handles.Edit_ROI_pushbutton, 'Enable', State);
-
-set(handles.Delete_ROI_pushbutton, 'Enable', State);
-
-set(handles.Save_MAT_checkbox, 'Enable', State);
-set(handles.Save_TXT_checkbox, 'Enable', State);
-set(handles.Delete_ROI_popupmenu, 'Enable', State);
-
-set(handles.Link_ROI_togglebutton, 'Enable', State);
-
-if Paste_Flag
-    set(handles.Paste_ROI_pushbutton, 'Enable', State);
-    set(handles.Paste_ROI_checkbox, 'Enable', State);
-end;
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function exclusionList = disableGUIExclusionList(varargin)
 %
-function ifig = Create_ROI_Info_Figure(i_current_ROI)
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
+
+if nargin==0
+    pasteFlag = 0;
+else
+    pasteFlag = varargin{1};
+end
+
+exclusionList = {
+    'Save_ROI_pushbutton'
+    'Copy_ROI_pushbutton'
+    'Edit_ROI_pushbutton'
+    'Delete_ROI_pushbutton'
+    'Save_MAT_checkbox'
+    'Save_TXT_checkbox'
+    'Delete_ROI_popupmenu'
+    'Link_ROI_togglebutton'
+    };
+
+if pasteFlag
+    exclusionList = [ exclusionList, ...
+        {
+        'Paste_ROI_pushbutton'
+        'Paste_ROI_checkbox'
+        } ];
+end
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function list = disableUponStartupObjectList(pasteFlag)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
+
+if nargin==0
+    pasteFlag = 0;
+end
+    
+list =  {
+    'Save_ROI_pushbutton'
+    'Copy_ROI_pushbutton'
+    'Edit_ROI_pushbutton'
+    'Delete_ROI_pushbutton'
+    'Save_MAT_checkbox'
+    'Save_TXT_checkbox'
+    'Delete_ROI_popupmenu'
+    'Link_ROI_togglebutton'
+    };
+
+if pasteFlag
+    list = [ list; ...
+        {
+        'Paste_ROI_pushbutton'
+        'Paste_ROI_checkbox'
+        } ];
+end
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function aD = Create_ROI_Info_Figure(aD, updateList)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Function to create and initialize the ROI info figure
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
+% 
+% close_str = [ 'hNewButton = findobj(''Tag'', ''figROITool'');' ...
+%         ' if strcmp(get(hNewButton, ''Type''), ''uitoggletool''),'....
+%         ' set(hNewButton, ''State'', ''off'' );' ...
+%         ' else,  ' ...
+%         ' ROI_tool(''Deactivate_ROI_Tool'' ,hNewButton);'...
+%         ' set(hNewButton, ''Value'', 0);',...
+%         ' end;' ];
 
-close_str = [ 'hNewButton = findobj(''Tag'', ''figROITool'');' ...
-        ' if strcmp(get(hNewButton, ''Type''), ''uitoggletool''),'....
-        ' set(hNewButton, ''State'', ''off'' );' ...
-        ' else,  ' ...
-        ' ROI_tool(''Deactivate_ROI_Tool'' ,hNewButton);'...
-        ' set(hNewButton, ''Value'', 0);',...
-        ' end;' ];
+aD.hInfoFig = openfig(aD.objectNames.figInfoFilename);
+aD.hInfoFig.Name = aD.objectNames.figInfoName;
+aD.hInfoFig.Tag  = aD.objectNames.figInfoTag;
+aD.hInfoFig.Resize = 'On'; 
+aD.hInfoFig.CloseRequestfcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};
 
-ifig = openfig('ROI_info_figure');
-set(ifig, 'Name', 'ROI Information' ,...
-    'Tag', 'RT_Info_figure' ,...
-    'Resize' , 'On',...
-    'CloseRequestfcn', close_str...
-    );
-handles = guihandles(ifig);
-guidata(ifig, handles);
+aD.hGUIInfo = guihandles(aD.hInfoFig);
+%guidata(ifig, hGUIInfo);
 
 % add figure handle into the "storage" place
-info_values = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
-findobj(info_values{1},   'Tag', 'figROITool');
-userdata = get(findobj(info_values{1}, 'Tag', 'figROITool'),'Userdata');
-ROI_info_table = userdata{1};
-handles_RT_Tool = guidata(info_values{2});
+%info_values = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
+%findobj(info_values{1},   'Tag', 'figROITool');
+%userdata = get(findobj(info_values{1}, 'Tag', 'figROITool'),'Userdata');
 
-for i = 1:size(ROI_info_table,1)
-    for j = 1:size(ROI_info_table,2)
-        if ROI_info_table(i,j).ROI_Exists
-            current_values = ROI_info_table(i,j).ROI_Info;
+for i = 1:size(aD.ROI_InfoTable,1)
+    for j = 1:size(aD.ROI_InfoTable,2)
+        if aD.ROI_InfoTable(i,j).ROI_Exists
+            currentValues = ROI_InfoTable(i,j).ROI_Info;
             % note that MATLAB automatically pads the strings with empty spaces
-            String_info_table(i,j, :)= Convert_ROI_Info([j,i,current_values]);
+            aD.strInfoTable(i,j, :)= num2strInfo([j,i,currentValues]);
         end;
     end
 end;
         
-    % now store the table in the listbox
-set(handles.ROI_Info_listbox,'Userdata', String_info_table);
+% now store the table in the listbox
+%set(hGUIInfo.ROI_Info_listbox,'Userdata', String_info_table);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Highlight_Current_ROI(i_current_ROI);
+function Highlight_Current_ROI(i_current_ROI)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 h_listbox = findobj('Tag','ROI_Info_listbox');
 String_info_table = get(h_listbox, 'Userdata');
@@ -3074,22 +3268,23 @@ else
     % want to set current ROI to blank (due to deletion of current ROI)
     set(h_listbox, 'Value', []);
 end;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Info_string = Convert_ROI_Info(Info_numbers)
+function stringInfo = num2strInfo(numbersInfo)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % function that converts the information from the ROI info table (numbers)
-% into a string that can be ins14erted in a cell array for display in the
-% list box.
-% temp fixed spacings
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
-a = [     sprintf('%2d', Info_numbers(1))];
-a = [a,   sprintf('%4d', Info_numbers(2))];
+% into a string that can be inserted in a cell array for display in the
+% list box. Uses fixed spacings. Info_numbers has 7 entries.
+dispDebug;
+a = (     sprintf('%2d', numbersInfo(1)));
+a = [a,   sprintf('%4d', numbersInfo(2))];
 
 total_use_digits = 9;
-if Info_numbers(6) < 10^5 
+if numbersInfo(6) < 10^5 
     after_decimal_precision_digits = 2;
     total_precision_digits =  5;
 else
@@ -3097,60 +3292,64 @@ else
     total_precision_digits = total_use_digits;
 end;
 
-a = [a,  FixLengthFormat(Info_numbers(3),total_use_digits, after_decimal_precision_digits)];
-a = [a,  FixLengthFormat(Info_numbers(4),total_use_digits-1, after_decimal_precision_digits)];
+a = [a,  FixLengthFormat(numbersInfo(3),total_use_digits, after_decimal_precision_digits)];
+a = [a,  FixLengthFormat(numbersInfo(4),total_use_digits-1, after_decimal_precision_digits)];
 
-a = [a,  sprintf('%6s',  num2str(Info_numbers(5), total_precision_digits) )];
+a = [a,  sprintf('%6s',  num2str(numbersInfo(5), total_precision_digits) )];
 
-a = [a,  FixLengthFormat(Info_numbers(6),total_use_digits-2, after_decimal_precision_digits)];
-a = [a,  FixLengthFormat(Info_numbers(7),total_use_digits, after_decimal_precision_digits)];
-Info_string = [a, 'x'];
+a = [a,  FixLengthFormat(numbersInfo(6),total_use_digits-2, after_decimal_precision_digits)];
+a = [a,  FixLengthFormat(numbersInfo(7),total_use_digits, after_decimal_precision_digits)];
 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+stringInfo = [a, 'x'];
 %
-function Update_ROI_Info_String(update_list)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function Update_ROI_Info_String(aD, updateList)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Inserts new data into the string array which is later "published"
 % onto the listbox
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
-h_listbox = findobj('Tag','ROI_Info_listbox');
-String_info_table = get(h_listbox, 'Userdata');
+%h_listbox = findobj('Tag','ROI_Info_listbox');
+%String_info_table = get(h_listbox, 'Userdata');
+%info_values = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
+%userdata = get(findobj(info_values{1}, 'Tag', 'figROITool'),'Userdata');
 
-info_values = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
-userdata = get(findobj(info_values{1}, 'Tag', 'figROITool'),'Userdata');
-ROI_info_table = userdata{1};
-
-if nargin == 0
-    update_list = [];
+%ROI_info_table = userdata{1};
+% XXX FIX with preallocation;
+if nargin == 1
+    updateList = [];
     % no update list sent, so update all values in the ROI_info_table
-    for i = 1:size(ROI_info_table,1)
-        for j = 1:size(ROI_info_table,2)
-            update_list(size(update_list,1)+1,:) = [i,j];
+    for i = 1:size(aD.ROI_info_table,1)
+        for j = 1:size(aD.ROI_info_table,2)
+            updateList(size(updateList,1)+1,:) = [i,j];
         end;
     end;    
 end
+% XXX FIX with preallocation;
 
-for i = 1:size(update_list,1)
-    current_info = [update_list(i,[2,1]), ROI_info_table(update_list(i,1), update_list(i,2)).ROI_Info];
-    % if ROI has been deleted, current info second hald will be empty will be empty; Fill with spaces
+for i = 1:size(updateList,1)
+    current_info = [updateList(i,[2,1]), ROI_info_table(updateList(i,1), updateList(i,2)).ROI_Info];
+    % if ROI has been deleted, current info second half will be empty. Fill with spaces
     if length(current_info)>2
-        String_info_table(update_list(i,1), update_list(i,2),:) = Convert_ROI_Info(current_info);
+        aD.ROI_StringInfoTable(updateList(i,1), updateList(i,2),:) = num2strInfo(current_info);
     else
-        String_info_table(update_list(i,1), update_list(i,2),:) =' ';
+        aD.ROI_StringInfoTable(updateList(i,1), updateList(i,2),:) =' ';
     end;
 end;
-set(h_listbox, 'Userdata', String_info_table);
+%aD.hGUIInfo.h_listbox.ROI_Info_listbox.Userdata = aD.ROI_StringInfoTable
 
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function value = FixLengthFormat(num,totalChars, precision)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %   By Patrick 'fishing boy' Helm
 %	FixLengthFormat(num,totalChars, precision)
 %		num is the number to format.	
@@ -3160,6 +3359,8 @@ function value = FixLengthFormat(num,totalChars, precision)
 %				num2str(num)
 %		precision is number of digits after decimal
 %
+dispDebug;
+
 tNum = num2str(num, 16);
 % find the decimal point index, if it exists
 iDecimal = find(tNum == '.');
@@ -3181,16 +3382,17 @@ if ((iDecimal + precision) <= totalChars)
    startPos = totalChars - (precision + iDecimal) + 1;
    value(startPos:totalChars) = tNum(1:(iDecimal+precision));
 end
-    
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%    
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function h_all_axes = Find_All_Axes(varargin);
+function h_all_axes = Find_All_Axes(varargin)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % function to find and sort axes in a figure - or - 
 % get axes handles if array of image handles is sent in
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 if strcmp(get(varargin{1}(1), 'Type'),'figure')
     % sent in nothing; determine axes handles and sort them into the correct matrix
@@ -3209,17 +3411,18 @@ else
         end;
     end;
 end;
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Refresh_ROIs(ROI_table);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function Refresh_ROIs(ROI_table)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Support function to redraw ROIs from the ROI info table
 % assumes a start from the Delete_ROI, case 4 condition;
 % Parallels Create_ROI code;
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 h_all_axes = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
 fig = h_all_axes{1};
@@ -3236,7 +3439,7 @@ handles = guidata(fig2);
 % get old ROI_info table
 Userdata = get(findobj(fig, 'Tag', 'figROITool'), 'UserData');
 
-ROI_info_table = Init_ROI_info_table;
+ROI_info_table = initROIinfoTable;
 
 temp_h_all_axes = find(h_all_axes);
 % cycle through to create 0's in the Exist field. marks the ROI table as initialized
@@ -3376,20 +3579,20 @@ Resort_ROI_Info_Listbox;
 % update current ROI index
 set(findobj('Tag', 'ROI_Title_text'), 'Userdata', { fig, fig2, h_all_axes, h_axes, i_current_ROI, ifig});
 Highlight_Current_ROI(i_current_ROI);
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function ROI_table = Insert_Other_Coordinates(ROI_table);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function ROI_table = Insert_Other_Coordinates(ROI_table)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Support function to insert "other coordinates" to elliptical ROIs that do not have them:
 % need positions for the size, angle and number handles. 
 % Places the results of the calculations into the ROI_Data field of each element
 % in the ROI info table. Elliptical ROI must have even number of non-equal points. If ellipse is 
 % closed, then there must be an odd number of points. Prefereably number of points divisible by 4.
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 debug = 0;
 colororder = repmat('rbgymcw',1,4);
@@ -3670,17 +3873,18 @@ for i = 1:size(ROI_table,2)
     end;
     
 end;
-    
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function a = fit_ellipse(x, y)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%
 % Support function to fit an ellipse from given x,y data points.
 % Used to recalculate corner points for elliptical ROIs loaded. 
 % a=> [ a1*x^2 + a2*x*y a3*y^2 + a4*x + a5*y + a6 = 0]
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 if size(x,1) == 1
     x = x';
@@ -3694,44 +3898,50 @@ S3 = D2'*D2;                              % linear part of the scatter matrix
 T = -inv(S3)*S2';                         % for getting a2 from a1
 M = S1 + S2*T;                            % reduced scatter matrix
 M = [M(3,:)./2; - M(2,:); M(1,:)./2;];    % premultiply by inv(C1)
-[e_vec, e_val] = eig(M);                    % solve eigensystem
+[e_vec, e_val] = eig(M);                   % solve eigensystem
 cond = 4*e_vec(1,:).*e_vec(3,:) - e_vec(2,:).^2; % evaluate a'Ca
 a1 = e_vec(:,find(cond > 0));              % eigenvector for min. pos. eigenvalue
-a = [a1; T*a1];                           % ellipse coefficients
+a = [a1; T*a1];                            % ellipse coefficients
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Close_Old_Figure(Figure_Name, Figure_Handle);
+function Close_Old_Figure(Figure_Name, Figure_Handle)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+dispDebug;
 
 if ~isempty(Figure_Name)
 	Figure_Handle = findobj('Tag', Figure_Name);
 end;
 if ~isempty(Figure_Handle)
 	set(Figure_Handle,'CloseRequestFcn', 'closereq');
-	try close(Figure_Handle);
-	catch delete(Figure_Handle);
+	try 
+        close(Figure_Handle);
+    catch
+        delete(Figure_Handle);
 	end;
 end;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function [h_objects, object_enable_states] = Change_Figure_States(State, figure_handles,  h_objects, object_enable_states)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function to set the enable states of the uicontrol objects of various
 % figures. Figure handles sent in are used to find all the objects, 
 % if the object handles are not sent in initially. 
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 if nargin <3
 	h_objects = findobj(figure_handles, 'type', 'uicontrol');
 	object_enable_states = {};
 else
 	if length(h_objects) ~= length(object_enable_states)
-		disp(['Can''t Enable Objects!']);;
+		disp(['Can''t Enable Objects!']);
 	end;
 end;
 
@@ -3747,86 +3957,235 @@ elseif strcmp(State, 'Enable')
 		end;
 	end;
 end;
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-function [xs, ys] = Spline_ROI(x, y);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [xs, ys] = Spline_ROI(x, y)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%
 % 	interpolate x & y points into a spline curve
 %   return xs and ys, upsampled by a factor f
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
 f  = 1/Sample_Rate;      % Upsample curve by a factor of 10 
 t  = 1:length(x);
 ts = 1: f : length(x);
 xs = spline(t, x, ts);
 ys = spline(t, y, ts);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function F = Sample_Rate;
+function F = Sample_Rate
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-F = 5;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+F = 4;
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function ROI_info_table = Init_ROI_info_table;
+function ROIinfoTable = initROIinfoTable
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %  Function to create an empty ROI_info_table with the 
 %  correct fields initialized to empty
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
-ROI_info_table = struct( ...
-	'ROI_Data', [], ...
-	'ROI_Exists', [], ...
+ROIinfoTable = struct( ...
+	'ROI_Exists', 0, ...
+    'ROI_Data', [], ...
 	'ROI_Info', [], ...
 	'ROI_x_original', [],...
 	'ROI_y_original', []);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function  handle_values = Make_ROI_Elements(xs,ys,roi_color,roi_number, center_x, center_y, size_x, size_y, angle_x, angle_y, number_x, number_y, alpha0);
+function  hROIElements = Make_ROI_Elements(hFig, hAxes, ...
+                                           xs,ys,roi_color,roi_number, ...
+                                           center_x, center_y, ...
+                                           size_x, size_y, ...
+                                           angle_x, angle_y, ...
+                                           number_x, number_y, ...
+                                           alpha0)
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  Funciton to create sub-elements of an ROI, including the actual ROI, the
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  Function to create sub-elements of an ROI, including the actual ROI, the
 %  resize square, the angle circle, the central plus and the ROI number
-global DB; if DB disp(['ROI_Tool: ', Get_Current_Function]); end;
+dispDebug;
 
-h_circle = plot(xs,ys,[roi_color,'-'],...
-	'ButtonDownFcn', 'ROI_tool(''Change_Current_ROI'')');
+hCircleLine = plot(hAxes, xs,ys,[roi_color,'-'],...
+	'ButtonDownFcn', {@Change_Current_ROI, hFig});
 
-h_center = plot(center_x, center_y , [roi_color,'+'], ...
-	'ButtonDownFcn', 'ROI_tool(''ROI_Pos_Adjust_Entry'',1)'); 
+hCenterPlus = plot(hAxes, center_x, center_y , [roi_color,'+'], ...
+	'ButtonDownFcn', {@ROI_Pos_Adjust_Entry, hFig, 1});
 
-h_size = plot(size_x , size_y, [roi_color,'s'],...
-	'ButtonDownFcn', 'ROI_tool(''ROI_Size_Adjust_Entry'')');
+hSizeSquare = plot(hAxes, size_x , size_y, [roi_color,'s'],...
+	'ButtonDownFcn',  {@ROI_Size_Adjust_Entry, hFig, hAxes});
 
-h_angle = plot(angle_x, angle_y, [roi_color,'o'],...
-	'ButtonDownFcn', 'ROI_tool(''ROI_Angle_Adjust_Entry'')');
-if nargin == 13
-	setappdata(h_angle, 'alpha0', alpha0);	
+hAngleCircle = plot(hAxes, angle_x, angle_y, [roi_color,'o'],...
+	'ButtonDownFcn', {@ROI_Angle_Adjust_Entry, hFig});
+
+if nargin == 15
+	setappdata(hAngleCircle, 'alpha0', alpha0);	
 end;
 
-h_number = text(number_x, number_y, num2str(roi_number),...
-	'color', roi_color, ...
+hNumberText = text(hAxes, number_x, number_y, num2str(roi_number),...
+	'Color', roi_color, ...
 	'HorizontalAlignment', 'center' , ...
-	'ButtonDownFcn', 'ROI_tool(''ROI_Pos_Adjust_Entry'',2)'); 
+	'ButtonDownFcn', {@ROI_Pos_Adjust_Entry, hFig, 2}); 
 
-handle_values = [h_circle, h_center, h_size, h_angle, h_number];
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+hROIElements = [hCircleLine, hCenterPlus, hSizeSquare, hAngleCircle, hNumberText];
 %
-function  func_name = Get_Current_Function;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Debug function - returns current function name
-x = dbstack;
-x = x(2).name;
-func_name = x(findstr('(', x)+1:findstr(')', x)-1);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+% %% %%%%%%%%%%%%%%%%%%%%%%%%
+% %
+% function  emptyROI = emptyROI_InfoTableEntry
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %  Function to create sub-elements of an ROI, including the actual ROI, the
+% %  resize square, the angle circle, the central plus and the ROI number
+% dispDebug;
+% emptyROI = struct(...
+%     'ROI_Exists',0, ...
+%     'ROI_Info', [],  ...
+%     'ROI_Data', [], ...
+%     'ROI_x_original', [], ...
+%     'ROI_y_original', []);
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  aD = getAD(hFig)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Retrieve application data stored within Active Figure (aka image figure)
+%  Appdata name depends on tool. 
+dispDebug;
+aD = getappdata(hFig, 'AD');
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  storeAD(aD)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+setappdata(aD.hFig, 'AD', aD);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function buttonImage = makeButtonImage
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The default button size is 15 x 16 x 3.
+dispDebug;
+
+buttonSize_x= 16;
+buttonImage = NaN* zeros(15,buttonSize_x);
+
+f = [...
+     6     7     8     9    10    19    27    33    36    37    38    39    40    43    47    51 ...
+    53    59    62    66    67    69    70    74    91    96    97    98    99   100   105   106 ...
+   111   115   120   121   126   130   135   136   141   142   143   144   145   150   167   171 ...
+   175   179   182   186   187   188   189   190   194   198   201   205   208   214   222   231 ...
+   232   233   234];
+
+   
+buttonImage(f) = 0;
+buttonImage = repmat(buttonImage, [1,1,3]);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function structNames = retrieveNames
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+structNames.Name                = 'ROI';
+structNames.toolName            = 'ROI_tool';
+structNames.buttonTag           = 'figButtonROI';
+structNames.buttonToolTipString = 'ROI Drawing Tool';
+structNames.menuTag             = 'menuROI';
+structNames.menuLabel           = 'Draw ROIs';
+
+structNames.figFilename         = 'ROI_tool_figure.fig';
+structNames.figName             = 'ROI Tool';
+structNames.figTag              = 'ROI_figure';
+
+structNames.figInfoFilename     = 'ROI_info_figure.fig';
+structNames.figInfoName         = 'ROI Info';
+structNames.figInfoTag          = 'ROI_info_figure';
+
+structNames.figDrawFilename     = 'ROI_draw_figure.fig';
+structNames.figDrawName         = 'Manual ROI Tool';
+structNames.figDrawTag          = 'ROI_draw_figure';
+
+structNames.activeFigureName    = 'ActiveFigure';
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function UIControls = optionalUIControls
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+UIControls = { ...
+        'Link_ROI_togglebutton', 'Value'; ...
+        'Create_ROI_checkbox',   'Value'; ...
+        'Create_ROI_popupmenu',  'Value'; ...
+        'Paste_ROI_checkbox',    'Value'; ...
+        'Delete_ROI_popupmenu',  'Value'; ...   
+        'Save_MAT_checkbox',     'Value'; ...
+        'Save_TXT_checkbox',     'Value'; ...
+        'Close_ROI_checkbox',    'Value'; ...
+        'Show_Pixels_checkbox',  'Value'; ...
+        'Point_Drop_edit',       'String'; ...
+        'Push_Radius_edit',      'String'; ...
+        'Spline_checkbox',       'Value'; ...
+        'Polygon_checkbox',      'Value'; ...
+        'Sort_Order_pushbutton', 'Value'; ...
+        };
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  dispDebug(varargin)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Print a debug string if global debug flag is set
+global DB;
+
+if DB
+    objectNames = retrieveNames;
+    x = dbstack;
+    func_name = x(2).name;    loc = [];
+    if length(x) > 4
+        loc = [' (loc) ', repmat('|> ',1, length(x)-3)] ;
+    end
+    fprintf([objectNames.toolName, ':',loc , ' %s'], func_name);
+    if nargin>0
+        for i = 1:length(varargin)
+            str = varargin{i};
+            fprintf(': %s', str);
+        end
+    end
+    fprintf('\n');
+
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

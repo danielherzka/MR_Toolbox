@@ -86,8 +86,8 @@ aD.objectNames =  objNames;
 % store app data structure in tool-specific field
 setappdata(aD.hFig, aD.Name, aD);
 
+% Check for time-dimension data. If none, deactivate tool.
 hAllAxes = findobj(aD.hFig, 'Type', 'Axes');
-
 if isempty(getappdata(hAllAxes(1), 'CurrentImage'))
     % Current images do not have hidden dimension data
     % Assume if one axis has hidden dimension, all do.
@@ -378,8 +378,7 @@ aD = getAD(hFig);
 
 frameRate = str2double(aD.hGUI.Frame_Rate_edit.String);
 
-origEnable = disableGUI(aD.hGUI);
-aD.hGUI.Stop_pushbutton.Enable ='On';
+origEnable = aD.hUtils.disableGUIObjects(aD.hGUI, 'Stop_pushbutton');
 		
 hAxesOfInterest = getApplyToAxes(aD,aD.hGUI.Apply_radiobutton);
 
@@ -443,7 +442,7 @@ if (GLOBAL_STOP_MOVIE ~= 2)
     end;
 	
     % Turn objects back on
-    enableGUI(aD.hGUI, origEnable);
+    aD.hUtils.restoreGUIObjects(aD.hGUI, origEnable);
     
     figure(aD.hToolFig);
     figure(aD.hFig);
@@ -488,7 +487,7 @@ filename = [pathname, filename];
 
 M = struct('cdata', [], 'colormap', []);
 
-origEnable = disableGUI(aD.hGUI);
+origEnable = aD.hUtils.disableGUIObjects(aD.hGUI);
 
 % Determine axis to be captured
 hAxesOfInterest = getApplyToAxes(aD,aD.hGUI.Apply_radiobutton);
@@ -594,7 +593,7 @@ end
 
 
 % Turn objects back on
-enableGUI(aD.hGUI, origEnable);
+aD.hUtils.restoreGUIObjects(aD.hGUI, origEnable);
 dispDebug('End');
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1037,12 +1036,13 @@ aD.hFig.CurrentAxes = aD.hAllAxes(1);
 % Set current figure and axis
 aD = aD.hUtils.updateHCurrentFigAxes(aD);
 
-% Store the figure's old infor within the fig's own userdata
+% Store the figure's old info within the fig's own userdata
 aD.origProperties      = aD.hUtils.retrieveOrigData(aD.hFig);
-aD.origAxesProperties  = aD.hUtils.retrieveOrigData(aD.hAllAxes , {'ButtonDownFcn', 'XLimMode', 'YLimMode'});
+aD.origAxesProperties  = aD.hUtils.retrieveOrigData(aD.hAllAxes , ...
+    {'ButtonDownFcn', 'XLimMode', 'YLimMode', 'SortMethod'});
 aD.origImageProperties = aD.hUtils.retrieveOrigData(aD.hAllImages , {'ButtonDownFcn'});
 
-% Find and close the old WL figure to avoid conflicts
+% Find and close the old tool figure to avoid conflicts
 hToolFigOld = aD.hUtils.findHiddenObj(aD.hRoot.Children, 'Tag', aD.objectNames.figTag);
 if ~isempty(hToolFigOld), delete(hToolFigOld);end
 pause(0.5);
@@ -1051,7 +1051,7 @@ pause(0.5);
 aD.hButton.Tag   = [aD.hButton.Tag,'_On'];
 aD.hMenuPZ.Tag   = [aD.hMenu.Tag, '_On'];
 
-% Set figure clsoe callback
+% Set figure close callback
 aD.hFig.CloseRequestFcn = {@localCloseParentFigure, aD.objectNames.figTag};
 
 % Draw faster and without flashes
@@ -1091,9 +1091,9 @@ end
 % Generate a structure of handles to pass to callbacks, and store it. 
 aD.hGUI = guihandles(aD.hToolFig);
 
-if ismac, aD.hUtils.adjustGUIForMAC(aD.hGUI); end
+if ismac, aD.hUtils.adjustGUIForMAC(aD.hGUI, 0.1); end
 
-aD.hUtils.adjustGUIPosition(aD.hFig, aD.hToolFig);
+aD.hUtils.adjustGUIPositionMiddle(aD.hFig, aD.hToolFig);
 
 aD.hToolFig.Name = aD.objectNames.figName;
 aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};
@@ -1226,39 +1226,6 @@ if applyAll
 else
     hAxes = aD.hCurrentAxes;
 end;
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function origEnable = disableGUI(hGUI)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-
-h = fieldnames(hGUI);
-origEnable = cell(size(h));
-for i = 1:length(h)
-    if strcmpi('uicontrol', hGUI.(h{i}).Type)
-        origEnable{i} = hGUI.(h{i}).Enable;
-        hGUI.(h{i}).Enable = 'Off';
-    end
-end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% %%%%%%%%%%%%%%%%%%%%%%%%
-%
-function enableGUI(hGUI, origEnable)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-dispDebug;
-h = fieldnames(hGUI);
-for i =1:length(h)
-    if strcmpi('uicontrol', hGUI.(h{i}).Type)
-        hGUI.(h{i}).Enable = origEnable{i};
-    end
-end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -8,7 +8,8 @@ function hFcn = MR_utilities(varargin)
 
 fs={...
     'adjustGUIForMAC';...
-    'adjustGUIPosition';...
+    'adjustGUIPositionMiddle';...
+    'adjustGUIPositionTop';...
     'closeParentFigure';...
     'closeRequestCallback';...
     'createButtonObject';...
@@ -16,7 +17,9 @@ fs={...
     'deactivateButton';...
     'defaultButtonTags';...
     'disableToolbarButtons';...
+    'disableGUIObjects';...
     'enableToolbarButtons';...
+    'enableGUIObjects';...
     'findAxesChildIm';...
     'findHiddenObj';...
     'findHiddenObjRegexp';...
@@ -88,7 +91,7 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function adjustGUIPosition(hFig, hToolFig) 
+function adjustGUIPositionMiddle(hFig, hToolFig) 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -96,6 +99,20 @@ figPos = hFig.Position;
 hToolFig.Units = hFig.Units;
 guiPos = hToolFig.Position;
 guiVPos = figPos(2) + figPos(4)/2 - guiPos(4)/2;
+guiHPos = figPos(1) - guiPos(3)*1.1;
+hToolFig.Position = [guiHPos, guiVPos, guiPos(3:4)];
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function adjustGUIPositionTop(hFig, hToolFig) 
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+figPos = hFig.Position;
+hToolFig.Units = hFig.Units;
+guiPos = hToolFig.Position;
+guiVPos = figPos(2) + figPos(4) - guiPos(4);
 guiHPos = figPos(1) - guiPos(3)*1.1;
 hToolFig.Position = [guiHPos, guiVPos, guiPos(3:4)];
 %
@@ -269,6 +286,90 @@ tags = { ...
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
+function origEnable = disableGUIObjects(hGUI, list)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Function to disable uicontrol objcects in a GUI. The exclusion list
+%  allows for specific objects to be ignored.
+dispDebug;
+if nargin==1
+    list = cell;
+end
+
+h = fieldnames(hGUI);
+
+for i = 1:length(h)
+    
+    if strcmpi('uicontrol', hGUI.(h{i}).Type)
+        if any(strcmpi (h{i}, list))
+            dispDebug(['disable->', h{i}])  
+            hGUI.(h{i}).Enable = 'Off';
+        end
+    end
+end
+
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function enableGUIObjects(hGUI, list)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Function to enable uicontrol objcects in a GUI. The exclusion list
+% (optional) allows for specific objects to be ignored. Assume that the input
+%  origEnables object list (optional) has the original Enable states. If
+%  the origEnables does not have an equivalent object name (as a field)
+%  the uicontrol is Enabled as a default.
+
+dispDebug;
+if nargin==1
+    list = {};
+end
+    
+h = fieldnames(hGUI);
+
+for i = 1:length(h)
+
+    if strcmpi('uicontrol', hGUI.(h{i}).Type)
+        
+        if strcmpi(h{i}, list)
+        
+            hGUI.(h{i}).Enable = 'On';
+        
+        end            
+            
+    end
+    
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% %% %%%%%%%%%%%%%%%%%%%%%%%%
+% %
+% function inStruct = removeFields(inStruct, List)
+% %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% dispDebug;
+% inStruct = rmfield(inStruct, List);
+
+% Use this version if rmfield causes problems 
+% with fields that somehow do not exist in inStruct
+%
+% for i=1:length(List)
+%     
+%     if isfield(inStruct, List{i})
+%     
+%         inStruct = rmfield(inStruct, List{i});
+%     end
+%         
+% end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
 function  aD = disableToolbarButtons(aD, currentToolName) 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -318,6 +419,21 @@ for i = 1:length(aD.hToolbarChildren)
     end
     if isprop(aD.hToolbarChildren(i), 'State') && ~isempty(aD.origToolStates{i})
         aD.hToolbarChildren(i).State = aD.origToolStates{i};
+    end
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function restoreGUIObjects(hGUI, origEnable)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+dispDebug;
+h = fieldnames(hGUI);
+for i =1:length(h)
+    if strcmpi('uicontrol', hGUI.(h{i}).Type)
+        hGUI.(h{i}).Enable = origEnable{i};
     end
 end
 %
@@ -582,6 +698,12 @@ if DB
         loc = ['(loc)', repmat('|> ',1, sum(strcmp(x(1).file, {x.file})-1))] ;
     end
     fprintf([callFuncName,' ',objectNames.toolName, ':', loc , ' %s'], funcName);
+    if nargin>0
+        for i = 1:length(varargin)
+            str = varargin{i};
+            fprintf(': %s | ', str);
+        end
+    end
     fprintf('\n');    
 end
 %

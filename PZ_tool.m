@@ -575,7 +575,7 @@ aD.hGUI = guihandles(aD.hToolFig);
 
 if ismac, aD.hUtils.adjustGUIForMAC(aD.hGUI, 0.3); end
 
-aD.hUtils.adjustGUIPosition(aD.hFig, aD.hToolFig);
+aD.hUtils.adjustGUIPositionMiddle(aD.hFig, aD.hToolFig);
 
 aD.hToolFig.Name = aD.objectNames.figName;
 aD.hToolFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};

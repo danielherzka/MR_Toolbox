@@ -1,5 +1,7 @@
 %load('C:\Users\herzkad\Dropbox\Herzka - MATLAB\Test DAta\VTA_Pig_G083_8_Weeks_post_MI_WIP_Hi-INAV-PSIR_SENSE_37_1.mat')
 
+clc
+
 load('/Users/danielherzka/Dropbox/Herzka - MATLAB/New Tools/20170310 In Progress EodD stop Wl PZ MV SP/VTA_Pig_G083_8_Weeks_post_MI_WIP_Hi-INAV-PSIR_SENSE_37_1.mat')
 try
     close all
@@ -25,7 +27,7 @@ end
 f=figure;
 Ims = cat(4, I.A,flipud(I.A),fliplr(I.A));
 %Ims = cat(5, Ims, flipud(Ims));
-imagescn(Ims(:,:,:,:,:), [], [], 10 , 3);
+imagescn(Ims, [], [], 10 , 3);
 
 hAllAxes = flipud(findobj(f, 'type', 'axes'));
 
@@ -133,5 +135,5 @@ shg
 % Test single image array without time
 % figure
 % imagescn(I.A(:,:,7), [], [], 10);
-shg
+% shg
 
