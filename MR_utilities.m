@@ -8,6 +8,7 @@ function hFcn = MR_utilities(varargin)
 
 fs={...
     'adjustGUIForMAC';...
+    'adjustGUIPositionBottom';...
     'adjustGUIPositionMiddle';...
     'adjustGUIPositionTop';...
     'closeParentFigure';...
@@ -47,6 +48,48 @@ end;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
+function activateToolExternal(hFig, objNames)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+hFig = isAppropriateFigureHandle(hFig); 
+if hFig==0
+    disp('Input to activate tool must be a figure handle');
+    return;
+end;
+
+hButton = findHiddenObj(hFig, 'Tag', objNames.figTag);
+
+if ~isempty(hButton)
+hButton.State = 'On'; % Triggers callbacks for button press
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function deactivateToolExternal(hFig, objNames)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+hButton = findHiddenObj(hFig, 'Tag', objNames.figTag);
+if ~isempty(hButton)
+    hButton.State = 'Off'; % Triggers callbacks for button press
+end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function  flag  = isAppropriateFigureHandle(h)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+flag = 1;
+if ~isgraphics(h), flag = 0; return; end
+if ~strcmpi(h.Type, 'Figure'), flag = 0; end
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
 function adjustGUIForMAC(hGUI, scaling) %#ok<*DEFNU>>
 % 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -58,8 +101,8 @@ if nargin==1, scaling = 0; end
 fSize = 12; % font size
 scaleFact = 1 + scaling; % figure size scaling factor
 objs = fieldnames(hGUI);
-xDelta = scaling/2;  % relative hor shift after scaling 
-yDelta = scaling/2;  % relative ver shift after scaling 
+xDelta = 1 + scaling/2;  % relative hor shift after scaling 
+yDelta = 1 + scaling/2;  % relative ver shift after scaling 
  
 % Scale in size
 for i = 1:length(objs)
@@ -67,25 +110,28 @@ for i = 1:length(objs)
                 hGUI.(objs{i}).FontSize = fSize;
     end   
     if isprop(hGUI.(objs{i}), 'Position')
-        hGUI.(objs{i}).Position = scaleFact * hGUI.(objs{i}).Position;
+       % pos = hGUI.(objs{i}).Position
+        %hGUI.(objs{i}).Position = [pos(1:2), scaleFact * pos(3:4)];
     end
 end
 
 % Calculate horizontal and vertical UIControl shift
-for i = 1:length(objs)
-    if strcmpi(hGUI.(objs{i}).Type, 'Figure')
-        figPos = hGUI.(objs{i}).Position;
-        xDelta = xDelta * figPos(3);
-        yDelta = yDelta * figPos(4);
-    end
-end
+% for i = 1:length(objs)
+%     if strcmpi(hGUI.(objs{i}).Type, 'Figure')
+%         figPos = hGUI.(objs{i}).Position;
+%         xDelta = xDelta * figPos(3) / 2
+%         yDelta = yDelta * figPos(4) / 2
+%         break
+%     end
+% end
 
 % Apply deltas
-for i = 1:length(objs)
-    if strcmpi(hGUI.(objs{i}).Type, 'UIControl') && isprop(hGUI.(objs{i}), 'Postion')
-        hGUI.(objs{i}).Position = [ xDelta yDelta 0 0];
-    end   
-end
+% for i = 1:length(objs)
+%     if strcmpi(hGUI.(objs{i}).Type, 'UIControl') && isprop(hGUI.(objs{i}), 'Position')
+%         pos = hGUI.(objs{i}).Position 
+%         hGUI.(objs{i}).Position = [ pos(1) + xDelta, pos(2)+yDelta, pos(3), pos(4)];
+%     end   
+% end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -117,6 +163,21 @@ guiHPos = figPos(1) - guiPos(3)*1.1;
 hToolFig.Position = [guiHPos, guiVPos, guiPos(3:4)];
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function adjustGUIPositionBottom(hFig, hToolFig) 
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+figPos = hFig.Position;
+hToolFig.Units = hFig.Units;
+guiPos = hToolFig.Position;
+guiVPos = figPos(2) + guiPos(4);
+guiHPos = figPos(1) - guiPos(3)*1.1;
+hToolFig.Position = [guiHPos, guiVPos, guiPos(3:4)];
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -152,6 +213,8 @@ uaD.hRoot.ShowHiddenHandles = 'On';
 %calls deactivate
 uaD.hButton.State = 'off';
 uaD.hRoot.ShowHiddenHandles= old_SHH;
+
+delete(gcf)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 

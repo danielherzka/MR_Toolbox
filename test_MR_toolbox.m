@@ -23,13 +23,18 @@ end
 % colormap(cmap(1:end/2,:))
 
 %% Test object drawing in MV
+load('TestIm')
 
-f=figure;
-Ims = cat(4, I.A,flipud(I.A),fliplr(I.A));
+hf=figure;
+Ims = cat(4, repmat(TestIm, [1 1 size(I.A,3)]), ...
+    I.A,flipud(I.A),fliplr(I.A));
+
+
 %Ims = cat(5, Ims, flipud(Ims));
 imagescn(Ims, [], [], 10 , 3);
+hf.Position = [42.5833 6.6389 10 10];
 
-hAllAxes = flipud(findobj(f, 'type', 'axes'));
+hAllAxes = flipud(findobj(hf, 'type', 'axes'));
 
 % Object params
 nframes = size(I.A,3);
@@ -128,6 +133,9 @@ for f = 1:length(hAllAxes)-1
     
     setappdata(hAllAxes(f), 'Objects', objStruct)
 end
+
+% outside trigger start
+%ROI_tool('Start', hf)
 
 shg
 

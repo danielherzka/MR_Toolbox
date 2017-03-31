@@ -1,9 +1,11 @@
 function ROI_tool(varargin)
 % function ROI_tool(varargin);
 % Function to create ROIs and manipulate ROIs on a montage of images.
-% Use with imagescn or iamgesc.
+% Use with imagescn or imagesc
 %
-% Usage: ROI_tool;
+% Usage: ROI_tool;                        -> creates the ROI_tool button. 
+%        ROI_tool('Start', figure_handle) -> opens an ROI tool for a fig
+%        ROI_tool('Exit');                -> closes an open ROI tool
 %
 % Author: Daniel Herzka  herzkad@nih.gov
 % Laboratory of Cardiac Energetics 
@@ -22,81 +24,93 @@ function ROI_tool(varargin)
 
 % Set or clear global debug flag
 dispDebug('Entry');
-Create_New_Objects;
-
-if isempty(varargin) 
-   Action = 'New';
-   Image_handles = [];
+if nargin==0
+    Create_New_Objects;
 else
-    if ischar(varargin{1})   % sent in an action
-        Action = varargin{1};  
-    elseif isnumeric(varargin{1}) % sent in a matrix of handles  
-        Action = 'New';
-        Image_handles = varargin{1};
-    else                     % sent in unidentified material
-        Action = 'Exit';
+    % Enable trigger to start ROI_tool from outside
+    if strcmpi(varargin{1}, 'Start')
+        hUtils = MR_Utilities;
+        hUtils.activateToolExternal(varargin{2}, retrieveNames)
+    elseif strcmpi(varargin{2}, 'Exit')
+        hUtils = MR_Utilities;
+        hUtils.deactivateToolExternal(varargin{2}, retrieveNames)
     end
 end
 
-switch Action
-    
- %   case 'New',                                Create_New_Button(Image_handles);
-    case 'Activate_ROI_Tool',                  Activate_ROI_Tool(varargin(2:end));
-    case 'Deactivate_ROI_Tool',                Deactivate_ROI_Tool(varargin{2:end});
-    case 'Create_New_ROI',                     Create_New_ROI;
-    case 'Delete_ROI',                         Delete_ROI;
-    case 'Copy_Current_ROI',                   Copy_Current_ROI;
-    case 'Edit_ROI', 	                       Prep_Draw_ROI(1, []);
-    case 'Edit_ROI_Finish', 	               Edit_ROI_Finish(varargin{2:end});
-        
-    case 'Paste_Current_ROI',                  Paste_Current_ROI;
-    case 'Change_Current_Axes',                Change_Current_Axes;
-    case 'Change_Current_ROI',                 Change_Current_ROI;
-        
-    case 'ROI_Angle_Adjust_Entry',             ROI_Angle_Adjust_Entry;    % Entry
-    case 'ROI_Angle_Adjust',                   ROI_Angle_Adjust;     % Cycle
-    case 'ROI_Angle_Adjust_Exit',              set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
-                                               ROI_Angle_Adjust_Exit;    % Exit
-    case 'ROI_Size_Adjust_Entry',              ROI_Size_Adjust_Entry;    % Entry
-    case 'ROI_Size_Adjust',                    ROI_Size_Adjust;     % Cycle
-    case 'ROI_Size_Adjust_Exit',               set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
-                                               ROI_Size_Adjust_Exit;        % Exit
-    case 'ROI_Pos_Adjust_Entry',               ROI_Pos_Adjust_Entry(varargin{2});   % Entry
-    case 'ROI_Pos_Adjust',                     ROI_Pos_Adjust(varargin{2}); % Cycle
-    case 'ROI_Pos_Adjust_Exit',                set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
-                                               ROI_Pos_Adjust_Exit;      % Exit
-    case 'ROI_Draw_Entry',                     ROI_Draw_Entry(varargin{2:end});     % Entry
-    case 'ROI_Draw',                           ROI_Draw;    % Cycle
-    case 'ROI_Draw_Exit',                      set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
-                                               ROI_Draw_Exit;    % Exit
-    case 'ROI_Point_Move_Entry',               ROI_Point_Move_Entry(varargin{2:end}); % Entry
-    case 'ROI_Point_Move',                     ROI_Point_Move(varargin{2:end});     % Cycle
-    case 'ROI_Point_Move_Exit',                set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
-                                               ROI_Point_Move_Exit(varargin{2:end});    % Exit
-    case 'ROI_Push_Point_Entry',               ROI_Push_Point_Entry(varargin{2:end});     % Entry
-    case 'ROI_Push_Point',                     ROI_Push_Point(varargin{2:end});    % Cycle
-    case 'ROI_Push_Point_Exit',                set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
-                                               ROI_Push_Point_Exit(varargin{2:end});     % Exit
-    case 'Draw_ROI_Finish' ,                   Draw_ROI_Finish(varargin{2:end});
-    case 'Draw_Spline',                        Draw_Spline;
-    case 'Draw_Clear_ROI',                     Draw_Clear_ROI;
-    case 'Toggle_Draw_Mode',                   Toggle_Draw_Mode(varargin{2:end});
-    case 'ROI_Push_Move_Cursor',               ROI_Push_Move_Cursor;
-    case 'Toggle_Spline_Poly',                 Toggle_Spline_Poly(varargin{2:end});
-    case 'Show_Pixels',                        Show_Pixels;
-    case 'Draw_Change_Edit_Value',             Draw_Change_Edit_Value(varargin{2:end});
-    case 'Draw_Push_Radius',                   Draw_Push_Radius(varargin{2:end});
-    case 'Draw_Change_Radius_Value',           Draw_Change_Radius_Value(varargin{2:end});
-        
-    case 'Resort_ROI_Info_Listbox',            Resort_ROI_Info_Listbox(varargin{2});
-    case 'Listbox_Change_Current_ROI',         Listbox_Change_Current_ROI;
-    case 'Save_ROI',                           Save_ROI(varargin{2:end});
-    case 'Load_ROI',                           Load_ROI(varargin{2:end});
-    case 'Close_Parent_Figure',                Close_Parent_Figure;
-    case 'Menu_ROI_Tool',                      Menu_ROI_Tool;
-    case 'Exit',                               disp('Unknown Input Argument');
-    otherwise,                                 disp(['Unimplemented Functionality: ', Action]);
-end;
+
+% if isempty(varargin) 
+%    Action = 'New';
+%    Image_handles = [];
+% else
+%     if ischar(varargin{1})   % sent in an action
+%         Action = varargin{1};  
+%     elseif isnumeric(varargin{1}) % sent in a matrix of handles  
+%         Action = 'New';
+%         Image_handles = varargin{1};
+%     else                     % sent in unidentified material
+%         Action = 'Exit';
+%     end
+% end
+
+% switch Action
+%     
+%  %   case 'New',                                Create_New_Button(Image_handles);
+%     case 'Activate_ROI_Tool',                  Activate_ROI_Tool(varargin(2:end));
+%     case 'Deactivate_ROI_Tool',                Deactivate_ROI_Tool(varargin{2:end});
+%     case 'Create_New_ROI',                     Create_New_ROI;
+%     case 'Delete_ROI',                         Delete_ROI;
+%     case 'Copy_Current_ROI',                   Copy_Current_ROI;
+%     case 'Edit_ROI', 	                       Prep_Draw_ROI(1, []);
+%     case 'Edit_ROI_Finish', 	               Edit_ROI_Finish(varargin{2:end});
+%         
+%     case 'Paste_Current_ROI',                  Paste_Current_ROI;
+%     case 'Change_Current_Axes',                Change_Current_Axes;
+%     case 'Change_Current_ROI',                 Change_Current_ROI;
+%         
+%     case 'ROI_Angle_Adjust_Entry',             ROI_Angle_Adjust_Entry;    % Entry
+%     case 'ROI_Angle_Adjust',                   ROI_Angle_Adjust;     % Cycle
+%     case 'ROI_Angle_Adjust_Exit',              set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
+%                                                ROI_Angle_Adjust_Exit;    % Exit
+%     case 'ROI_Size_Adjust_Entry',              ROI_Size_Adjust_Entry;    % Entry
+%     case 'ROI_Size_Adjust',                    ROI_Size_Adjust;     % Cycle
+%     case 'ROI_Size_Adjust_Exit',               set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
+%                                                ROI_Size_Adjust_Exit;        % Exit
+%     case 'ROI_Pos_Adjust_Entry',               ROI_Pos_Adjust_Entry(varargin{2});   % Entry
+%     case 'ROI_Pos_Adjust',                     ROI_Pos_Adjust(varargin{2}); % Cycle
+%     case 'ROI_Pos_Adjust_Exit',                set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
+%                                                ROI_Pos_Adjust_Exit;      % Exit
+%     case 'ROI_Draw_Entry',                     ROI_Draw_Entry(varargin{2:end});     % Entry
+%     case 'ROI_Draw',                           ROI_Draw;    % Cycle
+%     case 'ROI_Draw_Exit',                      set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
+%                                                ROI_Draw_Exit;    % Exit
+%     case 'ROI_Point_Move_Entry',               ROI_Point_Move_Entry(varargin{2:end}); % Entry
+%     case 'ROI_Point_Move',                     ROI_Point_Move(varargin{2:end});     % Cycle
+%     case 'ROI_Point_Move_Exit',                set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
+%                                                ROI_Point_Move_Exit(varargin{2:end});    % Exit
+%     case 'ROI_Push_Point_Entry',               ROI_Push_Point_Entry(varargin{2:end});     % Entry
+%     case 'ROI_Push_Point',                     ROI_Push_Point(varargin{2:end});    % Cycle
+%     case 'ROI_Push_Point_Exit',                set(gcf, 'WindowButtonMotionFcn', ' ','WindowButtonUpFcn', ' ');
+%                                                ROI_Push_Point_Exit(varargin{2:end});     % Exit
+%     case 'Draw_ROI_Finish' ,                   Draw_ROI_Finish(varargin{2:end});
+%     case 'Draw_Spline',                        Draw_Spline;
+%     case 'Draw_Clear_ROI',                     Draw_Clear_ROI;
+%     case 'Toggle_Draw_Mode',                   Toggle_Draw_Mode(varargin{2:end});
+%     case 'ROI_Push_Move_Cursor',               ROI_Push_Move_Cursor;
+%     case 'Toggle_Spline_Poly',                 Toggle_Spline_Poly(varargin{2:end});
+%     case 'Show_Pixels',                        Show_Pixels;
+%     case 'Draw_Change_Edit_Value',             Draw_Change_Edit_Value(varargin{2:end});
+%     case 'Draw_Push_Radius',                   Draw_Push_Radius(varargin{2:end});
+%     case 'Draw_Change_Radius_Value',           Draw_Change_Radius_Value(varargin{2:end});
+%         
+%     case 'Resort_ROI_Info_Listbox',            Resort_ROI_Info_Listbox(varargin{2});
+%     case 'Listbox_Change_Current_ROI',         Listbox_Change_Current_ROI;
+%     case 'Save_ROI',                           Save_ROI(varargin{2:end});
+%     case 'Load_ROI',                           Load_ROI(varargin{2:end});
+%     case 'Close_Parent_Figure',                Close_Parent_Figure;
+%     case 'Menu_ROI_Tool',                      Menu_ROI_Tool;
+%     case 'Exit',                               disp('Unknown Input Argument');
+%     otherwise,                                 disp(['Unimplemented Functionality: ', Action]);
+% end;
 
 %  Object callbacks; return hFig for speed
 % aD.hButton.OnCallback                   -> {@Activate_ROI, hFig}
@@ -157,6 +171,8 @@ if isappdata(aD.hFig, aD.Name)
     aD.oldAD = getappdata(aD.hFig, aD.Name);
 end
 setappdata(aD.hFig, aD.Name, aD);
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
@@ -386,6 +402,8 @@ storeAD(aD);
 % %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function Deactivate_ROI_Tool(~,~,hFig)
@@ -397,15 +415,15 @@ aD = getAD(hFig);
 
 % If ROIs were created, hide objects and remove ButtonDown functions
 if any(aD.ROI_InfoTable(:).ROI_Exists)
-    hROIElements = [aD.ROI_InfoTable(:).ROI_Data];
-    hROIElements = hROIElements(1,:);    
+    hROIElements = [aD.ROI_InfoTable(:).ROI_Handles];
     [hROIElements(isgraphics(hROIElements)).Visible] =  deal('Off');
     [hROIElements(isgraphics(hROIElements)).ButtonDownFcn] =  deal('');
 end;
 
 % store current state for next tool call
-setappdata(aD.hFig, 'ROI_InfoTable'  , aD.ROI_InfoTable) 
-setappdata(aD.hFig, 'ROI_CurrentInfo', aD.ROI_CurrentInfo);
+%%% NEED TO MAKE SURE SUCCEEDING CALLS KNOW IT IS A RETURN CALL
+%setappdata(aD.hFig, 'ROI_InfoTable'  , aD.ROI_InfoTable) 
+%setappdata(aD.hFig, 'ROI_CurrentInfo', aD.ROI_CurrentInfo);
 
 aD.hUtils.deactivateButton(aD);
 
@@ -428,7 +446,8 @@ dispDebug;
 aD = getAD(hFig);
 
 
-ELLIPSE = 1;  FREEHAND = 2;
+ELLIPSE = 1;  
+%FREEHAND = 2;
 
 createROIMethod = aD.hGUI.Create_ROI_popupmenu.Value;
 applyAll        = aD.hGUI.Create_ROI_checkbox.Value;
@@ -438,7 +457,7 @@ if ~any([aD.ROI_InfoTable(:).ROI_Exists])
     % create ROI info table to correct size (rows = number of ROIs, columns = images) 
     % now make the invalid last in case grid is not complete
   %  temp_h_all_axes = find(h_all_axes);
-    [aD.ROI_InfoTable(1, 1:length(aD.hAllAxes))]  = deal(initROIinfoTable);
+    [aD.ROI_InfoTable(1, 1:length(aD.hAllAxes))]  = deal(emptyROIInfoTable);
     % cycle through to create 0's in the Exist field. marks the ROI table as initialized
 %     [aD.ROI_InfoTable(1,1:length(temp_h_all_axes)).ROI_Exists]      = deal(0);
 % 	[aD.ROI_InfoTable(1,1:length(temp_h_all_axes)).ROI_Info]        = deal([]);
@@ -451,22 +470,22 @@ else
 end;
 
 % Find empty slots in ROI_info Table
-aD.ROI_CurrentIndex = [];
+aD.ROI_CurrentIdx = [];
 for i = size(aD.ROI_InfoTable,1):-1:1
     % found empty slot, use it; search in reverse to use the nearest one
     if (any([aD.ROI_InfoTable(i,:).ROI_Exists]))
-        aD.ROI_CurrentIndex = i;
+        aD.ROI_CurrentIdx = i;
     end;
 end;
 
 % If didn't find an empty slot, create a new row in ROI info table
-if isempty(aD.ROI_CurrentIndex)
-    aD.ROI_CurrentIndex = size(aD.ROI_InfoTable,1) + 1 - first_ROI_flag;
-    [aD.ROI_InfoTable(aD.ROI_CurrentIndex,:).ROI_Exists] = deal(0);
+if isempty(aD.ROI_CurrentIdx)
+    aD.ROI_CurrentIdx = size(aD.ROI_InfoTable,1) + 1 - first_ROI_flag;
+    [aD.ROI_InfoTable(aD.ROI_CurrentIdx,:).ROI_Exists] = deal(0);
 end;
     
 % Limit max number of ROIs to make sure we don't over clutter the screen
-if aD.ROI_CurrentIndex > 10
+if aD.ROI_CurrentIdx > 10
     msgbox('Too Many ROIs. Please delete some before creating new ones.');
     return;
 end;
@@ -512,8 +531,8 @@ switch createROIMethod
 			hROI_Elements = Make_ROI_Elements( ...
                 aD.hFig, hAxesOfInterest(i), ...
 				x + center_x, y + center_y,...
-				colororder(aD.ROI_CurrentIndex),...
-				aD.ROI_CurrentIndex,...
+				colororder(aD.ROI_CurrentIdx),...
+				aD.ROI_CurrentIdx,...
 				center_x, center_y,...
 				center_x - size_x, center_y - size_y, ...
 				center_x + size_x, center_y,...
@@ -521,21 +540,22 @@ switch createROIMethod
 			
 			ROI_values = [center_x, center_y, size_x, size_y, alpha];
 			
-			[hROI_Elements(:).UserData] = [ROI_CurrentIndex, hAxesIdx]
+			[hROI_Elements(1:4).UserData] = deal([aD.ROI_CurrentIdx, hAxesIdx]);
+			 hROI_Elements(5).UserData = [aD.ROI_CurrentIdx, hAxesIdx];
+
             %      deal( [aD.ROI_CurrentIndex, hAxesIdx, hROI_Elements, ROI_values ] );
             
-			aD.ROI_InfoTable(ROI_CurrentIndex,hAxesIdx).ROI_Data   = ROI_values;
-			aD.ROI_InfoTable(ROI_CurrentIndex,hAxesIdx).ROI_Handles = hROI_Elements;
+			aD.ROI_InfoTable(aD.ROI_CurrentIdx,hAxesIdx).ROI_Data   = ROI_values;
+			aD.ROI_InfoTable(aD.ROI_CurrentIdx,hAxesIdx).ROI_Handles = hROI_Elements;
 
-			aD.ROI_InfoTable(ROI_CurrentIndex, hAxesIdx).ROI_Exists = 1;
+			aD.ROI_InfoTable(aD.ROI_CurrentIdx, hAxesIdx).ROI_Exists = 1;
 
-			aD.ROI_InfoTable(ROI_CurrentIndex, hAxesIdx).ROI_x_original = [];
-			aD.ROI_InfoTable(ROI_CurrentIndex, hAxesIdx).ROI_y_original = [];
+			aD.ROI_InfoTable(aD.ROI_CurrentIdx, hAxesIdx).ROI_x_original = [];
+			aD.ROI_InfoTable(aD.ROI_CurrentIdx, hAxesIdx).ROI_y_original = [];
 
 			
-			aD.ROI_CurrentIDX = [ROI_CurrentIndex, hAxesIdx];
-
-            updateList(i,:) = [ROI_CurrentIndex, hAxesIdx];
+			%aD.ROI_CurrentIdx = [ROI_CurrentIdx, hAxesIdx];
+            updateList(i,:) = [aD.ROI_CurrentIdx, hAxesIdx];
             listCounter = listCounter+1;
             
             drawnow
@@ -547,28 +567,27 @@ switch createROIMethod
 		%set(findobj(fig, 'Tag', 'figROITool'), 'UserData', Userdata);
 		
 		% call the ROI_info update function: puts data into ROI_info_table
-		Update_ROI_Info(aD, updateList);
+		aD = Update_ROI_Info(aD, updateList);
 		
 		if first_ROI_flag
-			% creates figure the first time and creates the string table that is to be
+			% Creates figure the first time which creates the string table that is to be
 			% used for "publishing" the ROI data
-			aD = Create_ROI_Info_Figure(aD, updateList);
-			% published the string into the listbox
+			aD = Create_ROI_Info_Figure(aD);
 			
-			% turn on buttons, but turn off print objects
-			Change_Object_Enable_State(handles,'Off',1);
-			Change_Object_Enable_State(handles,'On',0);
+			% turn on buttons, but turn off paste objects
+			%Change_Object_Enable_State(handles,'Off',1);
+			%Change_Object_Enable_State(handles,'On',0);
 		else
 			% call function that will take info string table and "publish" it
 			
 			%Update_ROI_Info(update_list);
-			Update_ROI_Info_String(updateList);
+			aD = Update_ROI_Info_String(aD, updateList);
 		end;
 		
-		Resort_ROI_Info_Listbox;
+		Resort_ROI_Info_Listbox(aD);
 		% update current ROI index
         
-		Highlight_Current_ROI(aD.ROI_CurrentIdx);
+		Highlight_Current_ROI(aD);
 		
 		
 % 	case FREEHAND
@@ -1170,7 +1189,6 @@ center_pt = [loc_Values(1),  loc_Values(2)];
 v1 = [point(1,1)   point(1,2)]   - center_pt;   % new position
 
 %v2 = [hSize.XData, hSize.YData]  - center_pt ;  % old position
-
 
 % Undo rotation v1 -> inverse v1 - val(12)= angle from +x-axis to circle marker 
 alpha = loc_Values(5);
@@ -2503,94 +2521,107 @@ guidata(findobj('Tag', 'ROI_Draw_figure'), handlesDraw );
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Update_ROI_Info(update_list)
+function aD = Update_ROI_Info(aD, updateList)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%% 
-% updates the roi info (mean, std, pixs, etc) into the ROI table
+% Update the roi info (mean, std, pixs, etc) into the ROI table within the 
+%  app data structure
 dispDebug;
 
-if ~isempty(update_list)
-    h_all_axes = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
-    fig = h_all_axes{1};    
-    fig2 = h_all_axes{2};   
-    h_all_axes = h_all_axes{3};
-    handles = guidata(fig2);
-    userdata = get(findobj(fig, 'Tag', 'figROITool'),'Userdata');
-    ROI_info_table = userdata{1};
-
-	debug_mode = 0;
-       
-    for i = 1:size(update_list,1)
+if ~isempty(updateList)
+    
+    for i = 1:size(updateList,1)
+        ROIIdx = updateList(i,1);
+        axIdx  = updateList(i,2);
+        
         % get the handles of the image, and the ROI circle
-        h_circle = ROI_info_table(update_list(i,1), update_list(i,2)).ROI_Data(1);
-        xpts = get(h_circle, 'xdata');
-        ypts = get(h_circle, 'ydata');
-        im = get(findobj(get(h_circle, 'Parent'), 'Type', 'Image'), 'CData');
+        hCircle = aD.ROI_InfoTable(ROIIdx, axIdx).ROI_Handles(1);
+        xpts = hCircle.XData;
+        ypts = hCircle.YData;
+        im = aD.hAllImages(axIdx).CData;
 
-        % check boundary conditions
-        %xpts(xpts<=1) = 1;  xpts(xpts>size(im,1)) = size(im,1);
-        %ypts(ypts<=1) = 1;  ypts(ypts>size(im,2)) = size(im,2);
-        
-        % reduce the matrix size        
-        min_xpts = min(xpts); max_xpts = max(xpts);
-        min_ypts = min(ypts); max_ypts = max(ypts);
-         
-        % shift indexes
-        xpts2 = xpts - floor(min_xpts) ;
-        ypts2 = ypts - floor(min_ypts) ;
-       
-        %reduce image size too cover only points
-        im2 = im(floor(min_ypts):ceil(max_ypts), floor(min_xpts):ceil(max_xpts));
-        %figure; imagesc(im2)
-        %hold on; plot(xpts2, ypts2, 'ro-');
-        %axis image
-        
-        %xx = repmat([1:size(im2,2)], size(im2,1),1);
-        %yy = repmat([1:size(im2,1)]',1, size(im2,2));
-		  [xx,yy] = meshgrid([1:size(im,2)],[1:size(im2,1)]);
-
-        % Do not use roipoly as it only uses integer vertex coordinates
-        %BW = roipoly(im, xpts, ypts);
-        % However, because in_polygon uses vector and cross products to determine
-        % if point is within polygon, make matrix smaller.
-        %tic
-        rr = inpolygon(xx,yy,xpts2,ypts2);
-        %toc
-        [ii,jj] = find(rr);
-
-		if debug_mode
-            %plot(jj+floor(min_xpts),ii+floor(min_ypts),'r.');
-            f = figure;
-            imagesc(im2);
-            axis equal; 
-            hold on;
-			title('Press Any Key To Continue');
-			plot(jj+1,ii+1,'r.');
-            plot(xpts2+1,ypts2+1,'r-.')
-			colormap(get(fig, 'Colormap'));
-            pause
-			try, close(f); end;
-        end;
-        ii = ii + 1; jj = jj + 1;        
-        ROI_vals = double(im2(sub2ind(size(im2),ii,jj)));
+        ROI_Pixels = findPixelsInROI(xpts, ypts, im);
    
-        mn  = mean(ROI_vals);
-        stdev= std(ROI_vals);
-        mins = min(ROI_vals);
-        maxs = max(ROI_vals);
-        pixels = length(ROI_vals);
+        mn     = mean(ROI_Pixels);
+        stdev  = std(ROI_Pixels);
+        mins   = min(ROI_Pixels);
+        maxs   = max(ROI_Pixels);
+        pixels = length(ROI_Pixels);
             
-        ROI_info_table(update_list(i,1), update_list(i,2)).ROI_Info = ...
-            [mn, stdev, pixels, mins, maxs];    
+        aD.ROI_InfoTable(ROIIdx, axIdx).ROI_Info = [mn, stdev, pixels, mins, maxs];    
     end;
-    % restore the ROI_info_table with its new info
-    userdata{1} = ROI_info_table;    
-    set(findobj(fig, 'Tag','figROITool'), 'UserData', userdata);
 
 end;
+
+
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% %%%%%%%%%%%%%%%%%%%%%%%%
+%
+function ROI_pixels = findPixelsInROI(x,y,im)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Function to find list of pixels of an image within an ROI specified by a 
+% list of (x,y) coordinates.
+dispDebug;
+
+locDebugMode = 1;
+
+% check boundary conditions
+%x(x<=1) = 1;  x(x>size(im,1)) = size(im,1);
+%y(x<=1) = 1;  y(y>size(im,2)) = size(im,2);
+
+min_x = floor(min(x)); max_x = ceil(max(x));
+min_y = floor(min(y)); max_y = ceil(max(y));
+         
+% Shift points 
+xS = x ;%- min_x;
+yS = y ;%- min_y;
+       
+% Reduce image size too cover only points within ROI
+%imCrop = im(min_y:max_y, min_x:max_x);
+imCrop = im;
+
+
+if locDebugMode
+    figure; imagesc(imCrop)
+    hold on; plot(xS, yS, 'ro-');
+    axis image
+end
+        
+[xx,yy] = meshgrid( (1:size(imCrop,2)), (1:size(imCrop,1)));
+
+rr = inpolygon(xx,yy,xS,yS);
+
+[ii,jj] = find(rr);
+        
+if locDebugMode
+    f = figure;
+    imagesc(imCrop);
+    axis equal;
+    hold on;
+    title('Press Any Key To Continue');
+    plot(jj+1,ii+1,'r.');
+    plot(xS+1,yS+1,'r-.')
+    colormap(gray);
+    pause
+    delete(f);
+end;
+        
+ii = ii + 1; jj = jj + 1;
+
+TestIm = imCrop;
+TestIm(sub2ind(size(imCrop),ii,jj)) = 100;
+
+save('TestIm', 'TestIm')
+
+
+ROI_pixels = double(imCrop(sub2ind(size(imCrop),ii,jj)));
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function Listbox_Change_Current_ROI
@@ -2643,18 +2674,18 @@ function Resort_ROI_Info_Listbox(varargin)
 dispDebug;
 
 if nargin == 1
-    hFig = varargin{1};
+    aD = varargin{1};
 else 
     % call form pushbutton on GUI
     hFig = varargin{3};
+    aD = getAD(hFig);
 end
-aD = getAD(hFig);    
 
 %a = get(aD.hGUIInfo.Sort_Order_pushbutton, {'Value','Userdata', 'String', 'Parent'} );
 % sortOrder = a{1}; new_str= a{2}; cur_str = a{3}; ifig = a{4};
 % sortOrder = 1 = sort by image, 2 = sort by ROI
 
-sortOrder = aD.hGUIInfo.Sort_Order_pushbutton.Value
+%sortOrder = aD.hGUIInfo.Sort_Order_pushbutton.Value
 newStr    = aD.hGUIInfo.Sort_Order_pushbutton.UserData
 curStr    = aD.hGUIInfo.Sort_Order_pushbutton.String
 %aD.hGUIInfo.Sort_Order_pushbutton.Parent
@@ -2669,20 +2700,22 @@ if nargin ==3
 end
 
 if strcmp('Image', newStr)
-    String_InfoTable = permute(aD.String_InfoTable, [2 1 3]);
+    stringInfoTable = permute(aD.ROI_StringInfoTable, [2 1 3]);
+else
+    stringInfoTable = aD.ROI_StringInfoTable;
 end;
 
-st = size(String_InfoTable);
-String_InfoTable = reshape(String_InfoTable, st(1)*st(2), st(3));
+st = size(stringInfoTable);
+stringInfoTable = reshape(stringInfoTable, st(1)*st(2), st(3));
 
 % now deblank empty rows
 % assumes last digit in row is not space in normal strings
-if (size(String_InfoTable, 1)>1)
-    g =  String_InfoTable(:,size(String_InfoTable,2))'=='x';
-    String_InfoTable = String_InfoTable(g,:);
+if (size(stringInfoTable, 1)>1)
+    g =  stringInfoTable(:,size(stringInfoTable,2))'=='x';
+    stringInfoTable = stringInfoTable(g,:);
 end;
 %set(handles.ROI_Info_listbox,'String', String_InfoTable(:,1:end-1));
-aD.String_InfoTabel = String_InfoTable;
+aD.ROI_StringInfoTable = stringInfoTable;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -2983,7 +3016,7 @@ end
 % Generate a structure of handles to pass to callbacks, and store it. 
 aD.hGUI = guihandles(aD.hToolFig);
 
-if ismac, aD.hUtils.adjustGUIForMAC(aD.hGUI); end
+if ismac, aD.hUtils.adjustGUIForMAC(aD.hGUI, 0.1); end
 
 aD.hUtils.adjustGUIPositionTop(aD.hFig, aD.hToolFig);
 
@@ -3020,7 +3053,7 @@ if isfield(aD, 'oldAD')
     aD.ROI_InfoTable    = getappdata(fig, 'ROI_InfoTable');
 	aD.ROI_CurrentInfo  = getappdata(fig, 'ROI_CurrentInfo');
 else
-	aD.ROI_InfoTable    = initROIinfoTable;
+	aD.ROI_InfoTable    = emptyROIInfoTable;
     aD.ROI_CurrentInfo  = [];
 end;
 
@@ -3203,28 +3236,24 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function aD = Create_ROI_Info_Figure(aD, updateList)
+function aD = Create_ROI_Info_Figure(aD)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Function to create and initialize the ROI info figure
 dispDebug;
-% 
-% close_str = [ 'hNewButton = findobj(''Tag'', ''figROITool'');' ...
-%         ' if strcmp(get(hNewButton, ''Type''), ''uitoggletool''),'....
-%         ' set(hNewButton, ''State'', ''off'' );' ...
-%         ' else,  ' ...
-%         ' ROI_tool(''Deactivate_ROI_Tool'' ,hNewButton);'...
-%         ' set(hNewButton, ''Value'', 0);',...
-%         ' end;' ];
 
 aD.hInfoFig = openfig(aD.objectNames.figInfoFilename);
 aD.hInfoFig.Name = aD.objectNames.figInfoName;
 aD.hInfoFig.Tag  = aD.objectNames.figInfoTag;
 aD.hInfoFig.Resize = 'On'; 
-aD.hInfoFig.CloseRequestfcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};
+aD.hInfoFig.CloseRequestFcn = {aD.hUtils.closeRequestCallback, aD.hUtils.limitAD(aD)};
 
 aD.hGUIInfo = guihandles(aD.hInfoFig);
-%guidata(ifig, hGUIInfo);
+
+if ismac, aD.hUtils.adjustGUIForMAC(aD.hGUI, 0.3); end
+
+aD.hUtils.adjustGUIPositionBottom(aD.hFig, aD.hInfoFig);
+
 
 % add figure handle into the "storage" place
 %info_values = get(findobj('Tag', 'ROI_Title_text'), 'UserData');
@@ -3234,9 +3263,9 @@ aD.hGUIInfo = guihandles(aD.hInfoFig);
 for i = 1:size(aD.ROI_InfoTable,1)
     for j = 1:size(aD.ROI_InfoTable,2)
         if aD.ROI_InfoTable(i,j).ROI_Exists
-            currentValues = ROI_InfoTable(i,j).ROI_Info;
+            currentValues = aD.ROI_InfoTable(i,j).ROI_Info;
             % note that MATLAB automatically pads the strings with empty spaces
-            aD.strInfoTable(i,j, :)= num2strInfo([j,i,currentValues]);
+            aD.ROI_StringInfoTable(i,j, :)= num2strInfo([j,i,currentValues]);
         end;
     end
 end;
@@ -3248,20 +3277,18 @@ end;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Highlight_Current_ROI(i_current_ROI)
+function Highlight_Current_ROI(aD, currentROIidxs)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%% 
 dispDebug;
 
-h_listbox = findobj('Tag','ROI_Info_listbox');
-String_info_table = get(h_listbox, 'Userdata');
-current_page = get(h_listbox, 'String');
+currentPage = aD.hGUI.ROI_Info_listbox.String;
 
-if ~isempty(i_current_ROI)
-    current_string = squeeze(String_info_table(i_current_ROI(1,1), i_current_ROI(1,2),:))';
-    for i = 1:size(current_page, 1)
-        if strcmp(current_string(1,1:end-1), current_page(i,:))
-            set(h_listbox, 'Value', i);
+if ~isempty(currentROIidxs)
+    currentString = squeeze(aD.ROI_StringInfoTable(currentROIidxs(1,1), currentROIidxs(1,2),:))';
+    for i = 1:size(currentPage, 1)
+        if strcmp(currentString(1,1:end-1), currentPage(i,:))
+            aD.hGUI.ROI_Info_listbox.Value = i;
         end
     end;
 else
@@ -3306,7 +3333,7 @@ stringInfo = [a, 'x'];
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function Update_ROI_Info_String(aD, updateList)
+function aD = Update_ROI_Info_String(aD, updateList)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Inserts new data into the string array which is later "published"
@@ -3319,29 +3346,28 @@ dispDebug;
 %userdata = get(findobj(info_values{1}, 'Tag', 'figROITool'),'Userdata');
 
 %ROI_info_table = userdata{1};
-% XXX FIX with preallocation;
-if nargin == 1
-    updateList = [];
-    % no update list sent, so update all values in the ROI_info_table
+
+if nargin == 1 % Update all
+    c=1;
+    updateList = zeros(size(aD.ROI_InfoTable,1)*size(aD.ROI_InfoTable,2),2);
     for i = 1:size(aD.ROI_info_table,1)
         for j = 1:size(aD.ROI_info_table,2)
-            updateList(size(updateList,1)+1,:) = [i,j];
+            updateList(c,:) = [i,j];
+            c= c+1;
         end;
     end;    
 end
-% XXX FIX with preallocation;
+
 
 for i = 1:size(updateList,1)
-    current_info = [updateList(i,[2,1]), ROI_info_table(updateList(i,1), updateList(i,2)).ROI_Info];
-    % if ROI has been deleted, current info second half will be empty. Fill with spaces
-    if length(current_info)>2
-        aD.ROI_StringInfoTable(updateList(i,1), updateList(i,2),:) = num2strInfo(current_info);
+    currentInfo = [updateList(i,[2,1]), aD.ROI_InfoTable(updateList(i,1), updateList(i,2)).ROI_Info];
+    % if ROI has been deleted, there will only be 2 elements in currentInfo. Fill entry with spaces
+    if length(currentInfo)>2
+        aD.ROI_StringInfoTable(updateList(i,1), updateList(i,2),:) = num2strInfo(currentInfo);
     else
-        aD.ROI_StringInfoTable(updateList(i,1), updateList(i,2),:) =' ';
+        aD.ROI_StringInfoTable(updateList(i,1), updateList(i,2),:) = ' ';
     end;
 end;
-%aD.hGUIInfo.h_listbox.ROI_Info_listbox.Userdata = aD.ROI_StringInfoTable
-
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -3439,7 +3465,7 @@ handles = guidata(fig2);
 % get old ROI_info table
 Userdata = get(findobj(fig, 'Tag', 'figROITool'), 'UserData');
 
-ROI_info_table = initROIinfoTable;
+ROI_info_table = emptyROIInfoTable;
 
 temp_h_all_axes = find(h_all_axes);
 % cycle through to create 0's in the Exist field. marks the ROI table as initialized
@@ -3989,17 +4015,18 @@ F = 4;
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
-function ROIinfoTable = initROIinfoTable
+function ROIinfoTableEntry = emptyROIInfoTable
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %  Function to create an empty ROI_info_table with the 
 %  correct fields initialized to empty
 dispDebug;
 
-ROIinfoTable = struct( ...
-	'ROI_Exists', 0, ...
-    'ROI_Data', [], ...
-	'ROI_Info', [], ...
+ROIinfoTableEntry = struct( ...
+	'ROI_Exists',     0, ...
+    'ROI_Data',       [], ...
+    'ROI_Handles',    [], ...
+	'ROI_Info',       [], ...
 	'ROI_x_original', [],...
 	'ROI_y_original', []);
 %
@@ -4161,6 +4188,8 @@ UIControls = { ...
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
     
+
+
 %% %%%%%%%%%%%%%%%%%%%%%%%%
 %
 function  dispDebug(varargin)
